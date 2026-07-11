@@ -1,0 +1,33 @@
+{
+  "modules": [
+    {
+      "w": 36,
+      "h": 36
+    }
+  ],
+  "frames": [
+    {
+      "x": 0,
+      "y": 0,
+      "w": 36,
+      "h": 36
+    }
+  ],
+  "frameModules": [
+    {
+      "module": 0,
+      "x": 0,
+      "y": 0,
+      "flags": 0
+    }
+  ],
+  "frameFirst": [
+    0
+  ],
+  "frameCounts": [
+    1
+  ],
+  "animationFrames": null,
+  "animationFirst": null,
+  "animationCounts": null
+}

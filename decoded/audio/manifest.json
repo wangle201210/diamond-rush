@@ -1,0 +1,132 @@
+{
+  "source": "/Users/wanna/mine/github/wangle201210/DiamondRushSource/src/main/resources/snd.f",
+  "count": 21,
+  "sounds": [
+    {
+      "id": 0,
+      "offset": 169,
+      "length": 190,
+      "file": "sound00.mid"
+    },
+    {
+      "id": 1,
+      "offset": 359,
+      "length": 421,
+      "file": "sound01.mid"
+    },
+    {
+      "id": 2,
+      "offset": 780,
+      "length": 806,
+      "file": "sound02.mid"
+    },
+    {
+      "id": 3,
+      "offset": 1586,
+      "length": 174,
+      "file": "sound03.mid"
+    },
+    {
+      "id": 4,
+      "offset": 1760,
+      "length": 566,
+      "file": "sound04.mid"
+    },
+    {
+      "id": 5,
+      "offset": 2326,
+      "length": 163,
+      "file": "sound05.mid"
+    },
+    {
+      "id": 6,
+      "offset": 2489,
+      "length": 149,
+      "file": "sound06.mid"
+    },
+    {
+      "id": 7,
+      "offset": 2638,
+      "length": 185,
+      "file": "sound07.mid"
+    },
+    {
+      "id": 8,
+      "offset": 2823,
+      "length": 427,
+      "file": "sound08.mid"
+    },
+    {
+      "id": 9,
+      "offset": 3250,
+      "length": 521,
+      "file": "sound09.mid"
+    },
+    {
+      "id": 10,
+      "offset": 3771,
+      "length": 185,
+      "file": "sound10.mid"
+    },
+    {
+      "id": 11,
+      "offset": 3956,
+      "length": 348,
+      "file": "sound11.mid"
+    },
+    {
+      "id": 12,
+      "offset": 4304,
+      "length": 113,
+      "file": "sound12.mid"
+    },
+    {
+      "id": 13,
+      "offset": 4417,
+      "length": 443,
+      "file": "sound13.mid"
+    },
+    {
+      "id": 14,
+      "offset": 4860,
+      "length": 233,
+      "file": "sound14.mid"
+    },
+    {
+      "id": 15,
+      "offset": 5093,
+      "length": 1345,
+      "file": "sound15.mid"
+    },
+    {
+      "id": 16,
+      "offset": 6438,
+      "length": 1656,
+      "file": "sound16.mid"
+    },
+    {
+      "id": 17,
+      "offset": 8094,
+      "length": 2340,
+      "file": "sound17.mid"
+    },
+    {
+      "id": 18,
+      "offset": 10434,
+      "length": 2544,
+      "file": "sound18.mid"
+    },
+    {
+      "id": 19,
+      "offset": 12978,
+      "length": 6735,
+      "file": "sound19.mid"
+    },
+    {
+      "id": 20,
+      "offset": 19713,
+      "length": 1855,
+      "file": "sound20.mid"
+    }
+  ]
+}

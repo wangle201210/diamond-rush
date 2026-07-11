@@ -1,0 +1,23 @@
+{
+  "modules": [
+    {
+      "w": 24,
+      "h": 23
+    },
+    {
+      "w": 24,
+      "h": 16
+    },
+    {
+      "w": 24,
+      "h": 23
+    }
+  ],
+  "frames": null,
+  "frameModules": null,
+  "frameFirst": null,
+  "frameCounts": null,
+  "animationFrames": null,
+  "animationFirst": null,
+  "animationCounts": null
+}

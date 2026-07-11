@@ -1,0 +1,1885 @@
+[
+  {
+    "index": 0,
+    "offset": 0,
+    "length": 2486,
+    "file": "0.f",
+    "sprite": {
+      "modules": 8,
+      "frames": 8,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 16,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk00-modules.png",
+      "frameSheet": "chunk00-frames.png",
+      "animationJson": "chunk00-animations.json"
+    }
+  },
+  {
+    "index": 1,
+    "offset": 2486,
+    "length": 1262,
+    "file": "0.f",
+    "sprite": {
+      "modules": 13,
+      "frames": 8,
+      "animations": 1,
+      "palettes": 1,
+      "colors": 10,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk01-modules.png",
+      "frameSheet": "chunk01-frames.png",
+      "animationJson": "chunk01-animations.json"
+    }
+  },
+  {
+    "index": 2,
+    "offset": 3748,
+    "length": 8995,
+    "file": "0.f",
+    "sprite": {
+      "modules": 30,
+      "frames": 40,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 16,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk02-modules.png",
+      "frameSheet": "chunk02-frames.png",
+      "animationJson": "chunk02-animations.json"
+    }
+  },
+  {
+    "index": 3,
+    "offset": 12743,
+    "length": 336,
+    "file": "0.f",
+    "sprite": {
+      "modules": 1,
+      "frames": 0,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 11,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk03-modules.png",
+      "animationJson": "chunk03-animations.json"
+    }
+  },
+  {
+    "index": 0,
+    "offset": 0,
+    "length": 1105,
+    "file": "1.f",
+    "sprite": {
+      "modules": 5,
+      "frames": 8,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 16,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk00-modules.png",
+      "frameSheet": "chunk00-frames.png",
+      "animationJson": "chunk00-animations.json"
+    }
+  },
+  {
+    "index": 1,
+    "offset": 1105,
+    "length": 1059,
+    "file": "1.f",
+    "sprite": {
+      "modules": 20,
+      "frames": 6,
+      "animations": 1,
+      "palettes": 1,
+      "colors": 12,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk01-modules.png",
+      "frameSheet": "chunk01-frames.png",
+      "animationJson": "chunk01-animations.json"
+    }
+  },
+  {
+    "index": 2,
+    "offset": 2164,
+    "length": 9077,
+    "file": "1.f",
+    "sprite": {
+      "modules": 39,
+      "frames": 66,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 16,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk02-modules.png",
+      "frameSheet": "chunk02-frames.png",
+      "animationJson": "chunk02-animations.json"
+    }
+  },
+  {
+    "index": 3,
+    "offset": 11241,
+    "length": 332,
+    "file": "1.f",
+    "sprite": {
+      "modules": 1,
+      "frames": 0,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 9,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk03-modules.png",
+      "animationJson": "chunk03-animations.json"
+    }
+  },
+  {
+    "index": 0,
+    "offset": 0,
+    "length": 2470,
+    "file": "2.f",
+    "sprite": {
+      "modules": 8,
+      "frames": 8,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 8,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk00-modules.png",
+      "frameSheet": "chunk00-frames.png",
+      "animationJson": "chunk00-animations.json"
+    }
+  },
+  {
+    "index": 1,
+    "offset": 2470,
+    "length": 1139,
+    "file": "2.f",
+    "sprite": {
+      "modules": 9,
+      "frames": 7,
+      "animations": 1,
+      "palettes": 1,
+      "colors": 12,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk01-modules.png",
+      "frameSheet": "chunk01-frames.png",
+      "animationJson": "chunk01-animations.json"
+    }
+  },
+  {
+    "index": 2,
+    "offset": 3609,
+    "length": 9290,
+    "file": "2.f",
+    "sprite": {
+      "modules": 33,
+      "frames": 45,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 16,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk02-modules.png",
+      "frameSheet": "chunk02-frames.png",
+      "animationJson": "chunk02-animations.json"
+    }
+  },
+  {
+    "index": 3,
+    "offset": 12899,
+    "length": 328,
+    "file": "2.f",
+    "sprite": {
+      "modules": 1,
+      "frames": 0,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 7,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk03-modules.png",
+      "animationJson": "chunk03-animations.json"
+    }
+  },
+  {
+    "index": 0,
+    "offset": 0,
+    "length": 4003,
+    "file": "b0.f",
+    "sprite": {
+      "modules": 18,
+      "frames": 23,
+      "animations": 9,
+      "palettes": 1,
+      "colors": 13,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk00-modules.png",
+      "frameSheet": "chunk00-frames.png",
+      "animationJson": "chunk00-animations.json"
+    }
+  },
+  {
+    "index": 1,
+    "offset": 4003,
+    "length": 350,
+    "file": "b0.f",
+    "sprite": {
+      "modules": 2,
+      "frames": 2,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 10,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk01-modules.png",
+      "frameSheet": "chunk01-frames.png",
+      "animationJson": "chunk01-animations.json"
+    }
+  },
+  {
+    "index": 0,
+    "offset": 0,
+    "length": 16241,
+    "file": "b1.f",
+    "sprite": {
+      "modules": 72,
+      "frames": 78,
+      "animations": 14,
+      "palettes": 1,
+      "colors": 16,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk00-modules.png",
+      "frameSheet": "chunk00-frames.png",
+      "animationJson": "chunk00-animations.json"
+    }
+  },
+  {
+    "index": 0,
+    "offset": 0,
+    "length": 634,
+    "file": "cm.f",
+    "sprite": {
+      "modules": 2,
+      "frames": 0,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 14,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk00-modules.png",
+      "animationJson": "chunk00-animations.json"
+    }
+  },
+  {
+    "index": 1,
+    "offset": 634,
+    "length": 1258,
+    "file": "cm.f",
+    "sprite": {
+      "modules": 6,
+      "frames": 6,
+      "animations": 0,
+      "palettes": 3,
+      "colors": 15,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk01-modules.png",
+      "frameSheet": "chunk01-frames.png",
+      "paletteSheets": [
+        {
+          "palette": 1,
+          "moduleSheet": "chunk01-palette01-modules.png",
+          "frameSheet": "chunk01-palette01-frames.png"
+        },
+        {
+          "palette": 2,
+          "moduleSheet": "chunk01-palette02-modules.png",
+          "frameSheet": "chunk01-palette02-frames.png"
+        }
+      ],
+      "animationJson": "chunk01-animations.json"
+    }
+  },
+  {
+    "index": 2,
+    "offset": 1892,
+    "length": 805,
+    "file": "cm.f",
+    "sprite": {
+      "modules": 4,
+      "frames": 4,
+      "animations": 0,
+      "palettes": 2,
+      "colors": 12,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk02-modules.png",
+      "frameSheet": "chunk02-frames.png",
+      "paletteSheets": [
+        {
+          "palette": 1,
+          "moduleSheet": "chunk02-palette01-modules.png",
+          "frameSheet": "chunk02-palette01-frames.png"
+        }
+      ],
+      "animationJson": "chunk02-animations.json"
+    }
+  },
+  {
+    "index": 3,
+    "offset": 2697,
+    "length": 1236,
+    "file": "cm.f",
+    "sprite": {
+      "modules": 9,
+      "frames": 4,
+      "animations": 1,
+      "palettes": 1,
+      "colors": 9,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk03-modules.png",
+      "frameSheet": "chunk03-frames.png",
+      "animationJson": "chunk03-animations.json"
+    }
+  },
+  {
+    "index": 4,
+    "offset": 3933,
+    "length": 632,
+    "file": "cm.f",
+    "sprite": {
+      "modules": 2,
+      "frames": 0,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 13,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk04-modules.png",
+      "animationJson": "chunk04-animations.json"
+    }
+  },
+  {
+    "index": 5,
+    "offset": 4565,
+    "length": 335,
+    "file": "cm.f",
+    "sprite": {
+      "modules": 2,
+      "frames": 2,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 13,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk05-modules.png",
+      "frameSheet": "chunk05-frames.png",
+      "animationJson": "chunk05-animations.json"
+    }
+  },
+  {
+    "index": 6,
+    "offset": 4900,
+    "length": 1026,
+    "file": "cm.f",
+    "sprite": {
+      "modules": 3,
+      "frames": 8,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 16,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk06-modules.png",
+      "frameSheet": "chunk06-frames.png",
+      "animationJson": "chunk06-animations.json"
+    }
+  },
+  {
+    "index": 7,
+    "offset": 5926,
+    "length": 4153,
+    "file": "cm.f",
+    "sprite": {
+      "modules": 17,
+      "frames": 71,
+      "animations": 6,
+      "palettes": 1,
+      "colors": 14,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk07-modules.png",
+      "frameSheet": "chunk07-frames.png",
+      "animationJson": "chunk07-animations.json"
+    }
+  },
+  {
+    "index": 0,
+    "offset": 0,
+    "length": 41,
+    "file": "cr.f",
+    "error": "module table exceeds chunk"
+  },
+  {
+    "index": 0,
+    "offset": 0,
+    "length": 1290,
+    "file": "demo.f",
+    "error": "animation frame table exceeds chunk"
+  },
+  {
+    "index": 0,
+    "offset": 0,
+    "length": 322,
+    "file": "demoui.f",
+    "sprite": {
+      "modules": 10,
+      "frames": 0,
+      "animations": 0,
+      "palettes": 2,
+      "colors": 10,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk00-modules.png",
+      "paletteSheets": [
+        {
+          "palette": 1,
+          "moduleSheet": "chunk00-palette01-modules.png"
+        }
+      ],
+      "animationJson": "chunk00-animations.json"
+    }
+  },
+  {
+    "index": 0,
+    "offset": 0,
+    "length": 323,
+    "file": "gen0.f",
+    "sprite": {
+      "modules": 5,
+      "frames": 1,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 9,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk00-modules.png",
+      "frameSheet": "chunk00-frames.png",
+      "animationJson": "chunk00-animations.json"
+    }
+  },
+  {
+    "index": 1,
+    "offset": 323,
+    "length": 382,
+    "file": "gen0.f",
+    "sprite": {
+      "modules": 7,
+      "frames": 1,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 13,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk01-modules.png",
+      "frameSheet": "chunk01-frames.png",
+      "animationJson": "chunk01-animations.json"
+    }
+  },
+  {
+    "index": 2,
+    "offset": 705,
+    "length": 254,
+    "file": "gen0.f",
+    "sprite": {
+      "modules": 1,
+      "frames": 0,
+      "animations": 0,
+      "palettes": 2,
+      "colors": 13,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk02-modules.png",
+      "paletteSheets": [
+        {
+          "palette": 1,
+          "moduleSheet": "chunk02-palette01-modules.png"
+        }
+      ],
+      "animationJson": "chunk02-animations.json"
+    }
+  },
+  {
+    "index": 3,
+    "offset": 959,
+    "length": 2785,
+    "file": "gen0.f",
+    "sprite": {
+      "modules": 15,
+      "frames": 12,
+      "animations": 2,
+      "palettes": 1,
+      "colors": 10,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk03-modules.png",
+      "frameSheet": "chunk03-frames.png",
+      "animationJson": "chunk03-animations.json"
+    }
+  },
+  {
+    "index": 4,
+    "offset": 3744,
+    "length": 2542,
+    "file": "gen0.f",
+    "sprite": {
+      "modules": 8,
+      "frames": 8,
+      "animations": 4,
+      "palettes": 1,
+      "colors": 16,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk04-modules.png",
+      "frameSheet": "chunk04-frames.png",
+      "animationJson": "chunk04-animations.json"
+    }
+  },
+  {
+    "index": 5,
+    "offset": 6286,
+    "length": 406,
+    "file": "gen0.f",
+    "sprite": {
+      "modules": 2,
+      "frames": 2,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 16,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk05-modules.png",
+      "frameSheet": "chunk05-frames.png",
+      "animationJson": "chunk05-animations.json"
+    }
+  },
+  {
+    "index": 6,
+    "offset": 6692,
+    "length": 350,
+    "file": "gen0.f",
+    "sprite": {
+      "modules": 1,
+      "frames": 1,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 12,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk06-modules.png",
+      "frameSheet": "chunk06-frames.png",
+      "animationJson": "chunk06-animations.json"
+    }
+  },
+  {
+    "index": 7,
+    "offset": 7042,
+    "length": 1244,
+    "file": "gen0.f",
+    "sprite": {
+      "modules": 10,
+      "frames": 8,
+      "animations": 1,
+      "palettes": 2,
+      "colors": 15,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk07-modules.png",
+      "frameSheet": "chunk07-frames.png",
+      "paletteSheets": [
+        {
+          "palette": 1,
+          "moduleSheet": "chunk07-palette01-modules.png",
+          "frameSheet": "chunk07-palette01-frames.png"
+        }
+      ],
+      "animationJson": "chunk07-animations.json"
+    }
+  },
+  {
+    "index": 8,
+    "offset": 8286,
+    "length": 1205,
+    "file": "gen0.f",
+    "sprite": {
+      "modules": 8,
+      "frames": 3,
+      "animations": 2,
+      "palettes": 1,
+      "colors": 16,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk08-modules.png",
+      "frameSheet": "chunk08-frames.png",
+      "animationJson": "chunk08-animations.json"
+    }
+  },
+  {
+    "index": 9,
+    "offset": 9491,
+    "length": 370,
+    "file": "gen0.f",
+    "sprite": {
+      "modules": 1,
+      "frames": 2,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 16,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk09-modules.png",
+      "frameSheet": "chunk09-frames.png",
+      "animationJson": "chunk09-animations.json"
+    }
+  },
+  {
+    "index": 0,
+    "offset": 0,
+    "length": 5175,
+    "file": "gen1.f",
+    "sprite": {
+      "modules": 41,
+      "frames": 27,
+      "animations": 3,
+      "palettes": 1,
+      "colors": 15,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk00-modules.png",
+      "frameSheet": "chunk00-frames.png",
+      "animationJson": "chunk00-animations.json"
+    }
+  },
+  {
+    "index": 1,
+    "offset": 5175,
+    "length": 494,
+    "file": "gen1.f",
+    "sprite": {
+      "modules": 2,
+      "frames": 4,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 16,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk01-modules.png",
+      "frameSheet": "chunk01-frames.png",
+      "animationJson": "chunk01-animations.json"
+    }
+  },
+  {
+    "index": 2,
+    "offset": 5669,
+    "length": 1386,
+    "file": "gen1.f",
+    "sprite": {
+      "modules": 13,
+      "frames": 0,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 16,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk02-modules.png",
+      "animationJson": "chunk02-animations.json"
+    }
+  },
+  {
+    "index": 3,
+    "offset": 7055,
+    "length": 4024,
+    "file": "gen1.f",
+    "sprite": {
+      "modules": 20,
+      "frames": 18,
+      "animations": 2,
+      "palettes": 1,
+      "colors": 14,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk03-modules.png",
+      "frameSheet": "chunk03-frames.png",
+      "animationJson": "chunk03-animations.json"
+    }
+  },
+  {
+    "index": 4,
+    "offset": 11079,
+    "length": 1991,
+    "file": "gen1.f",
+    "sprite": {
+      "modules": 6,
+      "frames": 0,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 11,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk04-modules.png",
+      "animationJson": "chunk04-animations.json"
+    }
+  },
+  {
+    "index": 5,
+    "offset": 13070,
+    "length": 4247,
+    "file": "gen1.f",
+    "sprite": {
+      "modules": 47,
+      "frames": 33,
+      "animations": 5,
+      "palettes": 3,
+      "colors": 13,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk05-modules.png",
+      "frameSheet": "chunk05-frames.png",
+      "paletteSheets": [
+        {
+          "palette": 1,
+          "moduleSheet": "chunk05-palette01-modules.png",
+          "frameSheet": "chunk05-palette01-frames.png"
+        },
+        {
+          "palette": 2,
+          "moduleSheet": "chunk05-palette02-modules.png",
+          "frameSheet": "chunk05-palette02-frames.png"
+        }
+      ],
+      "animationJson": "chunk05-animations.json"
+    }
+  },
+  {
+    "index": 6,
+    "offset": 17317,
+    "length": 281,
+    "file": "gen1.f",
+    "sprite": {
+      "modules": 3,
+      "frames": 1,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 9,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk06-modules.png",
+      "frameSheet": "chunk06-frames.png",
+      "animationJson": "chunk06-animations.json"
+    }
+  },
+  {
+    "index": 7,
+    "offset": 17598,
+    "length": 1596,
+    "file": "gen1.f",
+    "sprite": {
+      "modules": 13,
+      "frames": 14,
+      "animations": 3,
+      "palettes": 2,
+      "colors": 14,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk07-modules.png",
+      "frameSheet": "chunk07-frames.png",
+      "paletteSheets": [
+        {
+          "palette": 1,
+          "moduleSheet": "chunk07-palette01-modules.png",
+          "frameSheet": "chunk07-palette01-frames.png"
+        }
+      ],
+      "animationJson": "chunk07-animations.json"
+    }
+  },
+  {
+    "index": 8,
+    "offset": 19194,
+    "length": 232,
+    "file": "gen1.f",
+    "sprite": {
+      "modules": 2,
+      "frames": 1,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 6,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk08-modules.png",
+      "frameSheet": "chunk08-frames.png",
+      "animationJson": "chunk08-animations.json"
+    }
+  },
+  {
+    "index": 9,
+    "offset": 19426,
+    "length": 808,
+    "file": "gen1.f",
+    "sprite": {
+      "modules": 3,
+      "frames": 0,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 15,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk09-modules.png",
+      "animationJson": "chunk09-animations.json"
+    }
+  },
+  {
+    "index": 0,
+    "offset": 0,
+    "length": 778,
+    "file": "gen2.f",
+    "sprite": {
+      "modules": 2,
+      "frames": 1,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 5,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk00-modules.png",
+      "frameSheet": "chunk00-frames.png",
+      "animationJson": "chunk00-animations.json"
+    }
+  },
+  {
+    "index": 1,
+    "offset": 778,
+    "length": 2542,
+    "file": "gen2.f",
+    "sprite": {
+      "modules": 8,
+      "frames": 8,
+      "animations": 4,
+      "palettes": 1,
+      "colors": 16,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk01-modules.png",
+      "frameSheet": "chunk01-frames.png",
+      "animationJson": "chunk01-animations.json"
+    }
+  },
+  {
+    "index": 2,
+    "offset": 3320,
+    "length": 527,
+    "file": "gen2.f",
+    "sprite": {
+      "modules": 4,
+      "frames": 4,
+      "animations": 1,
+      "palettes": 1,
+      "colors": 12,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk02-modules.png",
+      "frameSheet": "chunk02-frames.png",
+      "animationJson": "chunk02-animations.json"
+    }
+  },
+  {
+    "index": 3,
+    "offset": 3847,
+    "length": 1846,
+    "file": "gen2.f",
+    "sprite": {
+      "modules": 11,
+      "frames": 8,
+      "animations": 2,
+      "palettes": 1,
+      "colors": 16,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk03-modules.png",
+      "frameSheet": "chunk03-frames.png",
+      "animationJson": "chunk03-animations.json"
+    }
+  },
+  {
+    "index": 4,
+    "offset": 5693,
+    "length": 906,
+    "file": "gen2.f",
+    "sprite": {
+      "modules": 5,
+      "frames": 5,
+      "animations": 0,
+      "palettes": 2,
+      "colors": 16,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk04-modules.png",
+      "frameSheet": "chunk04-frames.png",
+      "paletteSheets": [
+        {
+          "palette": 1,
+          "moduleSheet": "chunk04-palette01-modules.png",
+          "frameSheet": "chunk04-palette01-frames.png"
+        }
+      ],
+      "animationJson": "chunk04-animations.json"
+    }
+  },
+  {
+    "index": 5,
+    "offset": 6599,
+    "length": 1216,
+    "file": "gen2.f",
+    "sprite": {
+      "modules": 4,
+      "frames": 0,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 13,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk05-modules.png",
+      "animationJson": "chunk05-animations.json"
+    }
+  },
+  {
+    "index": 6,
+    "offset": 7815,
+    "length": 3326,
+    "file": "gen2.f",
+    "sprite": {
+      "modules": 17,
+      "frames": 34,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 9,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk06-modules.png",
+      "frameSheet": "chunk06-frames.png",
+      "animationJson": "chunk06-animations.json"
+    }
+  },
+  {
+    "index": 7,
+    "offset": 11141,
+    "length": 336,
+    "file": "gen2.f",
+    "sprite": {
+      "modules": 1,
+      "frames": 0,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 11,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk07-modules.png",
+      "animationJson": "chunk07-animations.json"
+    }
+  },
+  {
+    "index": 8,
+    "offset": 11477,
+    "length": 727,
+    "file": "gen2.f",
+    "sprite": {
+      "modules": 8,
+      "frames": 7,
+      "animations": 0,
+      "palettes": 2,
+      "colors": 16,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk08-modules.png",
+      "frameSheet": "chunk08-frames.png",
+      "paletteSheets": [
+        {
+          "palette": 1,
+          "moduleSheet": "chunk08-palette01-modules.png",
+          "frameSheet": "chunk08-palette01-frames.png"
+        }
+      ],
+      "animationJson": "chunk08-animations.json"
+    }
+  },
+  {
+    "index": 9,
+    "offset": 12204,
+    "length": 214,
+    "file": "gen2.f",
+    "sprite": {
+      "modules": 1,
+      "frames": 0,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 16,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk09-modules.png",
+      "animationJson": "chunk09-animations.json"
+    }
+  },
+  {
+    "index": 0,
+    "offset": 0,
+    "length": 1371,
+    "file": "gen3.f",
+    "sprite": {
+      "modules": 7,
+      "frames": 6,
+      "animations": 3,
+      "palettes": 1,
+      "colors": 16,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk00-modules.png",
+      "frameSheet": "chunk00-frames.png",
+      "animationJson": "chunk00-animations.json"
+    }
+  },
+  {
+    "index": 1,
+    "offset": 1371,
+    "length": 346,
+    "file": "gen3.f",
+    "sprite": {
+      "modules": 1,
+      "frames": 0,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 16,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk01-modules.png",
+      "animationJson": "chunk01-animations.json"
+    }
+  },
+  {
+    "index": 2,
+    "offset": 1717,
+    "length": 983,
+    "file": "gen3.f",
+    "sprite": {
+      "modules": 8,
+      "frames": 3,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 16,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk02-modules.png",
+      "frameSheet": "chunk02-frames.png",
+      "animationJson": "chunk02-animations.json"
+    }
+  },
+  {
+    "index": 3,
+    "offset": 2700,
+    "length": 592,
+    "file": "gen3.f",
+    "sprite": {
+      "modules": 4,
+      "frames": 5,
+      "animations": 1,
+      "palettes": 1,
+      "colors": 15,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk03-modules.png",
+      "frameSheet": "chunk03-frames.png",
+      "animationJson": "chunk03-animations.json"
+    }
+  },
+  {
+    "index": 4,
+    "offset": 3292,
+    "length": 754,
+    "file": "gen3.f",
+    "sprite": {
+      "modules": 11,
+      "frames": 7,
+      "animations": 5,
+      "palettes": 1,
+      "colors": 9,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk04-modules.png",
+      "frameSheet": "chunk04-frames.png",
+      "animationJson": "chunk04-animations.json"
+    }
+  },
+  {
+    "index": 5,
+    "offset": 4046,
+    "length": 4421,
+    "file": "gen3.f",
+    "sprite": {
+      "modules": 49,
+      "frames": 38,
+      "animations": 11,
+      "palettes": 1,
+      "colors": 16,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk05-modules.png",
+      "frameSheet": "chunk05-frames.png",
+      "animationJson": "chunk05-animations.json"
+    }
+  },
+  {
+    "index": 6,
+    "offset": 8467,
+    "length": 316,
+    "file": "gen3.f",
+    "sprite": {
+      "modules": 5,
+      "frames": 1,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 11,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk06-modules.png",
+      "frameSheet": "chunk06-frames.png",
+      "animationJson": "chunk06-animations.json"
+    }
+  },
+  {
+    "index": 7,
+    "offset": 8783,
+    "length": 3876,
+    "file": "gen3.f",
+    "sprite": {
+      "modules": 35,
+      "frames": 39,
+      "animations": 18,
+      "palettes": 1,
+      "colors": 16,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk07-modules.png",
+      "frameSheet": "chunk07-frames.png",
+      "animationJson": "chunk07-animations.json"
+    }
+  },
+  {
+    "index": 8,
+    "offset": 12659,
+    "length": 355,
+    "file": "gen3.f",
+    "sprite": {
+      "modules": 5,
+      "frames": 1,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 6,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk08-modules.png",
+      "frameSheet": "chunk08-frames.png",
+      "animationJson": "chunk08-animations.json"
+    }
+  },
+  {
+    "index": 9,
+    "offset": 13014,
+    "length": 808,
+    "file": "gen3.f",
+    "sprite": {
+      "modules": 9,
+      "frames": 4,
+      "animations": 1,
+      "palettes": 1,
+      "colors": 16,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk09-modules.png",
+      "frameSheet": "chunk09-frames.png",
+      "animationJson": "chunk09-animations.json"
+    }
+  },
+  {
+    "index": 0,
+    "offset": 0,
+    "length": 1138,
+    "file": "gen4.f",
+    "sprite": {
+      "modules": 12,
+      "frames": 12,
+      "animations": 2,
+      "palettes": 1,
+      "colors": 5,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk00-modules.png",
+      "frameSheet": "chunk00-frames.png",
+      "animationJson": "chunk00-animations.json"
+    }
+  },
+  {
+    "index": 1,
+    "offset": 1138,
+    "length": 930,
+    "file": "gen4.f",
+    "sprite": {
+      "modules": 5,
+      "frames": 13,
+      "animations": 4,
+      "palettes": 1,
+      "colors": 13,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk01-modules.png",
+      "frameSheet": "chunk01-frames.png",
+      "animationJson": "chunk01-animations.json"
+    }
+  },
+  {
+    "index": 2,
+    "offset": 2068,
+    "length": 280,
+    "file": "gen4.f",
+    "sprite": {
+      "modules": 1,
+      "frames": 1,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 11,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk02-modules.png",
+      "frameSheet": "chunk02-frames.png",
+      "animationJson": "chunk02-animations.json"
+    }
+  },
+  {
+    "index": 0,
+    "offset": 0,
+    "length": 3421,
+    "file": "mm0.f",
+    "sprite": {
+      "modules": 12,
+      "frames": 21,
+      "animations": 3,
+      "palettes": 1,
+      "colors": 16,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk00-modules.png",
+      "frameSheet": "chunk00-frames.png",
+      "animationJson": "chunk00-animations.json"
+    }
+  },
+  {
+    "index": 1,
+    "offset": 3421,
+    "length": 4223,
+    "file": "mm0.f",
+    "sprite": {
+      "modules": 22,
+      "frames": 24,
+      "animations": 3,
+      "palettes": 1,
+      "colors": 16,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk01-modules.png",
+      "frameSheet": "chunk01-frames.png",
+      "animationJson": "chunk01-animations.json"
+    }
+  },
+  {
+    "index": 2,
+    "offset": 7644,
+    "length": 296,
+    "file": "mm0.f",
+    "sprite": {
+      "modules": 2,
+      "frames": 0,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 9,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk02-modules.png",
+      "animationJson": "chunk02-animations.json"
+    }
+  },
+  {
+    "index": 0,
+    "offset": 0,
+    "length": 13945,
+    "file": "mm1.f",
+    "sprite": {
+      "modules": 104,
+      "frames": 44,
+      "animations": 15,
+      "palettes": 1,
+      "colors": 14,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk00-modules.png",
+      "frameSheet": "chunk00-frames.png",
+      "animationJson": "chunk00-animations.json"
+    }
+  },
+  {
+    "index": 0,
+    "offset": 0,
+    "length": 5287,
+    "file": "mmv.f",
+    "sprite": {
+      "modules": 23,
+      "frames": 29,
+      "animations": 0,
+      "palettes": 2,
+      "colors": 16,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk00-modules.png",
+      "frameSheet": "chunk00-frames.png",
+      "paletteSheets": [
+        {
+          "palette": 1,
+          "moduleSheet": "chunk00-palette01-modules.png",
+          "frameSheet": "chunk00-palette01-frames.png"
+        }
+      ],
+      "animationJson": "chunk00-animations.json"
+    }
+  },
+  {
+    "index": 1,
+    "offset": 5287,
+    "length": 452,
+    "file": "mmv.f",
+    "sprite": {
+      "modules": 1,
+      "frames": 1,
+      "animations": 1,
+      "palettes": 1,
+      "colors": 11,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk01-modules.png",
+      "frameSheet": "chunk01-frames.png",
+      "animationJson": "chunk01-animations.json"
+    }
+  },
+  {
+    "index": 2,
+    "offset": 5739,
+    "length": 460,
+    "file": "mmv.f",
+    "sprite": {
+      "modules": 1,
+      "frames": 1,
+      "animations": 1,
+      "palettes": 1,
+      "colors": 15,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk02-modules.png",
+      "frameSheet": "chunk02-frames.png",
+      "animationJson": "chunk02-animations.json"
+    }
+  },
+  {
+    "index": 3,
+    "offset": 6199,
+    "length": 452,
+    "file": "mmv.f",
+    "sprite": {
+      "modules": 1,
+      "frames": 1,
+      "animations": 1,
+      "palettes": 1,
+      "colors": 11,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk03-modules.png",
+      "frameSheet": "chunk03-frames.png",
+      "animationJson": "chunk03-animations.json"
+    }
+  },
+  {
+    "index": 4,
+    "offset": 6651,
+    "length": 296,
+    "file": "mmv.f",
+    "sprite": {
+      "modules": 3,
+      "frames": 5,
+      "animations": 1,
+      "palettes": 1,
+      "colors": 7,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk04-modules.png",
+      "frameSheet": "chunk04-frames.png",
+      "animationJson": "chunk04-animations.json"
+    }
+  },
+  {
+    "index": 5,
+    "offset": 6947,
+    "length": 636,
+    "file": "mmv.f",
+    "sprite": {
+      "modules": 12,
+      "frames": 4,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 15,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk05-modules.png",
+      "frameSheet": "chunk05-frames.png",
+      "animationJson": "chunk05-animations.json"
+    }
+  },
+  {
+    "index": 0,
+    "offset": 0,
+    "length": 2000,
+    "file": "ms.f",
+    "sprite": {
+      "modules": 20,
+      "frames": 19,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 15,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk00-modules.png",
+      "frameSheet": "chunk00-frames.png",
+      "animationJson": "chunk00-animations.json"
+    }
+  },
+  {
+    "index": 1,
+    "offset": 2000,
+    "length": 1683,
+    "file": "ms.f",
+    "sprite": {
+      "modules": 13,
+      "frames": 1,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 12,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk01-modules.png",
+      "frameSheet": "chunk01-frames.png",
+      "animationJson": "chunk01-animations.json"
+    }
+  },
+  {
+    "index": 2,
+    "offset": 3683,
+    "length": 2620,
+    "file": "ms.f",
+    "sprite": {
+      "modules": 21,
+      "frames": 1,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 16,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk02-modules.png",
+      "frameSheet": "chunk02-frames.png",
+      "animationJson": "chunk02-animations.json"
+    }
+  },
+  {
+    "index": 3,
+    "offset": 6303,
+    "length": 2475,
+    "file": "ms.f",
+    "sprite": {
+      "modules": 16,
+      "frames": 1,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 107,
+      "dataFormat": 10225,
+      "moduleSheet": "chunk03-modules.png",
+      "frameSheet": "chunk03-frames.png",
+      "animationJson": "chunk03-animations.json"
+    }
+  },
+  {
+    "index": 4,
+    "offset": 8778,
+    "length": 4675,
+    "file": "ms.f",
+    "sprite": {
+      "modules": 27,
+      "frames": 1,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 93,
+      "dataFormat": 10225,
+      "moduleSheet": "chunk04-modules.png",
+      "frameSheet": "chunk04-frames.png",
+      "animationJson": "chunk04-animations.json"
+    }
+  },
+  {
+    "index": 0,
+    "offset": 0,
+    "length": 19846,
+    "file": "o.f",
+    "sprite": {
+      "modules": 222,
+      "frames": 141,
+      "animations": 49,
+      "palettes": 5,
+      "colors": 16,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk00-modules.png",
+      "frameSheet": "chunk00-frames.png",
+      "paletteSheets": [
+        {
+          "palette": 1,
+          "moduleSheet": "chunk00-palette01-modules.png",
+          "frameSheet": "chunk00-palette01-frames.png"
+        },
+        {
+          "palette": 2,
+          "moduleSheet": "chunk00-palette02-modules.png",
+          "frameSheet": "chunk00-palette02-frames.png"
+        },
+        {
+          "palette": 3,
+          "moduleSheet": "chunk00-palette03-modules.png",
+          "frameSheet": "chunk00-palette03-frames.png"
+        },
+        {
+          "palette": 4,
+          "moduleSheet": "chunk00-palette04-modules.png",
+          "frameSheet": "chunk00-palette04-frames.png"
+        }
+      ],
+      "animationJson": "chunk00-animations.json"
+    }
+  },
+  {
+    "index": 1,
+    "offset": 19846,
+    "length": 1849,
+    "file": "o.f",
+    "sprite": {
+      "modules": 19,
+      "frames": 6,
+      "animations": 1,
+      "palettes": 1,
+      "colors": 14,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk01-modules.png",
+      "frameSheet": "chunk01-frames.png",
+      "animationJson": "chunk01-animations.json"
+    }
+  },
+  {
+    "index": 0,
+    "offset": 0,
+    "length": 190,
+    "file": "snd.f",
+    "error": "module table exceeds chunk"
+  },
+  {
+    "index": 1,
+    "offset": 190,
+    "length": 421,
+    "file": "snd.f",
+    "error": "module table exceeds chunk"
+  },
+  {
+    "index": 2,
+    "offset": 611,
+    "length": 806,
+    "file": "snd.f",
+    "error": "module table exceeds chunk"
+  },
+  {
+    "index": 3,
+    "offset": 1417,
+    "length": 174,
+    "file": "snd.f",
+    "error": "module table exceeds chunk"
+  },
+  {
+    "index": 4,
+    "offset": 1591,
+    "length": 566,
+    "file": "snd.f",
+    "error": "module table exceeds chunk"
+  },
+  {
+    "index": 5,
+    "offset": 2157,
+    "length": 163,
+    "file": "snd.f",
+    "error": "module table exceeds chunk"
+  },
+  {
+    "index": 6,
+    "offset": 2320,
+    "length": 149,
+    "file": "snd.f",
+    "error": "module table exceeds chunk"
+  },
+  {
+    "index": 7,
+    "offset": 2469,
+    "length": 185,
+    "file": "snd.f",
+    "error": "module table exceeds chunk"
+  },
+  {
+    "index": 8,
+    "offset": 2654,
+    "length": 427,
+    "file": "snd.f",
+    "error": "module table exceeds chunk"
+  },
+  {
+    "index": 9,
+    "offset": 3081,
+    "length": 521,
+    "file": "snd.f",
+    "error": "module table exceeds chunk"
+  },
+  {
+    "index": 10,
+    "offset": 3602,
+    "length": 185,
+    "file": "snd.f",
+    "error": "module table exceeds chunk"
+  },
+  {
+    "index": 11,
+    "offset": 3787,
+    "length": 348,
+    "file": "snd.f",
+    "error": "module table exceeds chunk"
+  },
+  {
+    "index": 12,
+    "offset": 4135,
+    "length": 113,
+    "file": "snd.f",
+    "error": "module table exceeds chunk"
+  },
+  {
+    "index": 13,
+    "offset": 4248,
+    "length": 443,
+    "file": "snd.f",
+    "error": "module table exceeds chunk"
+  },
+  {
+    "index": 14,
+    "offset": 4691,
+    "length": 233,
+    "file": "snd.f",
+    "error": "module table exceeds chunk"
+  },
+  {
+    "index": 15,
+    "offset": 4924,
+    "length": 1345,
+    "file": "snd.f",
+    "error": "module table exceeds chunk"
+  },
+  {
+    "index": 16,
+    "offset": 6269,
+    "length": 1656,
+    "file": "snd.f",
+    "error": "module table exceeds chunk"
+  },
+  {
+    "index": 17,
+    "offset": 7925,
+    "length": 2340,
+    "file": "snd.f",
+    "error": "module table exceeds chunk"
+  },
+  {
+    "index": 18,
+    "offset": 10265,
+    "length": 2544,
+    "file": "snd.f",
+    "error": "module table exceeds chunk"
+  },
+  {
+    "index": 19,
+    "offset": 12809,
+    "length": 6735,
+    "file": "snd.f",
+    "error": "frame module table exceeds chunk"
+  },
+  {
+    "index": 20,
+    "offset": 19544,
+    "length": 1855,
+    "file": "snd.f",
+    "error": "module table exceeds chunk"
+  },
+  {
+    "index": 0,
+    "offset": 0,
+    "length": 7527,
+    "file": "spl.f",
+    "error": "frame module table exceeds chunk"
+  },
+  {
+    "index": 1,
+    "offset": 7527,
+    "length": 2861,
+    "file": "spl.f",
+    "error": "module table exceeds chunk"
+  },
+  {
+    "index": 2,
+    "offset": 10388,
+    "length": 324,
+    "file": "spl.f",
+    "error": "module table exceeds chunk"
+  },
+  {
+    "index": 0,
+    "offset": 0,
+    "length": 2219,
+    "file": "tips.f",
+    "sprite": {
+      "modules": 16,
+      "frames": 12,
+      "animations": 4,
+      "palettes": 1,
+      "colors": 33,
+      "dataFormat": 10225,
+      "moduleSheet": "chunk00-modules.png",
+      "frameSheet": "chunk00-frames.png",
+      "animationJson": "chunk00-animations.json"
+    }
+  },
+  {
+    "index": 1,
+    "offset": 2219,
+    "length": 470,
+    "file": "tips.f",
+    "sprite": {
+      "modules": 3,
+      "frames": 2,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 13,
+      "dataFormat": 10225,
+      "moduleSheet": "chunk01-modules.png",
+      "frameSheet": "chunk01-frames.png",
+      "animationJson": "chunk01-animations.json"
+    }
+  },
+  {
+    "index": 2,
+    "offset": 2689,
+    "length": 632,
+    "file": "tips.f",
+    "sprite": {
+      "modules": 2,
+      "frames": 2,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 20,
+      "dataFormat": 10225,
+      "moduleSheet": "chunk02-modules.png",
+      "frameSheet": "chunk02-frames.png",
+      "animationJson": "chunk02-animations.json"
+    }
+  },
+  {
+    "index": 3,
+    "offset": 3321,
+    "length": 1001,
+    "file": "tips.f",
+    "sprite": {
+      "modules": 1,
+      "frames": 1,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 66,
+      "dataFormat": 10225,
+      "moduleSheet": "chunk03-modules.png",
+      "frameSheet": "chunk03-frames.png",
+      "animationJson": "chunk03-animations.json"
+    }
+  },
+  {
+    "index": 4,
+    "offset": 4322,
+    "length": 1311,
+    "file": "tips.f",
+    "sprite": {
+      "modules": 8,
+      "frames": 7,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 38,
+      "dataFormat": 10225,
+      "moduleSheet": "chunk04-modules.png",
+      "frameSheet": "chunk04-frames.png",
+      "animationJson": "chunk04-animations.json"
+    }
+  },
+  {
+    "index": 0,
+    "offset": 0,
+    "length": 902,
+    "file": "tipst.f",
+    "error": "module table exceeds chunk"
+  },
+  {
+    "index": 0,
+    "offset": 0,
+    "length": 3356,
+    "file": "ui.f",
+    "sprite": {
+      "modules": 21,
+      "frames": 12,
+      "animations": 2,
+      "palettes": 1,
+      "colors": 16,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk00-modules.png",
+      "frameSheet": "chunk00-frames.png",
+      "animationJson": "chunk00-animations.json"
+    }
+  },
+  {
+    "index": 1,
+    "offset": 3356,
+    "length": 5719,
+    "file": "ui.f",
+    "sprite": {
+      "modules": 82,
+      "frames": 29,
+      "animations": 0,
+      "palettes": 3,
+      "colors": 6,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk01-modules.png",
+      "frameSheet": "chunk01-frames.png",
+      "paletteSheets": [
+        {
+          "palette": 1,
+          "moduleSheet": "chunk01-palette01-modules.png",
+          "frameSheet": "chunk01-palette01-frames.png"
+        },
+        {
+          "palette": 2,
+          "moduleSheet": "chunk01-palette02-modules.png",
+          "frameSheet": "chunk01-palette02-frames.png"
+        }
+      ],
+      "animationJson": "chunk01-animations.json"
+    }
+  },
+  {
+    "index": 2,
+    "offset": 9075,
+    "length": 6998,
+    "file": "ui.f",
+    "sprite": {
+      "modules": 38,
+      "frames": 22,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 56,
+      "dataFormat": 10225,
+      "moduleSheet": "chunk02-modules.png",
+      "frameSheet": "chunk02-frames.png",
+      "animationJson": "chunk02-animations.json"
+    }
+  },
+  {
+    "index": 3,
+    "offset": 16073,
+    "length": 621,
+    "file": "ui.f",
+    "sprite": {
+      "modules": 5,
+      "frames": 5,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 14,
+      "dataFormat": 5632,
+      "moduleSheet": "chunk03-modules.png",
+      "frameSheet": "chunk03-frames.png",
+      "animationJson": "chunk03-animations.json"
+    }
+  },
+  {
+    "index": 4,
+    "offset": 16694,
+    "length": 228,
+    "file": "ui.f",
+    "sprite": {
+      "modules": 1,
+      "frames": 0,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 3,
+      "dataFormat": 1024,
+      "moduleSheet": "chunk04-modules.png",
+      "animationJson": "chunk04-animations.json"
+    }
+  }
+]

@@ -1,0 +1,218 @@
+{
+  "modules": [
+    {
+      "w": 14,
+      "h": 9
+    },
+    {
+      "w": 5,
+      "h": 5
+    },
+    {
+      "w": 11,
+      "h": 5
+    }
+  ],
+  "frames": [
+    {
+      "x": 0,
+      "y": 0,
+      "w": 14,
+      "h": 19
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "w": 14,
+      "h": 19
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "w": 14,
+      "h": 19
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "w": 14,
+      "h": 19
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "w": 14,
+      "h": 19
+    }
+  ],
+  "frameModules": [
+    {
+      "module": 0,
+      "x": 0,
+      "y": 5,
+      "flags": 0
+    },
+    {
+      "module": 1,
+      "x": 7,
+      "y": 14,
+      "flags": 0
+    },
+    {
+      "module": 2,
+      "x": 1,
+      "y": 0,
+      "flags": 0
+    },
+    {
+      "module": 0,
+      "x": 0,
+      "y": 6,
+      "flags": 0
+    },
+    {
+      "module": 1,
+      "x": 7,
+      "y": 15,
+      "flags": 0
+    },
+    {
+      "module": 2,
+      "x": 1,
+      "y": 1,
+      "flags": 0
+    },
+    {
+      "module": 1,
+      "x": 7,
+      "y": 16,
+      "flags": 0
+    },
+    {
+      "module": 2,
+      "x": 1,
+      "y": 2,
+      "flags": 0
+    },
+    {
+      "module": 0,
+      "x": 0,
+      "y": 7,
+      "flags": 0
+    },
+    {
+      "module": 1,
+      "x": 7,
+      "y": 17,
+      "flags": 0
+    },
+    {
+      "module": 2,
+      "x": 1,
+      "y": 3,
+      "flags": 0
+    },
+    {
+      "module": 0,
+      "x": 0,
+      "y": 8,
+      "flags": 0
+    },
+    {
+      "module": 1,
+      "x": 7,
+      "y": 18,
+      "flags": 0
+    },
+    {
+      "module": 2,
+      "x": 1,
+      "y": 4,
+      "flags": 0
+    },
+    {
+      "module": 0,
+      "x": 0,
+      "y": 9,
+      "flags": 0
+    }
+  ],
+  "frameFirst": [
+    0,
+    3,
+    6,
+    9,
+    12
+  ],
+  "frameCounts": [
+    3,
+    3,
+    3,
+    3,
+    3
+  ],
+  "animationFrames": [
+    {
+      "frame": 0,
+      "time": 1,
+      "x": 0,
+      "y": 0,
+      "flags": 0
+    },
+    {
+      "frame": 1,
+      "time": 1,
+      "x": 0,
+      "y": 0,
+      "flags": 0
+    },
+    {
+      "frame": 2,
+      "time": 1,
+      "x": 0,
+      "y": 0,
+      "flags": 0
+    },
+    {
+      "frame": 3,
+      "time": 1,
+      "x": 0,
+      "y": 0,
+      "flags": 0
+    },
+    {
+      "frame": 4,
+      "time": 1,
+      "x": 0,
+      "y": 0,
+      "flags": 0
+    },
+    {
+      "frame": 3,
+      "time": 1,
+      "x": 0,
+      "y": 0,
+      "flags": 0
+    },
+    {
+      "frame": 2,
+      "time": 1,
+      "x": 0,
+      "y": 0,
+      "flags": 0
+    },
+    {
+      "frame": 1,
+      "time": 1,
+      "x": 0,
+      "y": 0,
+      "flags": 0
+    }
+  ],
+  "animationFirst": [
+    0
+  ],
+  "animationCounts": [
+    8
+  ]
+}

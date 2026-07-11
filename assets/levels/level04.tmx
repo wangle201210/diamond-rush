@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.10.2" orientation="orthogonal" renderorder="right-down" width="20" height="15" tilewidth="32" tileheight="32" infinite="0">
+ <properties>
+  <property name="title" value="Hidden Passage"/>
+  <property name="theme" value="Angkor"/>
+  <property name="hint" value="Use switches, cracked walls, and teleporters."/>
+  <property name="required_diamonds" value="7"/>
+  <property name="par_steps" value="145"/>
+  <property name="gravity_ticks" value="8"/>
+  <property name="enemy_ticks" value="16"/>
+ </properties>
+ <tileset firstgid="1" source="diamond-rush.tsx"/>
+ <layer id="1" name="terrain" width="20" height="15">
+  <data encoding="csv">
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+1,0,19,2,2,3,2,10,11,11,11,2,2,3,2,2,13,2,5,1,
+1,2,1,1,2,1,1,1,1,1,1,2,1,1,1,2,1,1,2,1,
+1,2,2,2,2,2,2,2,2,1,2,2,2,4,1,2,2,1,2,1,
+1,1,1,2,1,2,1,1,2,1,1,1,12,2,1,1,2,1,2,1,
+1,2,2,3,1,2,2,1,2,2,2,1,2,2,2,1,2,1,2,1,
+1,2,1,1,1,1,2,1,1,1,2,1,1,1,2,1,2,1,2,1,
+1,2,2,16,2,2,2,2,13,2,2,2,2,1,2,2,2,1,2,1,
+1,2,1,1,1,2,1,1,1,14,14,14,17,1,1,1,2,1,2,1,
+1,2,2,3,1,2,2,2,1,2,2,2,2,2,2,1,2,2,2,1,
+1,4,1,2,1,1,1,2,1,1,1,2,1,1,2,1,1,1,2,1,
+1,2,2,2,2,2,1,2,2,2,1,2,2,3,15,2,2,22,21,1,
+1,2,1,1,1,2,1,1,1,2,1,1,1,2,1,1,1,2,1,1,
+1,2,2,2,2,3,2,2,2,4,2,2,2,2,2,3,2,6,7,1,
+1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+  </data>
+ </layer>
+ <objectgroup id="2" name="actors">
+  <object id="1" name="Player" type="player" x="32" y="32" width="32" height="32"/>
+  <object id="2" name="Bat" type="enemy_vertical" x="512" y="256" width="32" height="32">
+   <properties>
+    <property name="direction" value="up"/>
+   </properties>
+  </object>
+  <object id="3" name="Snake" type="enemy_horizontal" x="384" y="352" width="32" height="32">
+   <properties>
+    <property name="direction" value="left"/>
+   </properties>
+  </object>
+ </objectgroup>
+ <objectgroup id="3" name="containers">
+  <object id="4" name="Red Diamond Chest" type="chest" x="448" y="352" width="32" height="32">
+   <properties>
+    <property name="reward" value="red_diamond"/>
+    <property name="amount" value="1"/>
+   </properties>
+  </object>
+ </objectgroup>
+</map>

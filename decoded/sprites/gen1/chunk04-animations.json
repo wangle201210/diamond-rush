@@ -1,0 +1,35 @@
+{
+  "modules": [
+    {
+      "w": 24,
+      "h": 24
+    },
+    {
+      "w": 24,
+      "h": 24
+    },
+    {
+      "w": 24,
+      "h": 24
+    },
+    {
+      "w": 24,
+      "h": 30
+    },
+    {
+      "w": 23,
+      "h": 33
+    },
+    {
+      "w": 22,
+      "h": 29
+    }
+  ],
+  "frames": null,
+  "frameModules": null,
+  "frameFirst": null,
+  "frameCounts": null,
+  "animationFrames": null,
+  "animationFirst": null,
+  "animationCounts": null
+}

@@ -1,0 +1,73 @@
+{
+  "modules": [
+    {
+      "w": 13,
+      "h": 26
+    },
+    {
+      "w": 5,
+      "h": 9
+    },
+    {
+      "w": 5,
+      "h": 10
+    },
+    {
+      "w": 6,
+      "h": 8
+    },
+    {
+      "w": 7,
+      "h": 9
+    }
+  ],
+  "frames": [
+    {
+      "x": -1,
+      "y": -2,
+      "w": 26,
+      "h": 26
+    }
+  ],
+  "frameModules": [
+    {
+      "module": 0,
+      "x": 5,
+      "y": -2,
+      "flags": 0
+    },
+    {
+      "module": 1,
+      "x": 0,
+      "y": 15,
+      "flags": 0
+    },
+    {
+      "module": 2,
+      "x": 18,
+      "y": 14,
+      "flags": 0
+    },
+    {
+      "module": 3,
+      "x": -1,
+      "y": 5,
+      "flags": 0
+    },
+    {
+      "module": 4,
+      "x": 18,
+      "y": 0,
+      "flags": 0
+    }
+  ],
+  "frameFirst": [
+    0
+  ],
+  "frameCounts": [
+    5
+  ],
+  "animationFrames": null,
+  "animationFirst": null,
+  "animationCounts": null
+}
