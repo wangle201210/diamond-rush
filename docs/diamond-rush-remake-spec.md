@@ -2,7 +2,7 @@
 
 Last updated: 2026-07-11
 
-This is the working specification for rebuilding the Go remake from the local Java reference. The current prototype is disposable. The target is behavior-first fidelity to the original Nokia Java ME Diamond Rush, then replacement assets and clean Go architecture.
+This is the working specification for the source-fidelity Go runtime built from the local Java reference. The target is behavior-first fidelity to the original Nokia Java ME Diamond Rush, backed by decoded original data and deterministic Go tests.
 
 Reference project:
 
@@ -30,7 +30,7 @@ Build a Go + Ebitengine Diamond Rush remake that feels like the original Nokia J
 ## Non-Goals
 
 - Do not line-by-line port the Java decompilation.
-- Do not keep the current Go prototype if it blocks fidelity.
+- Do not replace decoded source data with guessed or self-authored stage behavior.
 - Do not use a full-map desktop board as the default gameplay view.
 - Do not make hook/hammer mouse-targeted.
 - Do not use original copyrighted visual/audio assets directly in the final distributable without a separate asset decision.
@@ -66,7 +66,7 @@ Minimum output:
 - raw dimensions.
 - raw player/background/foreground layer bytes.
 - tile ID frequency tables.
-- optional CSV/TMX preview layers.
+- optional CSV preview layers.
 
 Source basis:
 
@@ -175,21 +175,17 @@ Acceptance:
 - The gameplay logic must not depend on final art.
 - Placeholder art must still preserve tile size, hitbox size, facing, and animation timing categories.
 
-## Architecture Target
+## Runtime Architecture
 
-| Area | Package | Required behavior |
+| Area | Package/path | Required behavior |
 | --- | --- | --- |
-| App modes | `internal/app` | Title, world map, shop, cutscene, stage loading, stage playing, stage clear, game over. |
-| Input | `internal/input` | Phone-key abstraction: direction, `5`, `*`, `#`, soft keys; desktop mappings are adapters. |
-| Progress | `internal/progress` | JSON save with red/violet gems, stage flags, shop upgrades, unlocked worlds, settings. |
-| Level data | `internal/level` | Load decoded original data or converted maps, preserve original layer semantics. |
-| World logic | `internal/world` | Tile/object grid, mutable layer state, deterministic tick order, checkpoint snapshots. |
-| Player/tools | `internal/player`, `internal/tool` | Movement, facing, health, hurt state, hammer, hook, checkpoint action. |
-| Entities | `internal/entity` | Enemies, falling objects, bosses, traps, object timers. |
-| Rendering | `internal/render` | 240x320 camera, HUD, animation, world-map screens. |
-| Audio | `internal/audio` | Event-based playback mapped to original sound IDs. |
+| Executable | `cmd/originalrush` | Start the Ebitengine runtime. |
+| Source runtime | `internal/original` | Preserve three original layers, object timers, source scan order, movement interpolation, tools, hazards and checkpoint state. |
+| Game adapter | `internal/originalgame` | Phone-key mapping, 240x320 camera/HUD, source sprites, audio, stage flow, world map and JSON progress. |
+| Decoded data | `decoded/` | Original world packs, map graph, sprite metadata/images, fonts and audio. |
+| Extraction/audit | `tools/` | Reproducible decoding and source-data inspection. |
 
-The exact package names can change, but the boundaries should remain.
+Keep gameplay facts in `internal/original`; Ebitengine and host-platform concerns belong in `internal/originalgame`.
 
 ## Original-Behavior Requirements
 
@@ -249,7 +245,7 @@ Acceptance:
 Required:
 
 - Player movement is tile/grid based with original-feeling animation delay.
-- Dirt/empty/wall/object passability must come from decoded object classes, not current prototype guesses.
+- Dirt/empty/wall/object passability must come from decoded object classes, not implementation guesses.
 - Pushing/falling/rolling objects must be deterministic and match runtime observation.
 - Falling objects can damage or kill the player according to original damage rules.
 
@@ -517,29 +513,15 @@ Exit criteria:
 
 - A player familiar with Diamond Rush recognizes the interaction model, screen composition, progression, and tool gating.
 
-## Current Prototype Disposition
+## Current Runtime Entry Points
 
-The existing Go code can be mined for:
+Run the source-data implementation:
 
-- Ebitengine setup.
-- Simple tests.
-- A rough package layout.
-- Temporary asset generation.
+```bash
+go run ./cmd/originalrush
+```
 
-It should not constrain:
-
-- Tile ID taxonomy.
-- Level design.
-- Tool behavior.
-- World-map structure.
-- Economy/progression.
-- Checkpoint semantics.
-
-When a decoded-source implementation conflicts with existing code, replace the existing code.
-
-## First Concrete Engineering Task
-
-Build `tools/drdecode`:
+Regenerate Angkor stage data when the decoder changes:
 
 ```bash
 go run ./tools/drdecode \
@@ -547,7 +529,7 @@ go run ./tools/drdecode \
   -out decoded/world0
 ```
 
-Expected files:
+The generated files include:
 
 ```text
 decoded/world0/manifest.json

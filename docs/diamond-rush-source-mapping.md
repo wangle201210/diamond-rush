@@ -48,7 +48,7 @@ cd /Users/wanna/mine/github/wangle201210/DiamondRushSource
 | `src/main/java/j_SoundManager.java` | Sound ID table and MIDI playback priority. | Reference event IDs, priority groups, and extracted original MIDI playback. |
 | `src/main/java/c.java` | Demo/cutscene interpreter-like class. | Reference opening/tutorial sequences if recreating presentation. |
 | `src/main/java/org/recompile/freej2me/FreeJ2ME.java` | Desktop emulator wrapper. Locally patched for Mac input/repaint. | Runtime oracle only, not game logic. |
-| `src/main/resources/w0.bin` | Angkor Wat stage pack. | Decode into Tiled or a Go-native level format. |
+| `src/main/resources/w0.bin` | Angkor Wat stage pack. | Decode into the preserved three-layer Go/JSON format. |
 | `src/main/resources/w1.bin` | Bavaria/Scotland stage pack. | Decode later after Angkor slice. |
 | `src/main/resources/w2.bin` | Tibet/Siberia stage pack. | Decode later after Angkor/Bavaria. |
 | `src/main/resources/map_angkor.out` | Angkor world map metadata. | Reference stage-node layout and unlock flow. |
@@ -139,9 +139,9 @@ Go implication:
 - Write a decoder for `w0.bin` first, not a hand-authored guess.
 - Export decoded stages to an inspectable format before gameplay work:
   - `tools/drdecode` reads `w0.bin`.
-  - Output JSON + optional TMX.
+  - Output JSON while preserving all three raw layers.
   - Preserve all raw byte IDs until they are named.
-- Do not force Tiled tile IDs to match the old prototype. Treat current prototype levels as disposable.
+- Do not map raw IDs into a guessed tile taxonomy; preserve the source values and layer roles.
 
 ## Decoded Stage Packs
 
@@ -680,28 +680,18 @@ Go implication:
 | 19 | `SOUND_M_TITLE` | Title music. |
 | 20 | `SOUND_M_GAME_OVER` | Game over music. |
 
-## Proposed Go Package Mapping
+## Current Go Package Mapping
 
-| Go package | Responsibilities | Java reference |
+| Go package/path | Responsibilities | Java reference |
 | --- | --- | --- |
-| `cmd/diamondrush` | Ebitengine startup and CLI flags. | `GloftDIRU`, `FreeJ2ME` only conceptually. |
-| `internal/app` | High-level game modes and transitions. | `i.run`, `handleKeyPresses`. |
-| `internal/input` | Phone-key abstraction and desktop mapping. | `SKEY_*`, `KEY_*`, `getKeyFromKeyCode`. |
-| `internal/progress` | Save data, settings, stage marks, currencies. | RMS helpers around lines 5028-5087 and stage-clear branch. |
-| `internal/level` | Decode `w*.bin`, load exported TMX/JSON, stage metadata. | Stage loader lines 3407-3473. |
-| `internal/world` | Tile/object grid, physics, checkpoint snapshots, hazards. | Stage gameplay branch and layer arrays. |
-| `internal/entity` | Player, enemies, bosses, dynamic objects. | Player/enemy branches inside `i.java`. |
-| `internal/tool` | Hammer, hook, special items, action resolver. | `KEY_OK` branch around lines 1266-1499. |
-| `internal/render` | Camera, HUD, sprite animation, maps. | `paint(Graphics)`, `f_Sprite`, `b_SpriteAnimator`. |
-| `internal/audio` | Event-based sound playback. | `j_SoundManager` IDs. |
-| `tools/drdecode` | Decode world/stage/resource files. | `i.java` loader, `f_Sprite`. |
+| `cmd/originalrush` | Ebitengine startup. | `GloftDIRU`, `FreeJ2ME` only conceptually. |
+| `internal/original` | Decoded stage loading, mutable layers, deterministic gameplay state, player/entities/tools/checkpoints. | Stage loader, gameplay branches and layer arrays in `i.java`. |
+| `internal/originalgame` | Desktop phone-key adapter, rendering, camera/HUD, audio, world map, results and JSON progress. | `paint(Graphics)`, input handlers, `f_Sprite`, `b_SpriteAnimator`, `j_SoundManager`, RMS helpers. |
+| `decoded/` | Generated world JSON, map graph, sprite metadata/images, fonts and audio. | `w*.bin`, `map_*.out`, `.f` resources and FreeJ2ME font output. |
+| `tools/drdecode` | Decode world/stage files. | Stage loader lines 3407-3473. |
+| `tools/drsprite` | Decode `.f` sprite resources. | `f_Sprite`. |
+| `tools/drinspect`, `tools/drworldaudit` | Inspect raw IDs and generate source-data inventories. | Decoded stage layers. |
 
-## Implementation Reset Policy
+## Implementation Policy
 
-The current Go prototype may be discarded or heavily rewritten. Preserve only parts that still match this source-derived model:
-
-- Ebitengine bootstrapping.
-- Useful test scaffolding.
-- Any Tiled loading code if it remains compatible with decoded original stage data.
-
-Do not keep prototype mechanics just because they already exist. Any mechanism that conflicts with the Java source or runtime observation should be rewritten.
+Keep source-derived gameplay in `internal/original` and host/rendering concerns in `internal/originalgame`. Any mechanism that conflicts with the original JAR, Java source or a repeatable FreeJ2ME observation must be corrected and covered by a focused regression.

@@ -68,7 +68,7 @@ func renderMarkdown(pack *original.WorldPack, in string) string {
 	}
 
 	b.WriteString("## Current Implementation Implications\n\n")
-	b.WriteString("- Do not map raw stage IDs into the old TMX `world.Tile` enum by guesswork.\n")
+	b.WriteString("- Do not map raw stage IDs into a guessed tile enum; preserve the original layer values.\n")
 	b.WriteString("- Runtime must keep three mutable layers: player/object, background/state, foreground.\n")
 	b.WriteString("- Raw `255` must be treated like Java signed `-1`/empty.\n")
 	b.WriteString("- Stage start is currently anchored by player-layer raw `79`; Java stage init handles it specially.\n")

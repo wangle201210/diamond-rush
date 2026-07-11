@@ -106,7 +106,7 @@ Use this as the first acceptance checklist before adding more levels or art. If 
 | Center `5` action | Tools use a facing-direction action, matching keypad play. | Keep Action/5 as a primary command. Hammer and hook must use facing direction rather than mouse targeting. |
 | Checkpoint magic | Checkpoints are active objects with recall/reset behavior, not just respawn coordinates. | Support checkpoint activation, life-cost recall, and room reset from the checkpoint action. |
 | Health/lives/shop | Original hazards are not just one-hit deaths; upgrades and lives are part of progression. | Use health, armor, lives, potions, and a small between-stage shop. Avoid making every trap instant death. |
-| Chests and secrets | Chests contain real rewards and secrets alter routing/completion. | Author chest reward payloads in Tiled and track secret-exit discovery separately from normal clears. |
+| Chests and secrets | Chests contain real rewards and secrets alter routing/completion. | Decode container payloads from the original player/foreground layers and preserve the original reward timing. |
 | Boss/world finale | Each world culminates in a boss stage. | The fifth level needs at least one guardian/boss puzzle gating the exit. |
 | Authored stages | Levels are handcrafted with puzzle beats, tool reveals, and revisits. | Prefer five dense, tuned stages over many generic cave boards. |
 
@@ -388,47 +388,11 @@ Recommended five-level structure:
    - Keys, red diamond chest, rocks, hammer, hook, checkpoint, traps, and a boss/puzzle guardian.
    - One secret reward requiring the earlier tool chain.
 
-## Current Project Gap Checklist
+## Current Runtime Boundary
 
-The current Go implementation already has:
+The maintained implementation is `cmd/originalrush` plus `internal/original` and `internal/originalgame`. It reads decoded original data and extracted source resources directly.
 
-- Go + Ebitengine runtime.
-- Tiled TMX loading.
-- Self-authored tile/world logic.
-- Five stages.
-- Partial original-style title menu with Continue, New Game, Level Map, Options, Help, About, and Exit entries; Angkor-style world-map level select with route nodes, lock states, red-diamond seal state, secret-exit marks, bundled secret-route targeting that can bypass a final-stage red seal, and a compact ancient-seal completion flag for the five-level pack.
-- Scrolling phone-style viewport.
-- Diamonds, rocks, dirt, silver and gold keys/doors, switches, bridge gates, cracked walls, hidden/false walls, teleporters, lava, static and timed spike traps, fire traps, enemies, final guardian boss encounter, persistent Compass/Mystic Hook/Mystic Hammer pickups, secret exits with persistent discovery marks, all-purple/all-red collection marks, no-damage/no-recall/no-restart completion marks, stage-clear collection/secret/clean result lines, Tiled-authored chest rewards, health potions, health, armor, lives, checkpoint recall, checkpoint room reset, compass HUD, purple-diamond bank, and max-HP/armor/lives shop upgrades.
-
-Major gaps against original:
-
-- Partial red vs purple diamond split: purple diamonds drive exits, and red diamonds are collected from chest rewards and saved per stage.
-- Partial red-diamond progression: the final bundled stage is gated behind at least one saved red diamond unless the player has found the configured secret route, and the five-level pack opens its ancient seal after the final stage is cleared with three saved red diamonds; full multi-world ancient-seal routing and per-world thresholds are still missing.
-- Partial health/lives/checkpoint system: health damage, potion healing, armor absorption, life loss, activation, death return, recall, and checkpoint room reset exist; tuned original damage values and exact reset semantics are still missing.
-- Partial compass: a persistent Compass pickup exists and HUD points to the nearest inactive checkpoint; original compass art and exact target rules still need capture verification.
-- Partial Mystic Hammer implementation: a persistent Hammer pickup exists, and hammer ability can break cracked walls and stun adjacent enemies; exact original acquisition stage, stun timing, and breakable-block taxonomy still need tuning.
-- Source-fidelity Mystic Hook behavior is implemented in `internal/original`: it searches a clear horizontal 2-3 tile line, creates timed raw `32` rope segments, pulls physical targets all the way to the adjacent cell, and pulls violet gems into the hero before collecting them. The JAR candidate set is raw `0/1/8/9/11/14/19/43/47/48`; later-world consequences for candidates not used by the first five Angkor stages still require stage-specific verification.
-- Chests are containers with Tiled-authored rewards including red diamonds, purple diamonds, keys, potions, extra lives, tools, and score; bundled stages now use both red-diamond and extra-life chest rewards.
-- Partial shop/upgrade flow: purple diamonds can buy max-HP, armor, and starting-lives upgrades in level select; original item list/costs are still missing.
-- Partial secret-route support: secret exits and per-stage discovery marks exist, the map displays secret marks, and secret clears can target a configured route that bypasses the final red seal; true hidden-stage routing and multi-world redirection are still missing.
-- Partial boss support: final guardian exists, gates the exit, and can be damaged by hammer/falling rocks; original world-specific boss patterns still need capture verification.
-- No full world-specific visual/mechanical identity for Angkor/Bavaria/Tibet.
-- Enemy catalog is too small and generic.
-- Trap catalog is still small, though static spikes, timed spikes, fire traps, and lava now cover binary, timing-based, and burning hazards.
-- Partial original-style completion tracking: all-purple, all-red, no-damage, no-recall, and no-restart marks exist, and the stage-clear overlay reports collection/secret/clean marks; original icon art and exact end-screen layout are still missing.
-
-## Implementation Order From Here
-
-1. Tune red-diamond gates, chest reward placement, and values against original stage/world pacing.
-2. Expand ancient-seal routing into true hidden-stage redirection and per-world red-diamond thresholds.
-3. Tune original damage values for each hazard/enemy.
-4. Tune checkpoint-room reset against captured original behavior.
-5. Tune Mystic Hammer acquisition timing, stun timing, and route-gated level design.
-6. Replace the text compass with original-style compass art and target rules.
-7. Add secret-stage routing/map redirection and fuller per-stage completion UI.
-8. Expand store with original item costs/effects.
-9. Rebuild the five stages around tool acquisition and backtracking.
-10. Tune the final boss-like encounter against original boss pacing and visual presentation.
+The current playable slice is Angkor `stage00` through `stage04`. `AGENTS.md` records the source-derived rules and named route regressions that are already implemented. This broader research document remains useful for feature discovery, but it is not evidence that an untested behavior matches the original.
 
 ## Verification Still Needed
 
@@ -437,8 +401,8 @@ Before claiming high fidelity:
 - Capture or locate footage for each original world at native aspect ratios.
 - Record exact HUD layout and counter names.
 - Verify tool acquisition stages and exact item names across versions.
-- Verify hook behavior: target types, range, blocked-path rules, and whether it pulls player, object, or both.
-- Verify hammer behavior: stun duration, breakable block classes, enemy hit rules.
+- Verify hook candidates and consequences again when later-world stages introduce IDs not exercised by the first five Angkor stages.
+- Verify hammer targets again when later-world stages introduce new breakable classes or enemies.
 - Verify health damage numbers by hazard/enemy.
 - Verify checkpoint reset and life-cost semantics.
 - Verify shop item names, costs, and upgrade effects.

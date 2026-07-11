@@ -182,12 +182,10 @@ go run ./cmd/originalrush
 改动原作数据运行链路后执行：
 
 ```bash
-go test ./internal/original ./internal/originalgame ./internal/world ./internal/level ./tools/drdecode ./tools/drinspect ./tools/drsprite ./tools/drsound ./tools/drworldaudit
+go test ./internal/original ./internal/originalgame ./tools/drdecode ./tools/drinspect ./tools/drsprite ./tools/drsound ./tools/drworldaudit
 go build -o /tmp/originalrush-smoke ./cmd/originalrush
-go build -o /tmp/diamondrush-smoke ./cmd/diamondrush
-go test -c ./internal/game -o /tmp/diamondrush-game.test
 go test ./...
-rm -f /tmp/originalrush-smoke /tmp/diamondrush-smoke /tmp/diamondrush-game.test
+rm -f /tmp/originalrush-smoke
 ```
 
 macOS 无主显示器环境下，Ebitengine/GLFW 测试可能在项目测试执行前失败；不要把这类初始化失败误判为玩法回归。文档或清单单独修改时无需重启正在运行的游戏。

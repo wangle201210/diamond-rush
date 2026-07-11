@@ -185,7 +185,7 @@ This is an implementation checklist for rebuilding Diamond Rush World 0. Raw IDs
 
 ## Current Implementation Implications
 
-- Do not map raw stage IDs into the old TMX `world.Tile` enum by guesswork.
+- Do not map raw stage IDs into a guessed tile enum; preserve the original layer values.
 - Runtime must keep three mutable layers: player/object, background/state, foreground.
 - Raw `255` must be treated like Java signed `-1`/empty.
 - Stage start is currently anchored by player-layer raw `79`; Java stage init handles it specially.
