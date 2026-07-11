@@ -2,6 +2,7 @@ package original
 
 import (
 	"fmt"
+	"slices"
 	"testing"
 )
 
@@ -12,15 +13,21 @@ func TestRuntimeStage02CanBeCompletedAtSourceCadence(t *testing.T) {
 		t.Fatal(err)
 	}
 	sourceTick := 0
+	demoPrompts := make([]int, 0, 2)
 	tickUpdate := func() {
 		sourceTick++
 		rt.TickSourceFrame(8, sourceTick, 0)
+		if prompt, ok := rt.TutorialPrompt(); ok {
+			if rt.AdvanceTutorialPrompt() {
+				demoPrompts = append(demoPrompts, prompt.TextIndex)
+			}
+		}
 		if rt.PlayerMotion.Remaining > 0 {
 			rt.AdvancePlayerMotion()
 		}
 	}
 	busy := func() bool {
-		return rt.PlayerMotion.Remaining > 0 || rt.HurtTicks > 0 || rt.ChestOpening || rt.LockOpening || rt.RecallPending
+		return rt.PlayerMotion.Remaining > 0 || rt.HurtTicks > 0 || rt.ChestOpening || rt.LockOpening || rt.RecallPending || rt.EnemyGateDemoActive || rt.TutorialScriptActive
 	}
 	move := func(label string, dx, dy, count int) {
 		t.Helper()
@@ -190,6 +197,9 @@ func TestRuntimeStage02CanBeCompletedAtSourceCadence(t *testing.T) {
 	move("enter Stage 3 goal", 1, 0, 3)
 	if rt.Player != (Point{X: 23, Y: 21}) || !rt.ReachedGoal {
 		t.Fatalf("Stage 3 finish player=%+v reached=%v tick=%d", rt.Player, rt.ReachedGoal, sourceTick)
+	}
+	if !slices.Equal(demoPrompts, []int{17, 18}) {
+		t.Fatalf("Stage 3 demo prompts=%v, want [17 18]", demoPrompts)
 	}
 }
 

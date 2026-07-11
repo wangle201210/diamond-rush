@@ -25,7 +25,7 @@ func TestRuntimeStage04CanBeCompletedAtSourceCadence(t *testing.T) {
 		}
 	}
 	busy := func() bool {
-		return rt.PlayerMotion.Remaining > 0 || rt.HurtTicks > 0 || rt.ChestOpening || rt.LockOpening || rt.Hammering || rt.Hooking || rt.RecallPending
+		return rt.PlayerMotion.Remaining > 0 || rt.HurtTicks > 0 || rt.ChestOpening || rt.LockOpening || rt.Hammering || rt.Hooking || rt.RecallPending || rt.EnemyGateDemoActive
 	}
 	move := func(label string, dx, dy, count int) {
 		t.Helper()
@@ -137,11 +137,24 @@ func TestRuntimeStage04CanBeCompletedAtSourceCadence(t *testing.T) {
 	)
 	move("enter first wall cluster", 1, 0, 2)
 	move("stand left of shaft snake", 0, 1, 2)
-	waitUntil("shaft snake enters hammer range", 160, func() bool {
+	waitUntil("shaft snake enters first hammer range", 240, func() bool {
 		id, _ := rt.At(PlayerLayer, 10, 15)
-		return id == 43
+		idx := rt.index(10, 15)
+		return id == 43 && rt.ObjectState[idx]&snakeStunMask == 0 && rt.ObjectMotion[idx].Remaining >= 12
 	})
-	hammer("clear shaft snake", 1, 0)
+	hammer("first shaft-snake hit", 1, 0)
+	move("move above shaft snake", 0, -1, 1)
+	move("stand above shaft snake", 1, 0, 1)
+	for hit := 2; hit <= 3; hit++ {
+		waitUntil(fmt.Sprintf("shaft snake reaches source re-hit window %d", hit), 160, func() bool {
+			id, _ := rt.At(PlayerLayer, 10, 15)
+			idx := rt.index(10, 15)
+			return id == 43 && rt.ObjectState[idx]&snakeStunMask == 8 && sourceTick%4 == 2
+		})
+		hammer(fmt.Sprintf("shaft-snake hit %d", hit), 0, 1)
+	}
+	move("return left of cleared shaft snake", -1, 0, 1)
+	move("return to cleared shaft-snake row", 0, 1, 1)
 	move("descend beside shifted stack", 0, 1, 3)
 	move("enter shifted-stack shaft", 1, 0, 1)
 	move("descend to shifted-stack support", 0, 1, 1)
@@ -368,7 +381,12 @@ func TestRuntimeStage04CanBeCompletedAtSourceCadence(t *testing.T) {
 	// Drop (25,3) through the horizontal snake corridor. The grouped snake's
 	// death opens the left door and releases the route back to the gold lock.
 	move("climb to grouped-snake boulder support", 0, -1, 3)
-	move("dig grouped-snake boulder support", -1, 0, 2)
+	move("dig first grouped-snake boulder support", -1, 0, 1)
+	waitUntil("grouped snake enters boulder timing window", 160, func() bool {
+		idx := rt.index(23, 6)
+		return rt.EnemyGateGroup[idx] == 0 && rt.ObjectMotion[idx].Remaining == 3 && rt.ObjectState[idx]&objectDirectionMask == 0
+	})
+	move("dig final grouped-snake boulder support", -1, 0, 1)
 	move("retreat from grouped-snake boulder", 1, 0, 1)
 	waitUntil("grouped snake crushed", 240, func() bool {
 		return rt.EnemyGateCounters[0] == 0 && rt.IsPassable(22, 7)
@@ -377,6 +395,9 @@ func TestRuntimeStage04CanBeCompletedAtSourceCadence(t *testing.T) {
 	move("circle right of settled grouped boulder", 1, 0, 1)
 	move("return to grouped-snake corridor", 0, 1, 1)
 	move("cross opened grouped-snake door", -1, 0, 5)
+	if rt.Player.X == 22 {
+		move("finish crossing grouped-snake door after snake timing", -1, 0, 1)
+	}
 	move("enter upper return row", 0, -1, 1)
 	move("cross opened return-boulder route", -1, 0, 5)
 	move("return below gold-key chest", -1, 0, 1)

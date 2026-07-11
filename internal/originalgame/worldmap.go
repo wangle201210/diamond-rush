@@ -97,7 +97,7 @@ func (m *worldMapData) nodeForStage(stage int) (worldMapNode, bool) {
 	return m.Nodes[index], true
 }
 
-func (m *worldMapData) linkedStage(stage, dx, dy, highestUnlocked int) (int, bool) {
+func (m *worldMapData) linkedStage(stage, dx, dy int, unlocked func(int) bool) (int, bool) {
 	node, ok := m.nodeForStage(stage)
 	if !ok {
 		return 0, false
@@ -111,7 +111,7 @@ func (m *worldMapData) linkedStage(stage, dx, dy, highestUnlocked int) (int, boo
 			continue
 		}
 		candidate := m.Nodes[index]
-		if candidate.Stage > highestUnlocked || candidate.Stage >= angkorReplicaStageCount {
+		if unlocked == nil || !unlocked(candidate.Stage) {
 			continue
 		}
 		deltaX := candidate.X - node.X
@@ -132,16 +132,64 @@ func (m *worldMapData) linkedStage(stage, dx, dy, highestUnlocked int) (int, boo
 	return bestStage, bestStage >= 0
 }
 
+func (m *worldMapData) exitTarget(stage int, secret bool) (int, bool) {
+	node, ok := m.nodeForStage(stage)
+	if !ok {
+		return 0, false
+	}
+	if secret && len(node.Links) <= 1 {
+		return stage, true
+	}
+	target := -1
+	for _, point := range node.Links {
+		index, exists := m.byPoint[point]
+		if !exists {
+			continue
+		}
+		candidate := m.Nodes[index]
+		if secret {
+			// zVoid selects a connected type-1 node whose stage index is
+			// greater than the current node. Angkor has at most one such edge.
+			if candidate.Type == 1 && candidate.Stage > node.Stage {
+				target = candidate.Stage
+			}
+			continue
+		}
+		if candidate.Type == 0 && candidate.Stage > node.Stage && (target < 0 || candidate.Stage < target) {
+			target = candidate.Stage
+		}
+	}
+	return target, target >= 0
+}
+
+func (m *worldMapData) stagesLinked(fromStage, toStage int) bool {
+	from, ok := m.nodeForStage(fromStage)
+	if !ok {
+		return false
+	}
+	to, ok := m.nodeForStage(toStage)
+	if !ok {
+		return false
+	}
+	for _, point := range from.Links {
+		if point == (worldMapPoint{X: to.X, Y: to.Y}) {
+			return true
+		}
+	}
+	return fromStage == toStage
+}
+
 func (g *Game) enterWorldMap() {
 	g.mode = gameModeWorldMap
 	g.worldMapLoadingStep = 0
-	g.worldMapSelectedStage = clamp(g.stageIndex, 0, g.progress.HighestUnlocked)
+	g.worldMapSelectedStage = clamp(g.stageIndex, 0, angkorStageCount-1)
 	g.worldMapTravelFrom = g.worldMapSelectedStage
 	g.worldMapTravelTo = g.worldMapSelectedStage
 	g.worldMapTravelTick = 0
-	if g.stageIndex < g.progress.HighestUnlocked {
-		g.worldMapTravelTo = g.stageIndex + 1
+	if g.pendingMapTarget >= 0 && g.progress.stageUnlocked(g.pendingMapTarget) && g.worldMap.stagesLinked(g.stageIndex, g.pendingMapTarget) {
+		g.worldMapTravelTo = g.pendingMapTarget
 	}
+	g.pendingMapTarget = -1
 	g.message = "Angkor world map"
 }
 
@@ -160,9 +208,11 @@ func (g *Game) updateWorldMap(action bool) {
 	}
 	if action {
 		stage := g.worldMapSelectedStage
-		if stage >= 0 && stage <= g.progress.HighestUnlocked && stage < angkorReplicaStageCount {
+		if g.progress.stageUnlocked(stage) && angkorStageImplemented(stage) {
 			g.loadStage(stage)
 			g.mode = gameModeStage
+		} else if g.progress.stageUnlocked(stage) {
+			g.message = fmt.Sprintf("Angkor stage %d is not replicated yet", stage+1)
 		}
 		return
 	}
@@ -170,7 +220,7 @@ func (g *Game) updateWorldMap(action bool) {
 	if dx == 0 && dy == 0 {
 		return
 	}
-	if stage, ok := g.worldMap.linkedStage(g.worldMapSelectedStage, dx, dy, g.progress.HighestUnlocked); ok {
+	if stage, ok := g.worldMap.linkedStage(g.worldMapSelectedStage, dx, dy, g.progress.stageUnlocked); ok {
 		g.worldMapTravelFrom = g.worldMapSelectedStage
 		g.worldMapTravelTo = stage
 		g.worldMapTravelTick = 0
@@ -199,10 +249,11 @@ func (g *Game) drawWorldMap(screen *ebiten.Image) {
 	g.drawWorldMapHero(screen)
 
 	drawRect(screen, 2, 275, 236, 39, color.RGBA{0x2f, 0x7b, 0x46, 0xff})
-	g.fontSmall.drawText(screen, fmt.Sprintf("STAGE %d", g.worldMapDisplayStage()+1), 8, 284, false, color.White)
+	g.fontSmall.drawText(screen, g.worldMapStageTitle(g.worldMapDisplayStage()), 8, 284, false, color.White)
 	g.fontSmall.drawText(screen, fmt.Sprintf("%d/%d", g.progress.StageVioletGems[g.worldMapDisplayStage()], g.stageTotalViolet(g.worldMapDisplayStage())), 92, 284, true, color.White)
 	g.fontSmall.drawText(screen, fmt.Sprintf("%d", g.progress.ExtraLives), 155, 284, true, color.White)
-	g.fontSmall.drawText(screen, "SELECT", 232, 314, true, color.White)
+	selectPrompt := desktopActionKeyLabel + ": SELECT"
+	g.fontSmall.drawText(screen, selectPrompt, 236-g.fontSmall.stringWidth(selectPrompt), 314, false, color.White)
 }
 
 func (g *Game) drawWorldMapLoading(screen *ebiten.Image) {
@@ -228,7 +279,7 @@ func (g *Game) drawWorldMapPaths(screen *ebiten.Image) {
 				continue
 			}
 			drawn[key] = true
-			unlocked := node.Stage <= g.progress.HighestUnlocked && linked.Stage <= g.progress.HighestUnlocked
+			unlocked := g.progress.stageUnlocked(node.Stage) && g.progress.stageUnlocked(linked.Stage)
 			frame := 2
 			if !unlocked {
 				frame = 3
@@ -258,11 +309,8 @@ func (g *Game) drawWorldMapNodes(screen *ebiten.Image) {
 		return
 	}
 	for _, node := range g.worldMap.Nodes {
-		if node.Stage >= angkorReplicaStageCount {
-			continue
-		}
 		frame := 1
-		if node.Stage <= g.progress.HighestUnlocked {
+		if g.progress.stageUnlocked(node.Stage) {
 			frame = 0
 		}
 		x, y := worldMapScreenPoint(node)
@@ -296,9 +344,20 @@ func (g *Game) drawWorldMapHero(screen *ebiten.Image) {
 
 func (g *Game) worldMapDisplayStage() int {
 	if g.worldMapTravelTick < worldMapTravelTicks {
-		return clamp(g.worldMapTravelTo, 0, angkorReplicaStageCount-1)
+		return clamp(g.worldMapTravelTo, 0, angkorStageCount-1)
 	}
-	return clamp(g.worldMapSelectedStage, 0, angkorReplicaStageCount-1)
+	return clamp(g.worldMapSelectedStage, 0, angkorStageCount-1)
+}
+
+func (g *Game) worldMapStageTitle(stage int) string {
+	if node, ok := g.worldMap.nodeForStage(stage); ok && node.Type == 1 {
+		return fmt.Sprintf("SECRET STAGE %d", stage-angkorFirstSecretStage+1)
+	}
+	return fmt.Sprintf("STAGE %d", stage+1)
+}
+
+func angkorStageImplemented(stage int) bool {
+	return stage >= 0 && stage < angkorReplicaStageCount
 }
 
 func (g *Game) stageTotalViolet(stage int) int {

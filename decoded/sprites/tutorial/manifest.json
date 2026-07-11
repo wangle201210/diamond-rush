@@ -1,0 +1,53 @@
+[
+  {
+    "index": 0,
+    "offset": 8,
+    "length": 2750,
+    "file": "demoSpr.bin",
+    "sprite": {
+      "modules": 22,
+      "frames": 9,
+      "animations": 1,
+      "palettes": 1,
+      "colors": 16,
+      "dataFormat": 5632,
+      "moduleSheet": "sprite00-modules.png",
+      "frameSheet": "sprite00-frames.png",
+      "animationJson": "sprite00-animations.json"
+    }
+  },
+  {
+    "index": 1,
+    "offset": 2764,
+    "length": 1048,
+    "file": "demoSpr.bin",
+    "sprite": {
+      "modules": 15,
+      "frames": 9,
+      "animations": 0,
+      "palettes": 1,
+      "colors": 4,
+      "dataFormat": 1024,
+      "moduleSheet": "sprite01-modules.png",
+      "frameSheet": "sprite01-frames.png",
+      "animationJson": "sprite01-animations.json"
+    }
+  },
+  {
+    "index": 2,
+    "offset": 3818,
+    "length": 481,
+    "file": "demoSpr.bin",
+    "sprite": {
+      "modules": 3,
+      "frames": 2,
+      "animations": 1,
+      "palettes": 1,
+      "colors": 13,
+      "dataFormat": 5632,
+      "moduleSheet": "sprite02-modules.png",
+      "frameSheet": "sprite02-frames.png",
+      "animationJson": "sprite02-animations.json"
+    }
+  }
+]

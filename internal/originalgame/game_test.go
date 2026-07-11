@@ -3,6 +3,7 @@ package originalgame
 import (
 	"image/png"
 	"os"
+	"slices"
 	"testing"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -49,6 +50,9 @@ func TestNewLoadsAngkorWorldPack(t *testing.T) {
 	if g.cameraY != 248 {
 		t.Fatalf("initial camera y = %d, want source entrance camera 248", g.cameraY)
 	}
+	if g.lastDX != 1 || g.lastDY != 0 || g.heroTurnOffset != 0 {
+		t.Fatalf("initial facing=%d,%d turn=%d, want source right/settled", g.lastDX, g.lastDY, g.heroTurnOffset)
+	}
 }
 
 func TestLoadStageSwitchesRuntime(t *testing.T) {
@@ -69,6 +73,244 @@ func TestLoadStageSwitchesRuntime(t *testing.T) {
 	}
 	if g.rt.SpecialItemMask != 2 {
 		t.Fatalf("stage04 standalone prerequisite tool=%d, want Mystic Hook level 2", g.rt.SpecialItemMask)
+	}
+}
+
+func TestStage07UsesFreezeHammerCrossWorldPrerequisite(t *testing.T) {
+	g, err := New(defaultWorldDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rt, err := original.NewRuntime(g.pack.Stages[7])
+	if err != nil {
+		t.Fatal(err)
+	}
+	g.applyCampaignProgress(rt, 7)
+	if rt.SpecialItemMask != 8 {
+		t.Fatalf("Stage 8 prerequisite tool=%d, want Freeze Hammer level 8", rt.SpecialItemMask)
+	}
+	if !rt.RestoreCheckpoint() || rt.SpecialItemMask != 8 {
+		t.Fatalf("Stage 8 checkpoint restored tool=%d, want Freeze Hammer level 8", rt.SpecialItemMask)
+	}
+}
+
+func TestSourceGoalFrameUsesSpecialAngkorStageVariants(t *testing.T) {
+	for stageIndex := 0; stageIndex < 14; stageIndex++ {
+		want := 0
+		if stageIndex == 4 || stageIndex == 7 {
+			want = 1
+		}
+		if got := sourceGoalFrame(stageIndex); got != want {
+			t.Errorf("Stage %d goal frame=%d, want %d", stageIndex+1, got, want)
+		}
+	}
+}
+
+func TestNewLoadsFreezeHammerObjectSprites(t *testing.T) {
+	g, err := New(defaultWorldDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for name, sheet := range map[string]*spriteSheet{
+		"frozen violet": g.frozenViolet,
+		"frozen snake":  g.frozenSnake,
+	} {
+		if sheet == nil || sheet.moduleImage == nil || len(sheet.meta.FrameCounts) == 0 || sheet.meta.FrameCounts[0] == 0 {
+			t.Errorf("%s source sprite is not drawable", name)
+		}
+	}
+}
+
+func TestStage08LoadsAndDrawsOriginalGreatAnacondaAssets(t *testing.T) {
+	g, err := New(defaultWorldDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for name, sheet := range map[string]*spriteSheet{
+		"Great Anaconda": g.anaconda,
+		"boss platforms": g.anacondaPlatform,
+		"Angkor seal":    g.angkorSeal,
+		"Bavaria seal":   g.bavariaSeal,
+		"Siberia seal":   g.siberiaSeal,
+		"seal arrow":     g.sealArrow,
+		"softkeys":       g.softkeys,
+	} {
+		if sheet == nil || sheet.moduleImage == nil || len(sheet.meta.FrameCounts) == 0 {
+			t.Errorf("%s source sprite is not drawable", name)
+		}
+	}
+	for animation, want := range map[int]int{4: 12, 7: 22, 8: 2} {
+		if duration, ok := g.anaconda.animationDuration(animation); !ok || duration != want {
+			t.Errorf("boss animation %d duration=%d,%v, want %d,true", animation, duration, ok, want)
+		}
+	}
+	if duration, ok := g.flames.animationDuration(2); !ok || duration != 11 {
+		t.Fatalf("tail animation duration=%d,%v, want source 11,true", duration, ok)
+	}
+
+	for stage := 1; stage <= 8; stage++ {
+		g.progress.unlockStage(stage)
+	}
+	g.loadStage(8)
+	if g.stageIndex != 8 || !g.rt.Anaconda.Enabled {
+		t.Fatalf("loaded stage=%d boss enabled=%v, want Stage 9 boss runtime", g.stageIndex, g.rt.Anaconda.Enabled)
+	}
+	g.rt.Anaconda.Phase = original.AnacondaPhaseVulnerable
+	g.rt.Anaconda.BodyY = 216
+	g.rt.Anaconda.Animation = 2
+	dst := ebiten.NewImage(original.ScreenWidth, playfieldHeight)
+	g.drawGreatAnaconda(dst, 100, 0)
+	if len(g.anacondaPlatform.meta.FrameCounts) < 2 || g.anacondaPlatform.meta.FrameCounts[1] != 4 || len(g.angkorSeal.meta.Modules) != 1 {
+		t.Fatalf("boss platform frames=%v seal modules=%v, want source frame-1 composition and seal module", g.anacondaPlatform.meta.FrameCounts, g.angkorSeal.meta.Modules)
+	}
+}
+
+func TestStage08SealUsesDedicatedLoadingTransition(t *testing.T) {
+	g, err := New(defaultWorldDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for stage := 1; stage <= 8; stage++ {
+		g.progress.unlockStage(stage)
+	}
+	g.loadStage(8)
+	g.rt.RelicMask = 1
+	g.rt.Anaconda.SealCollected = true
+	g.rt.Anaconda.StageComplete = true
+	if err := g.Update(); err != nil {
+		t.Fatal(err)
+	}
+	if !g.sealExitActive || g.worldDone || !g.progress.StageCleared[8] {
+		t.Fatalf("seal transition active=%v worldDone=%v stageCleared=%v", g.sealExitActive, g.worldDone, g.progress.StageCleared[8])
+	}
+	if g.progress.StageAwards[8] != 0 || g.progress.ExtraLives != 5 {
+		t.Fatalf("seal stage awards=%#x lives=%d, want no ordinary result awards or bonus lives", g.progress.StageAwards[8], g.progress.ExtraLives)
+	}
+	screen := ebiten.NewImage(original.ScreenWidth, original.ScreenHeight)
+	g.Draw(screen)
+	for step := 0; step < sealLoadingSteps-1; step++ {
+		if err := g.Update(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if g.mode != gameModeStage || !g.sealExitActive {
+		t.Fatalf("seal transition ended before loading step 11: mode=%d active=%v ticks=%d", g.mode, g.sealExitActive, g.sealExitTicks)
+	}
+	if err := g.Update(); err != nil {
+		t.Fatal(err)
+	}
+	if g.mode != gameModeWorldSelect || g.sealExitActive || g.worldSelectIncoming != sealPositionAngkor {
+		t.Fatalf("seal completion mode=%d active=%v incoming=%d, want world selector/false/Angkor", g.mode, g.sealExitActive, g.worldSelectIncoming)
+	}
+	if g.progress.RelicMask != 1 {
+		t.Fatalf("persisted relic mask=%#x, want Angkor bit", g.progress.RelicMask)
+	}
+}
+
+func TestStage08SealCelebrationUsesHeroAnimation47(t *testing.T) {
+	g, err := New(defaultWorldDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g.rt.RelicCelebrating = true
+	g.rt.RelicCelebrationTicks = 17
+	g.rt.ChestRewardID = 53
+	animation, tick := g.heroAnimationState()
+	if animation != 47 || tick != 17 {
+		t.Fatalf("seal celebration animation=%d tick=%d, want 47/17", animation, tick)
+	}
+	if duration, ok := g.hero.animationDuration(47); !ok || duration != 42 {
+		t.Fatalf("hero animation 47 duration=%d,%v, want source 42,true", duration, ok)
+	}
+}
+
+func TestStage05LoadsAndDrawsOriginalFallingTorchAssets(t *testing.T) {
+	g, err := New(defaultWorldDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if g.fallingFire == nil || g.fallingTorches == nil || g.fallingDebris == nil {
+		t.Fatal("mm0.f falling-torch resources were not loaded")
+	}
+	if duration, ok := g.fallingTorches.animationDuration(1); !ok || duration != 38 {
+		t.Fatalf("torch collapse duration=%d,%v, want source 38,true", duration, ok)
+	}
+	if duration, ok := g.fallingFire.animationDuration(2); !ok || duration != 30 {
+		t.Fatalf("fire startup duration=%d,%v, want source 30,true", duration, ok)
+	}
+
+	g.progress.HighestUnlocked = 5
+	g.loadStage(5)
+	g.rt.FallingTorchTriggers = 3
+	g.rt.FallingTorchAnimation = 2
+	g.rt.FallingTorchAnimationTicks = 1
+	g.rt.RisingFireAnimation = 0
+	g.rt.RisingFireAnimationTicks = 1
+	g.rt.RisingFireHeight = 1000
+	g.rt.FallingTorchWarningTicks = 60
+	g.tick = 80
+	dst := ebiten.NewImage(original.ScreenWidth, playfieldHeight)
+	g.drawFallingTorchStage(dst, 180, 900)
+	if frame, ok := g.fallingFire.animationFrame(g.rt.RisingFireAnimation, g.rt.RisingFireAnimationTicks); !ok || frame.Frame < 0 {
+		t.Fatalf("rising-fire frame=%+v ok=%v, want drawable source frame", frame, ok)
+	}
+}
+
+func TestSourceStageCellViewportMatchesJavaDynamicScan(t *testing.T) {
+	view := sourceStageCellViewport(8*original.TileSize+5, 4*original.TileSize+7)
+	if view.firstX != 8 || view.firstY != 4 || view.offX != -5 || view.offY != -7 {
+		t.Fatalf("viewport origin=%+v, want first (8,4), offset (-5,-7)", view)
+	}
+	if view.firstRel != -1 || view.lastRelX != 12 || view.lastRelY != 12 {
+		t.Fatalf("dynamic scan=%+v, want Java relative range [-1,12)", view)
+	}
+}
+
+func TestLateForegroundOverlayKeepsEmptyRawIDTransparent(t *testing.T) {
+	for _, tt := range []struct {
+		id    original.RawID
+		frame int
+		ok    bool
+	}{
+		{id: original.EmptyRawID},
+		{id: 79},
+		{id: 80, frame: 0, ok: true},
+		{id: 119, frame: 39, ok: true},
+	} {
+		frame, ok := sourceWorldOverlayFrame(tt.id)
+		if frame != tt.frame || ok != tt.ok {
+			t.Errorf("foreground raw %d overlay=%d,%v, want %d,%v", tt.id, frame, ok, tt.frame, tt.ok)
+		}
+	}
+	for tick, want := range map[int]int{0: 0, 3: 0, 4: 1, 7: 1, 8: 2} {
+		if got := sourceForegroundEffectSequence(tick); got != want {
+			t.Errorf("foreground sequence at tick %d=%d, want %d", tick, got, want)
+		}
+	}
+}
+
+func TestStage05DemoCameraUsesSourcePanTarget(t *testing.T) {
+	g, err := New(defaultWorldDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g.progress.HighestUnlocked = 5
+	g.loadStage(5)
+	g.cameraX = 20
+	g.cameraY = 300
+	g.rt.ForegroundDemoActive = true
+	g.rt.ForegroundDemoID = 3
+	g.rt.ForegroundDemoPhase = 1
+	g.rt.ForegroundDemoTicks = 30
+	g.updateCamera()
+	if g.cameraX != 100 || g.cameraY != 600 {
+		t.Fatalf("half demo pan camera=%d,%d, want 100,600", g.cameraX, g.cameraY)
+	}
+	g.rt.ForegroundDemoPhase = 2
+	g.rt.ForegroundDemoTicks = 0
+	g.updateCamera()
+	if g.cameraX != 180 || g.cameraY != 900 {
+		t.Fatalf("locked demo camera=%d,%d, want source target 180,900", g.cameraX, g.cameraY)
 	}
 }
 
@@ -94,7 +336,7 @@ func TestLoadStageCarriesSourceGlobalState(t *testing.T) {
 	}
 }
 
-func TestFirstFiveStagesUnlockAndCarryOriginalToolPrerequisites(t *testing.T) {
+func TestFirstNineStagesUnlockAndCarryOriginalToolPrerequisites(t *testing.T) {
 	g, err := New(defaultWorldDir)
 	if err != nil {
 		t.Fatal(err)
@@ -122,8 +364,44 @@ func TestFirstFiveStagesUnlockAndCarryOriginalToolPrerequisites(t *testing.T) {
 		t.Fatalf("Stage 5 runtime tool=%d, want original cross-world hook prerequisite level 2", g.rt.SpecialItemMask)
 	}
 	progress.recordStageResult(4, g.rt)
-	if progress.HighestUnlocked != 4 || !progress.StageCleared[4] || progress.ToolLevel != 2 {
-		t.Fatalf("final five-stage progress=%+v, want Stage 5 clear, no Stage 6 unlock, hook persisted", progress)
+	if progress.HighestUnlocked != 5 || !progress.StageCleared[4] || progress.ToolLevel != 2 {
+		t.Fatalf("Stage 5 progress=%+v, want Stage 6 unlocked and hook persisted", progress)
+	}
+	g.progress = progress
+	g.loadStage(5)
+	if g.stageIndex != 5 || !g.rt.IsFallingTorchStage() || g.rt.SpecialItemMask != 2 {
+		t.Fatalf("Stage 6 runtime index=%d falling=%v tool=%d, want 5/true/2", g.stageIndex, g.rt.IsFallingTorchStage(), g.rt.SpecialItemMask)
+	}
+	progress.recordStageResult(5, g.rt)
+	if progress.HighestUnlocked != 6 || !progress.StageCleared[5] || !progress.StageUnlocked[6] {
+		t.Fatalf("six-stage progress=%+v, want Stage 6 clear with Stage 7 unlocked", progress)
+	}
+	g.progress = progress
+	g.loadStage(6)
+	if g.stageIndex != 6 || g.rt.SpecialItemMask != 2 {
+		t.Fatalf("Stage 7 runtime index=%d tool=%d, want 6/2", g.stageIndex, g.rt.SpecialItemMask)
+	}
+	progress.recordStageResult(6, g.rt)
+	if progress.HighestUnlocked != 7 || !progress.StageCleared[6] || !progress.StageUnlocked[7] {
+		t.Fatalf("seven-stage progress=%+v, want Stage 7 clear with Stage 8 unlocked", progress)
+	}
+	g.progress = progress
+	g.loadStage(7)
+	if g.stageIndex != 7 || g.rt.SpecialItemMask != 8 {
+		t.Fatalf("Stage 8 runtime index=%d tool=%d, want 7/8", g.stageIndex, g.rt.SpecialItemMask)
+	}
+	progress.recordStageResult(7, g.rt)
+	if progress.HighestUnlocked != 8 || !progress.StageCleared[7] || !progress.StageUnlocked[8] || progress.ToolLevel != 8 {
+		t.Fatalf("eight-stage progress=%+v, want Stage 8 clear, Stage 9 unlocked, and Freeze Hammer persisted", progress)
+	}
+	g.progress = progress
+	g.loadStage(8)
+	if g.stageIndex != 8 || !g.rt.Anaconda.Enabled || g.rt.SpecialItemMask != 8 {
+		t.Fatalf("Stage 9 runtime index=%d boss=%v tool=%d, want 8/true/8", g.stageIndex, g.rt.Anaconda.Enabled, g.rt.SpecialItemMask)
+	}
+	progress.recordStageResult(8, g.rt)
+	if progress.HighestUnlocked != 8 || !progress.StageCleared[8] {
+		t.Fatalf("nine-stage progress=%+v, want final normal Angkor node cleared without sequential secret unlock", progress)
 	}
 }
 
@@ -183,6 +461,129 @@ func TestAdvanceAfterGoalDoesNotCompleteAtGoalCell(t *testing.T) {
 	if g.rt.Player != (original.Point{X: 23, Y: 9}) || g.heroMoveOffset != 12 {
 		t.Fatalf("first exit step player=%+v offset=%d, want (23,9)/12", g.rt.Player, g.heroMoveOffset)
 	}
+}
+
+func TestSecretStageRaw28UsesResultsAndUnlocksNextSecretNode(t *testing.T) {
+	g, err := New(defaultWorldDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rt, err := original.NewRuntime(g.pack.Stages[9])
+	if err != nil {
+		t.Fatal(err)
+	}
+	g.stageIndex = 9
+	g.rt = rt
+	g.progress.unlockStage(9)
+	rt.ReachedGoal = true
+	rt.GoalExitSecret = true
+	rt.GoalExitDirection = 2
+	rt.Player = original.Point{X: rt.Width() + 5, Y: 11}
+	rt.PlayerMotion = original.ObjectMotion{}
+	g.advanceAfterGoal()
+	if !g.worldDone || g.secretExitActive || g.resultPhase != resultPhaseLoading {
+		t.Fatalf("secret-stage exit worldDone=%v secretMessage=%v resultPhase=%d", g.worldDone, g.secretExitActive, g.resultPhase)
+	}
+	if !g.progress.StageCleared[9] || !g.progress.StageUnlocked[10] || g.pendingMapTarget != 10 {
+		t.Fatalf("secret-stage progress cleared=%v next=%v target=%d", g.progress.StageCleared[9], g.progress.StageUnlocked[10], g.pendingMapTarget)
+	}
+}
+
+func TestStage06SecretExitSkipsResultsAndTravelsToSecretStageOne(t *testing.T) {
+	g, err := New(defaultWorldDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for stage := 1; stage <= 6; stage++ {
+		g.progress.unlockStage(stage)
+	}
+	g.loadStage(6)
+	g.introTicks = stageIntroDuration
+	g.entranceSteps = 0
+	g.rt.Player = original.Point{X: 20, Y: 40}
+	g.rt.PlayerMotion = original.ObjectMotion{}
+	if !g.rt.TryMove(1, 0) {
+		t.Fatal("failed to enter Stage 7 source raw28 exit")
+	}
+	if !g.rt.GoalExitSecret {
+		t.Fatal("raw28 exit was not tagged as secret")
+	}
+	for tick := 0; tick < 80 && !g.secretExitActive; tick++ {
+		if g.rt.PlayerMotion.Remaining > 0 {
+			g.advanceHeroMotion()
+		} else {
+			g.advanceAfterGoal()
+		}
+	}
+	if !g.secretExitActive || g.worldDone || g.resultPhase != resultPhaseLoading {
+		t.Fatalf("secret transition active=%v worldDone=%v resultPhase=%d, want true/false/loading", g.secretExitActive, g.worldDone, g.resultPhase)
+	}
+	if g.pendingMapTarget != 9 || !g.progress.StageUnlocked[9] || g.progress.StageUnlocked[7] || g.progress.StageUnlocked[8] {
+		t.Fatalf("secret target=%d unlocks=%v, want target 9 only", g.pendingMapTarget, g.progress.StageUnlocked)
+	}
+	for g.secretExitActive {
+		if err := g.Update(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if g.mode != gameModeWorldMap || g.worldMapTravelFrom != 6 || g.worldMapTravelTo != 9 {
+		t.Fatalf("secret map mode=%d travel=%d->%d, want world map 6->9", g.mode, g.worldMapTravelFrom, g.worldMapTravelTo)
+	}
+}
+
+func TestStage07SecretExitSkipsResultsAndTravelsToSecretStageFour(t *testing.T) {
+	g, err := New(defaultWorldDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for stage := 1; stage <= 7; stage++ {
+		g.progress.unlockStage(stage)
+	}
+	g.loadStage(7)
+	g.introTicks = stageIntroDuration
+	g.entranceSteps = 0
+	g.rt.Player = original.Point{X: 3, Y: 3}
+	g.rt.PlayerMotion = original.ObjectMotion{}
+	if !g.rt.TryMove(1, 0) || !g.rt.GoalExitSecret {
+		t.Fatal("failed to enter Stage 8 source raw28 exit")
+	}
+	for tick := 0; tick < 100 && !g.secretExitActive; tick++ {
+		if g.rt.PlayerMotion.Remaining > 0 {
+			g.advanceHeroMotion()
+		} else {
+			g.advanceAfterGoal()
+		}
+	}
+	if !g.secretExitActive || g.worldDone {
+		t.Fatalf("Stage 8 secret transition active=%v worldDone=%v, want true/false", g.secretExitActive, g.worldDone)
+	}
+	if g.pendingMapTarget != 12 || !g.progress.StageUnlocked[12] || g.progress.StageUnlocked[8] {
+		t.Fatalf("Stage 8 secret target=%d unlocks=%v, want target 12 without normal Stage 9", g.pendingMapTarget, g.progress.StageUnlocked)
+	}
+	for g.secretExitActive {
+		if err := g.Update(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if g.mode != gameModeWorldMap || g.worldMapTravelFrom != 7 || g.worldMapTravelTo != 12 {
+		t.Fatalf("Stage 8 secret map mode=%d travel=%d->%d, want world map 7->12", g.mode, g.worldMapTravelFrom, g.worldMapTravelTo)
+	}
+}
+
+func TestSecretExitMessageFitsAndDrawsOnSourceScreen(t *testing.T) {
+	g, err := New(defaultWorldDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines := []string{"Congratulations! You have", "unlocked a secret path!"}
+	for _, line := range lines {
+		if width := g.fontSmall.stringWidth(line) + 10; width > original.ScreenWidth {
+			t.Fatalf("secret message line %q panel width=%d, exceeds %d", line, width, original.ScreenWidth)
+		}
+	}
+	g.secretExitActive = true
+	screen := ebiten.NewImage(original.ScreenWidth, original.ScreenHeight)
+	g.Draw(screen)
 }
 
 func TestHeroUsesExtractedAnimationMetadata(t *testing.T) {
@@ -396,7 +797,7 @@ func TestHUDUsesExtractedDigitAndHealthModules(t *testing.T) {
 	if got := g.hud.meta.FrameCounts[1]; got != 2 {
 		t.Fatalf("HUD gem-vessel frame modules = %d, want purple and red modules", got)
 	}
-	if g.hero.moduleImage == nil || g.door.moduleImage == nil || g.snakes.moduleImage == nil || g.crawler.moduleImage == nil || g.flames.moduleImage == nil || g.pressureSwitch.moduleImage == nil || g.quota.moduleImage == nil || g.hiddenOverlay.moduleImage == nil || g.specialContainer.moduleImage == nil || g.goldKey.moduleImage == nil || g.silverKey.moduleImage == nil || g.tools.moduleImage == nil || g.pickupEffects.moduleImage == nil || g.resultSpark.moduleImage == nil || g.resultMedal.moduleImage == nil {
+	if g.hero.moduleImage == nil || g.door.moduleImage == nil || g.snakes.moduleImage == nil || g.crawler.moduleImage == nil || g.flames.moduleImage == nil || g.pressureSwitch.moduleImage == nil || g.quota.moduleImage == nil || g.hiddenOverlay.moduleImage == nil || g.specialContainer.moduleImage == nil || g.goldKey.moduleImage == nil || g.silverKey.moduleImage == nil || g.tools.moduleImage == nil || g.toolPrompt.moduleImage == nil || g.pickupEffects.moduleImage == nil || g.resultSpark.moduleImage == nil || g.resultMedal.moduleImage == nil {
 		t.Fatal("source module sheets are required for gameplay and result-screen composite sprites")
 	}
 	if len(g.quota.meta.FrameCounts) < 1 || g.quota.meta.FrameCounts[0] != 2 {
@@ -460,6 +861,15 @@ func TestStageResultUsesSourceLoadingAndPhaseTiming(t *testing.T) {
 }
 
 func TestStageResultSourceSlideAndCountFrames(t *testing.T) {
+	if got := []int{
+		resultStageTitleY, resultCompleteY,
+		resultVioletLabelY, resultVioletCountY,
+		resultRedLabelY, resultRedCountY,
+		resultHitsIconY, resultHitsLabelY, resultHitsCountY,
+		resultRetriesIconY, resultRetriesLabelY, resultRetriesCountY,
+	}; !slices.Equal(got, []int{15, 32, 75, 91, 131, 147, 191, 187, 203, 243, 243, 259}) {
+		t.Fatalf("result layout coordinates = %v, want Java case 17 coordinates", got)
+	}
 	tests := []struct {
 		tick                 int
 		title, complete, row int
@@ -572,7 +982,7 @@ func TestStageIntroUsesSourceSlidePositionsAndText(t *testing.T) {
 	}
 }
 
-func TestMacCheckpointRecallShortcutsDoNotMoveDown(t *testing.T) {
+func TestMacActionAndRecallShortcutsAreUnambiguous(t *testing.T) {
 	pressed := keySet(ebiten.KeyShiftLeft, ebiten.KeyDigit8)
 	justPressed := keySet(ebiten.KeyDigit8)
 	if !recallPressedWith(justPressed, pressed) {
@@ -584,8 +994,23 @@ func TestMacCheckpointRecallShortcutsDoNotMoveDown(t *testing.T) {
 	if !recallPressedWith(keySet(ebiten.KeyR), keySet()) {
 		t.Fatal("R did not trigger checkpoint recall")
 	}
+	if !recallPressedWith(keySet(ebiten.KeyEnter), keySet()) {
+		t.Fatal("Enter did not trigger checkpoint recall")
+	}
 	if !recallPressedWith(keySet(ebiten.KeyBackspace), keySet()) {
 		t.Fatal("Backspace did not trigger checkpoint recall")
+	}
+	if !centerActionPressedWith(keySet(ebiten.KeySpace)) {
+		t.Fatal("Space did not trigger the phone 5 interaction")
+	}
+	if centerActionPressedWith(keySet(ebiten.KeyEnter)) {
+		t.Fatal("Enter still triggered the phone 5 interaction")
+	}
+	if !centerActionPressedWith(keySet(ebiten.KeyDigit5)) || !centerActionPressedWith(keySet(ebiten.KeyNumpad5)) {
+		t.Fatal("phone 5 keyboard aliases did not trigger interaction")
+	}
+	if !tutorialSkipPressedWith(keySet(ebiten.KeyS)) || tutorialSkipPressedWith(keySet(ebiten.KeySpace)) {
+		t.Fatal("tutorial skip must use S without consuming Space")
 	}
 	if dx, dy := heldDirectionWith(keySet(ebiten.KeyDigit8)); dx != 0 || dy != 1 {
 		t.Fatalf("plain 8 movement = %d,%d, want down", dx, dy)
@@ -606,7 +1031,7 @@ func TestClosedContainersDoNotRevealTheirPayloads(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	payloads := map[original.RawID]bool{2: true, 4: true, 5: true, 6: true, 7: true, 24: true, 26: true, 27: true, 41: true}
+	payloads := map[original.RawID]bool{2: true, 4: true, 5: true, 6: true, 7: true, 24: true, 26: true, 27: true, 40: true, 41: true, 42: true, 51: true, 52: true, 53: true}
 	hidden := 0
 	for stageIndex := 0; stageIndex < angkorReplicaStageCount; stageIndex++ {
 		stage := g.pack.Stages[stageIndex]
@@ -621,8 +1046,8 @@ func TestClosedContainersDoNotRevealTheirPayloads(t *testing.T) {
 			}
 		}
 	}
-	if hidden != 28 {
-		t.Fatalf("first-five hidden payloads=%d, want 28 audited container cells", hidden)
+	if hidden != 120 {
+		t.Fatalf("all-Angkor hidden payloads=%d, want 120 audited container cells", hidden)
 	}
 	if !sourceCellObjectVisible(2, original.EmptyRawID) || !sourceCellObjectVisible(1, 33) {
 		t.Fatal("container visibility filter hid a loose reward or non-payload object")
@@ -716,6 +1141,47 @@ func TestChestAnimation48UsesSourceRewardFrame(t *testing.T) {
 	g.rt.ChestTicks = 20
 	if animation, tick := g.heroAnimationState(); animation != 48 || tick != 20 {
 		t.Fatalf("short chest hero animation=%d tick=%d, want 48/20", animation, tick)
+	}
+}
+
+func TestCompassChestRewardUsesOriginalGen3Chunk1Artwork(t *testing.T) {
+	g, err := New(defaultWorldDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if g.compassPickup == nil || g.compassPickup.moduleImage == nil || len(g.compassPickup.meta.Modules) != 1 {
+		t.Fatal("gen3.f chunk 1 compass pickup is not loaded")
+	}
+	if got := g.compassPickup.meta.Modules[0]; got != (spriteModuleMeta{W: 24, H: 24}) {
+		t.Fatalf("compass module bounds = %+v, want source 24x24", got)
+	}
+	f, err := os.Open(resolvePath(compassPickupModules))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	img, err := png.Decode(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	visiblePixels := 0
+	for y := framePadding; y < framePadding+original.TileSize; y++ {
+		for x := framePadding; x < framePadding+original.TileSize; x++ {
+			r, green, b, alpha := img.At(x, y).RGBA()
+			isTransparentKey := uint8(r>>8) == 20 && uint8(green>>8) == 22 && uint8(b>>8) == 28
+			if alpha != 0 && !isTransparentKey {
+				visiblePixels++
+			}
+		}
+	}
+	if visiblePixels == 0 {
+		t.Fatal("gen3.f chunk 1 compass module contains no visible pixels")
+	}
+
+	dst := ebiten.NewImage(original.TileSize, original.TileSize)
+	g.rt.ChestRewardID = 42
+	if !g.drawChestRewardIcon(dst, 0, 0) {
+		t.Fatal("raw 42 chest reward did not select the original compass artwork")
 	}
 }
 
@@ -836,6 +1302,51 @@ func TestHeroMovementUsesSourceSubTileOffsets(t *testing.T) {
 	}
 	if g.heroMoveOffset != 0 {
 		t.Fatalf("final hero offset = %d, want 0", g.heroMoveOffset)
+	}
+}
+
+func TestDirectionChangeTurnsBeforeMovingAtSourceCadence(t *testing.T) {
+	stage := mustLoadOriginalStageForGame(t)
+	rt, err := original.NewRuntime(stage)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g := &Game{rt: rt, lastDY: -1}
+	start := rt.Player
+	if g.handlePlayerDirection(1, 0) {
+		t.Fatal("first changed-direction input moved instead of turning")
+	}
+	if rt.Player != start || g.lastDX != 1 || g.lastDY != 0 || g.heroTurnOffset != sourceHeroTurnStartOffset {
+		t.Fatalf("turn start player=%+v facing=%d,%d offset=%d", rt.Player, g.lastDX, g.lastDY, g.heroTurnOffset)
+	}
+	for step, want := range []int{12, 6, 0} {
+		if !g.advanceHeroTurn() {
+			t.Fatalf("turn cadence stopped at step %d", step)
+		}
+		if rt.Player != start || g.heroTurnOffset != want {
+			t.Fatalf("turn step %d player=%+v offset=%d, want %+v/%d", step, rt.Player, g.heroTurnOffset, start, want)
+		}
+	}
+	if g.advanceHeroTurn() {
+		t.Fatal("completed turn consumed an extra source frame")
+	}
+	if !g.handlePlayerDirection(1, 0) || rt.Player == start {
+		t.Fatalf("held direction did not move after turn: player=%+v start=%+v", rt.Player, start)
+	}
+}
+
+func TestSameFacingDirectionMovesWithoutTurn(t *testing.T) {
+	stage := mustLoadOriginalStageForGame(t)
+	rt, err := original.NewRuntime(stage)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g := &Game{rt: rt, lastDX: 1}
+	if !g.handlePlayerDirection(1, 0) {
+		t.Fatal("same-facing input did not move immediately")
+	}
+	if g.heroTurnOffset != 0 || rt.Player != (original.Point{X: 1, Y: 17}) {
+		t.Fatalf("same-facing move player=%+v turn=%d", rt.Player, g.heroTurnOffset)
 	}
 }
 

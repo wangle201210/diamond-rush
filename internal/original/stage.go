@@ -244,7 +244,7 @@ func KnownRole(layer Layer, id RawID) (IDRole, bool) {
 			return role, true
 		case id == 12:
 			role.Name = "bonus quota marker"
-			role.Source = "i.java stage init clears raw 12, stores x/y in abInt/acInt and background in aaInt"
+			role.Source = "original JAR retains raw 12, stores x/y in abInt/acInt and background in aaInt, then clears it when the quota reaches zero"
 			return role, true
 		case id == 30:
 			role.Name = "breakable wall"
@@ -326,8 +326,8 @@ func KnownRole(layer Layer, id RawID) (IDRole, bool) {
 			role.Source = "i.java lVoid(41) stores bIntArrArr value in aHInt, then adds aHInt to aZInt"
 			return role, true
 		case id == 42:
-			role.Name = "special pickup raw 42"
-			role.Source = "i.java stage init calls iVoid for raw 42; object update calls lVoid(42), pickup sets pBoolean and bmInt=11"
+			role.Name = "compass"
+			role.Source = "i.java lVoid(42) selects textures[29][0] from gen3.f chunk 1, then sets pBoolean and bmInt=11"
 			return role, true
 		case id == 43:
 			role.Name = "red snake"
@@ -382,8 +382,8 @@ func KnownRole(layer Layer, id RawID) (IDRole, bool) {
 			role.Source = "i.java render groups foreground raw 14/33; enemy-gate scan clears its high state when a matching raw17 group reaches zero"
 			return role, true
 		case 17:
-			role.Name = "enemy gate trigger"
-			role.Source = "i.java foreground raw 17 groups enemy counters by background state, then opens same-group raw 7 doors when the counter reaches zero"
+			role.Name = "enemy gate group marker"
+			role.Source = "i.java foreground raw 17 groups enemies, doors, and containers by background state; foreground raw 26 is the player trigger"
 			return role, true
 		case 20, 21, 22, 23, 24, 25:
 			role.Name = "animated foreground set"

@@ -1,0 +1,1327 @@
+[
+  {
+    "id": 0,
+    "commands": [
+      {
+        "opcode": 1,
+        "name": "camera",
+        "x": 7,
+        "y": 7,
+        "duration": 20
+      },
+      {
+        "opcode": 25,
+        "name": "set_foreground",
+        "x": 8,
+        "y": 7,
+        "value": 26
+      },
+      {
+        "opcode": 6,
+        "name": "wait",
+        "duration": 10
+      },
+      {
+        "opcode": 1,
+        "name": "camera",
+        "x": 11,
+        "y": 9,
+        "duration": 30
+      },
+      {
+        "opcode": 6,
+        "name": "wait",
+        "duration": 10
+      },
+      {
+        "opcode": 1,
+        "name": "camera",
+        "x": 11,
+        "y": 7,
+        "duration": 30
+      },
+      {
+        "opcode": 6,
+        "name": "wait",
+        "duration": 10
+      }
+    ],
+    "rawLength": 45
+  },
+  {
+    "id": 1,
+    "commands": [
+      {
+        "opcode": 1,
+        "name": "camera",
+        "x": 29,
+        "y": 5,
+        "duration": 30
+      },
+      {
+        "opcode": 6,
+        "name": "wait",
+        "duration": 20
+      }
+    ],
+    "rawLength": 14
+  },
+  {
+    "id": 2,
+    "commands": [
+      {
+        "opcode": 1,
+        "name": "camera",
+        "x": 22,
+        "y": 16,
+        "duration": 50
+      }
+    ],
+    "rawLength": 9
+  },
+  {
+    "id": 5,
+    "commands": [
+      {
+        "opcode": 1,
+        "name": "camera",
+        "x": 21,
+        "y": 14,
+        "duration": 30
+      },
+      {
+        "opcode": 6,
+        "name": "wait",
+        "duration": 5
+      },
+      {
+        "opcode": 26,
+        "name": "set_object_state",
+        "x": 21,
+        "y": 15,
+        "value": 0
+      },
+      {
+        "opcode": 6,
+        "name": "wait",
+        "duration": 20
+      },
+      {
+        "opcode": 1,
+        "name": "camera",
+        "x": 26,
+        "y": 16,
+        "duration": 30
+      },
+      {
+        "opcode": 6,
+        "name": "wait",
+        "duration": 20
+      },
+      {
+        "opcode": 1,
+        "name": "camera",
+        "x": 17,
+        "y": 17,
+        "duration": 30
+      },
+      {
+        "opcode": 6,
+        "name": "wait",
+        "duration": 10
+      },
+      {
+        "opcode": 25,
+        "name": "set_foreground",
+        "x": 17,
+        "y": 17,
+        "value": 26
+      }
+    ],
+    "rawLength": 59
+  },
+  {
+    "id": 32,
+    "commands": [
+      {
+        "opcode": 6,
+        "name": "wait",
+        "duration": 30
+      },
+      {
+        "opcode": 1,
+        "name": "camera",
+        "x": 8,
+        "y": 96,
+        "duration": 25
+      },
+      {
+        "opcode": 6,
+        "name": "wait",
+        "duration": 60
+      }
+    ],
+    "rawLength": 19
+  },
+  {
+    "id": 29,
+    "sprites": [
+      0,
+      2,
+      1
+    ],
+    "commands": [
+      {
+        "opcode": 1,
+        "name": "camera",
+        "x": 6,
+        "y": 4,
+        "duration": 5
+      },
+      {
+        "opcode": 11,
+        "name": "portrait_face",
+        "frame": 2,
+        "sprite": 2
+      },
+      {
+        "opcode": 12,
+        "name": "portrait_position",
+        "x": 17,
+        "y": 50
+      },
+      {
+        "opcode": 2,
+        "name": "text_bubble",
+        "y": 90,
+        "side": 2,
+        "text": "12"
+      },
+      {
+        "opcode": 11,
+        "name": "portrait_face",
+        "frame": 1,
+        "sprite": 2
+      },
+      {
+        "opcode": 2,
+        "name": "text_bubble",
+        "y": 90,
+        "side": 1,
+        "text": "13"
+      },
+      {
+        "opcode": 11,
+        "name": "portrait_face",
+        "frame": 3,
+        "sprite": 2
+      },
+      {
+        "opcode": 16,
+        "name": "portrait_mark",
+        "duration": 3,
+        "frame": 3
+      },
+      {
+        "opcode": 2,
+        "name": "text_bubble",
+        "y": 90,
+        "side": 1,
+        "text": "14"
+      }
+    ],
+    "rawLength": 63
+  },
+  {
+    "id": 10,
+    "sprites": [
+      0,
+      2
+    ],
+    "commands": [
+      {
+        "opcode": 1,
+        "name": "camera",
+        "x": 31,
+        "y": 6,
+        "duration": 5
+      },
+      {
+        "opcode": 11,
+        "name": "portrait_face",
+        "frame": 7,
+        "sprite": 2
+      },
+      {
+        "opcode": 12,
+        "name": "portrait_position",
+        "x": 57,
+        "y": 50
+      },
+      {
+        "opcode": 2,
+        "name": "text_bubble",
+        "y": 90,
+        "side": 2,
+        "text": "0"
+      },
+      {
+        "opcode": 10,
+        "name": "move_player",
+        "value": 4
+      },
+      {
+        "opcode": 25,
+        "name": "set_foreground",
+        "x": 31,
+        "y": 7,
+        "value": 2560
+      }
+    ],
+    "rawLength": 39
+  },
+  {
+    "id": 11,
+    "commands": [
+      {
+        "opcode": 27,
+        "name": "text_bottom",
+        "text": "19"
+      },
+      {
+        "opcode": 25,
+        "name": "set_foreground",
+        "x": 31,
+        "y": 7,
+        "value": 65535
+      }
+    ],
+    "rawLength": 14
+  },
+  {
+    "id": 13,
+    "sprites": [
+      0,
+      2
+    ],
+    "commands": [
+      {
+        "opcode": 1,
+        "name": "camera",
+        "x": 38,
+        "y": 7,
+        "duration": 20
+      },
+      {
+        "opcode": 27,
+        "name": "text_bottom",
+        "text": "1"
+      },
+      {
+        "opcode": 10,
+        "name": "move_player",
+        "value": 1
+      },
+      {
+        "opcode": 10,
+        "name": "move_player",
+        "value": 1
+      },
+      {
+        "opcode": 10,
+        "name": "move_player",
+        "value": 2
+      },
+      {
+        "opcode": 10,
+        "name": "move_player",
+        "value": 2
+      },
+      {
+        "opcode": 10,
+        "name": "move_player",
+        "value": 2
+      },
+      {
+        "opcode": 1,
+        "name": "camera",
+        "x": 40,
+        "y": 8,
+        "duration": 20
+      },
+      {
+        "opcode": 25,
+        "name": "set_foreground",
+        "x": 42,
+        "y": 8,
+        "value": 543
+      },
+      {
+        "opcode": 27,
+        "name": "text_bottom",
+        "text": "2"
+      },
+      {
+        "opcode": 27,
+        "name": "text_bottom",
+        "text": "3"
+      },
+      {
+        "opcode": 25,
+        "name": "set_foreground",
+        "x": 42,
+        "y": 8,
+        "value": 65535
+      },
+      {
+        "opcode": 25,
+        "name": "set_foreground",
+        "x": 36,
+        "y": 6,
+        "value": 287
+      },
+      {
+        "opcode": 1,
+        "name": "camera",
+        "x": 37,
+        "y": 7,
+        "duration": 20
+      },
+      {
+        "opcode": 27,
+        "name": "text_bottom",
+        "text": "4"
+      },
+      {
+        "opcode": 11,
+        "name": "portrait_face",
+        "frame": 1,
+        "sprite": 2
+      },
+      {
+        "opcode": 25,
+        "name": "set_foreground",
+        "x": 40,
+        "y": 7,
+        "value": 65535
+      }
+    ],
+    "rawLength": 86
+  },
+  {
+    "id": 15,
+    "commands": [
+      {
+        "opcode": 25,
+        "name": "set_foreground",
+        "x": 37,
+        "y": 7,
+        "value": 65535
+      }
+    ],
+    "rawLength": 9
+  },
+  {
+    "id": 16,
+    "commands": [
+      {
+        "opcode": 0,
+        "name": "parallel",
+        "commands": [
+          {
+            "opcode": 10,
+            "name": "move_player",
+            "value": 4
+          },
+          {
+            "opcode": 27,
+            "name": "text_bottom",
+            "text": "5"
+          }
+        ]
+      },
+      {
+        "opcode": 10,
+        "name": "move_player",
+        "value": 2
+      },
+      {
+        "opcode": 10,
+        "name": "move_player",
+        "value": 1
+      },
+      {
+        "opcode": 10,
+        "name": "move_player",
+        "value": 1
+      },
+      {
+        "opcode": 10,
+        "name": "move_player",
+        "value": 2
+      },
+      {
+        "opcode": 10,
+        "name": "move_player",
+        "value": 2
+      },
+      {
+        "opcode": 10,
+        "name": "move_player",
+        "value": 2
+      },
+      {
+        "opcode": 1,
+        "name": "camera",
+        "x": 50,
+        "y": 8,
+        "duration": 10
+      },
+      {
+        "opcode": 27,
+        "name": "text_bottom",
+        "text": "6"
+      },
+      {
+        "opcode": 0,
+        "name": "parallel",
+        "commands": [
+          {
+            "opcode": 27,
+            "name": "text_bottom",
+            "text": "7"
+          },
+          {
+            "opcode": 1,
+            "name": "camera",
+            "x": 36,
+            "y": 7,
+            "duration": 50
+          }
+        ]
+      }
+    ],
+    "rawLength": 46
+  },
+  {
+    "id": 17,
+    "commands": [
+      {
+        "opcode": 27,
+        "name": "text_bottom",
+        "text": "8"
+      }
+    ],
+    "rawLength": 6
+  },
+  {
+    "id": 28,
+    "sprites": [
+      0,
+      2,
+      1
+    ],
+    "commands": [
+      {
+        "opcode": 10,
+        "name": "move_player",
+        "value": 2
+      },
+      {
+        "opcode": 10,
+        "name": "move_player",
+        "value": 2
+      },
+      {
+        "opcode": 10,
+        "name": "move_player",
+        "value": 2
+      },
+      {
+        "opcode": 10,
+        "name": "move_player",
+        "value": 2
+      },
+      {
+        "opcode": 10,
+        "name": "move_player",
+        "value": 2
+      },
+      {
+        "opcode": 1,
+        "name": "camera",
+        "x": 62,
+        "y": 3,
+        "duration": 55
+      },
+      {
+        "opcode": 11,
+        "name": "portrait_face",
+        "frame": 2,
+        "sprite": 2
+      },
+      {
+        "opcode": 12,
+        "name": "portrait_position",
+        "x": 17,
+        "y": 50
+      },
+      {
+        "opcode": 16,
+        "name": "portrait_mark",
+        "duration": 3,
+        "frame": 2
+      },
+      {
+        "opcode": 2,
+        "name": "text_bubble",
+        "y": 90,
+        "side": 1,
+        "text": "9"
+      },
+      {
+        "opcode": 15,
+        "name": "portrait_hide"
+      },
+      {
+        "opcode": 10,
+        "name": "move_player",
+        "value": 1
+      },
+      {
+        "opcode": 10,
+        "name": "move_player",
+        "value": 4
+      },
+      {
+        "opcode": 10,
+        "name": "move_player",
+        "value": 1
+      },
+      {
+        "opcode": 10,
+        "name": "move_player",
+        "value": 1
+      },
+      {
+        "opcode": 10,
+        "name": "move_player",
+        "value": 1
+      },
+      {
+        "opcode": 10,
+        "name": "move_player",
+        "value": 4
+      },
+      {
+        "opcode": 10,
+        "name": "move_player",
+        "value": 1
+      },
+      {
+        "opcode": 1,
+        "name": "camera",
+        "x": 60,
+        "y": 1,
+        "duration": 55
+      },
+      {
+        "opcode": 11,
+        "name": "portrait_face",
+        "frame": 0,
+        "sprite": 2
+      },
+      {
+        "opcode": 12,
+        "name": "portrait_position",
+        "x": 17,
+        "y": 50
+      },
+      {
+        "opcode": 18,
+        "name": "flash",
+        "duration": 3,
+        "color": 16777215
+      },
+      {
+        "opcode": 16,
+        "name": "portrait_mark",
+        "duration": 3,
+        "frame": 1
+      },
+      {
+        "opcode": 2,
+        "name": "text_bubble",
+        "y": 230,
+        "side": 2,
+        "text": "10"
+      },
+      {
+        "opcode": 17,
+        "name": "portrait_mark_temporary",
+        "duration": 1,
+        "frame": 1
+      },
+      {
+        "opcode": 11,
+        "name": "portrait_face",
+        "frame": 3,
+        "sprite": 2
+      },
+      {
+        "opcode": 2,
+        "name": "text_bubble",
+        "y": 230,
+        "side": 2,
+        "text": "11"
+      },
+      {
+        "opcode": 15,
+        "name": "portrait_hide"
+      },
+      {
+        "opcode": 6,
+        "name": "wait",
+        "duration": 30
+      },
+      {
+        "opcode": 10,
+        "name": "move_player",
+        "value": 2
+      },
+      {
+        "opcode": 6,
+        "name": "wait",
+        "duration": 70
+      }
+    ],
+    "rawLength": 125
+  },
+  {
+    "id": 20,
+    "commands": [
+      {
+        "opcode": 27,
+        "name": "text_bottom",
+        "text": "15"
+      },
+      {
+        "opcode": 27,
+        "name": "text_bottom",
+        "text": "16"
+      }
+    ],
+    "rawLength": 12
+  },
+  {
+    "id": 30,
+    "sprites": [
+      0,
+      2,
+      1
+    ],
+    "commands": [
+      {
+        "opcode": 1,
+        "name": "camera",
+        "x": 6,
+        "y": 17,
+        "duration": 5
+      },
+      {
+        "opcode": 11,
+        "name": "portrait_face",
+        "frame": 2,
+        "sprite": 2
+      },
+      {
+        "opcode": 12,
+        "name": "portrait_position",
+        "x": 17,
+        "y": 50
+      },
+      {
+        "opcode": 16,
+        "name": "portrait_mark",
+        "duration": 2,
+        "frame": 1
+      },
+      {
+        "opcode": 2,
+        "name": "text_bubble",
+        "y": 90,
+        "side": 1,
+        "text": "17"
+      },
+      {
+        "opcode": 11,
+        "name": "portrait_face",
+        "frame": 3,
+        "sprite": 2
+      },
+      {
+        "opcode": 2,
+        "name": "text_bubble",
+        "y": 90,
+        "side": 2,
+        "text": "18"
+      }
+    ],
+    "rawLength": 50
+  },
+  {
+    "id": 3,
+    "commands": [
+      {
+        "opcode": 10,
+        "name": "move_player",
+        "value": 1
+      },
+      {
+        "opcode": 1,
+        "name": "camera",
+        "x": 12,
+        "y": 42,
+        "duration": 60
+      },
+      {
+        "opcode": 6,
+        "name": "wait",
+        "duration": 20
+      }
+    ],
+    "rawLength": 16
+  },
+  {
+    "id": 6,
+    "commands": [
+      {
+        "opcode": 1,
+        "name": "camera",
+        "x": 28,
+        "y": 18,
+        "duration": 40
+      },
+      {
+        "opcode": 6,
+        "name": "wait",
+        "duration": 20
+      },
+      {
+        "opcode": 1,
+        "name": "camera",
+        "x": 26,
+        "y": 11,
+        "duration": 40
+      },
+      {
+        "opcode": 6,
+        "name": "wait",
+        "duration": 20
+      }
+    ],
+    "rawLength": 26
+  },
+  {
+    "id": 4,
+    "commands": [
+      {
+        "opcode": 1,
+        "name": "camera",
+        "x": 13,
+        "y": 16,
+        "duration": 30
+      },
+      {
+        "opcode": 6,
+        "name": "wait",
+        "duration": 20
+      },
+      {
+        "opcode": 1,
+        "name": "camera",
+        "x": 19,
+        "y": 16,
+        "duration": 30
+      }
+    ],
+    "rawLength": 21
+  },
+  {
+    "id": 19,
+    "commands": [
+      {
+        "opcode": 1,
+        "name": "camera",
+        "x": 7,
+        "y": 42,
+        "duration": 20
+      },
+      {
+        "opcode": 6,
+        "name": "wait",
+        "duration": 20
+      },
+      {
+        "opcode": 1,
+        "name": "camera",
+        "x": 13,
+        "y": 56,
+        "duration": 45
+      },
+      {
+        "opcode": 6,
+        "name": "wait",
+        "duration": 20
+      }
+    ],
+    "rawLength": 26
+  },
+  {
+    "id": 22,
+    "sprites": [
+      0,
+      2,
+      1
+    ],
+    "commands": [
+      {
+        "opcode": 27,
+        "name": "text_bottom",
+        "text": "20"
+      },
+      {
+        "opcode": 27,
+        "name": "text_bottom",
+        "text": "21"
+      },
+      {
+        "opcode": 1,
+        "name": "camera",
+        "x": 26,
+        "y": 17,
+        "duration": 10
+      },
+      {
+        "opcode": 11,
+        "name": "portrait_face",
+        "frame": 2,
+        "sprite": 2
+      },
+      {
+        "opcode": 12,
+        "name": "portrait_position",
+        "x": 17,
+        "y": 50
+      },
+      {
+        "opcode": 16,
+        "name": "portrait_mark",
+        "duration": 2,
+        "frame": 1
+      },
+      {
+        "opcode": 2,
+        "name": "text_bubble",
+        "y": 90,
+        "side": 2,
+        "text": "22"
+      },
+      {
+        "opcode": 17,
+        "name": "portrait_mark_temporary",
+        "duration": 1,
+        "frame": 1
+      },
+      {
+        "opcode": 1,
+        "name": "camera",
+        "x": 22,
+        "y": 4,
+        "duration": 40
+      },
+      {
+        "opcode": 6,
+        "name": "wait",
+        "duration": 5
+      },
+      {
+        "opcode": 11,
+        "name": "portrait_face",
+        "frame": 1,
+        "sprite": 2
+      },
+      {
+        "opcode": 6,
+        "name": "wait",
+        "duration": 20
+      }
+    ],
+    "rawLength": 73
+  },
+  {
+    "id": 23,
+    "sprites": [
+      0,
+      2
+    ],
+    "commands": [
+      {
+        "opcode": 27,
+        "name": "text_bottom",
+        "text": "23"
+      },
+      {
+        "opcode": 27,
+        "name": "text_bottom",
+        "text": "24"
+      },
+      {
+        "opcode": 1,
+        "name": "camera",
+        "x": 24,
+        "y": 24,
+        "duration": 10
+      },
+      {
+        "opcode": 11,
+        "name": "portrait_face",
+        "frame": 3,
+        "sprite": 2
+      },
+      {
+        "opcode": 12,
+        "name": "portrait_position",
+        "x": 17,
+        "y": 50
+      },
+      {
+        "opcode": 2,
+        "name": "text_bubble",
+        "y": 90,
+        "side": 2,
+        "text": "25"
+      },
+      {
+        "opcode": 1,
+        "name": "camera",
+        "x": 17,
+        "y": 14,
+        "duration": 30
+      },
+      {
+        "opcode": 6,
+        "name": "wait",
+        "duration": 5
+      },
+      {
+        "opcode": 11,
+        "name": "portrait_face",
+        "frame": 1,
+        "sprite": 2
+      },
+      {
+        "opcode": 6,
+        "name": "wait",
+        "duration": 20
+      }
+    ],
+    "rawLength": 63
+  },
+  {
+    "id": 24,
+    "commands": [
+      {
+        "opcode": 27,
+        "name": "text_bottom",
+        "text": "26"
+      },
+      {
+        "opcode": 27,
+        "name": "text_bottom",
+        "text": "27"
+      }
+    ],
+    "rawLength": 12
+  },
+  {
+    "id": 25,
+    "sprites": [
+      0,
+      2,
+      1
+    ],
+    "commands": [
+      {
+        "opcode": 27,
+        "name": "text_bottom",
+        "text": "28"
+      },
+      {
+        "opcode": 27,
+        "name": "text_bottom",
+        "text": "29"
+      },
+      {
+        "opcode": 1,
+        "name": "camera",
+        "x": 32,
+        "y": 21,
+        "duration": 10
+      },
+      {
+        "opcode": 11,
+        "name": "portrait_face",
+        "frame": 2,
+        "sprite": 2
+      },
+      {
+        "opcode": 12,
+        "name": "portrait_position",
+        "x": 17,
+        "y": 50
+      },
+      {
+        "opcode": 16,
+        "name": "portrait_mark",
+        "duration": 3,
+        "frame": 6
+      },
+      {
+        "opcode": 2,
+        "name": "text_bubble",
+        "y": 90,
+        "side": 2,
+        "text": "30"
+      },
+      {
+        "opcode": 1,
+        "name": "camera",
+        "x": 41,
+        "y": 4,
+        "duration": 45
+      },
+      {
+        "opcode": 17,
+        "name": "portrait_mark_temporary",
+        "duration": 1,
+        "frame": 6
+      },
+      {
+        "opcode": 11,
+        "name": "portrait_face",
+        "frame": 1,
+        "sprite": 2
+      },
+      {
+        "opcode": 6,
+        "name": "wait",
+        "duration": 10
+      },
+      {
+        "opcode": 2,
+        "name": "text_bubble",
+        "y": 90,
+        "side": 2,
+        "text": "31"
+      },
+      {
+        "opcode": 6,
+        "name": "wait",
+        "duration": 25
+      }
+    ],
+    "rawLength": 81
+  },
+  {
+    "id": 33,
+    "sprites": [
+      0,
+      2
+    ],
+    "commands": [
+      {
+        "opcode": 1,
+        "name": "camera",
+        "x": 6,
+        "y": 4,
+        "duration": 5
+      },
+      {
+        "opcode": 11,
+        "name": "portrait_face",
+        "frame": 1,
+        "sprite": 2
+      },
+      {
+        "opcode": 12,
+        "name": "portrait_position",
+        "x": 17,
+        "y": 50
+      },
+      {
+        "opcode": 2,
+        "name": "text_bubble",
+        "y": 90,
+        "side": 2,
+        "text": "32"
+      },
+      {
+        "opcode": 11,
+        "name": "portrait_face",
+        "frame": 3,
+        "sprite": 2
+      },
+      {
+        "opcode": 2,
+        "name": "text_bubble",
+        "y": 90,
+        "side": 2,
+        "text": "33"
+      }
+    ],
+    "rawLength": 44
+  },
+  {
+    "id": 34,
+    "sprites": [
+      0,
+      2,
+      1
+    ],
+    "commands": [
+      {
+        "opcode": 11,
+        "name": "portrait_face",
+        "frame": 1,
+        "sprite": 2
+      },
+      {
+        "opcode": 12,
+        "name": "portrait_position",
+        "x": 17,
+        "y": 50
+      },
+      {
+        "opcode": 2,
+        "name": "text_bubble",
+        "y": 90,
+        "side": 2,
+        "text": "34"
+      },
+      {
+        "opcode": 11,
+        "name": "portrait_face",
+        "frame": 3,
+        "sprite": 2
+      },
+      {
+        "opcode": 18,
+        "name": "flash",
+        "duration": 1,
+        "color": 16777215
+      },
+      {
+        "opcode": 16,
+        "name": "portrait_mark",
+        "duration": 3,
+        "frame": 0
+      },
+      {
+        "opcode": 2,
+        "name": "text_bubble",
+        "y": 90,
+        "side": 2,
+        "text": "35"
+      },
+      {
+        "opcode": 11,
+        "name": "portrait_face",
+        "frame": 0,
+        "sprite": 2
+      },
+      {
+        "opcode": 16,
+        "name": "portrait_mark",
+        "duration": 3,
+        "frame": 4
+      },
+      {
+        "opcode": 2,
+        "name": "text_bubble",
+        "y": 90,
+        "side": 2,
+        "text": "36"
+      }
+    ],
+    "rawLength": 65
+  },
+  {
+    "id": 35,
+    "sprites": [
+      0,
+      2,
+      1
+    ],
+    "commands": [
+      {
+        "opcode": 1,
+        "name": "camera",
+        "x": 8,
+        "y": 15,
+        "duration": 5
+      },
+      {
+        "opcode": 11,
+        "name": "portrait_face",
+        "frame": 3,
+        "sprite": 2
+      },
+      {
+        "opcode": 12,
+        "name": "portrait_position",
+        "x": 17,
+        "y": 50
+      },
+      {
+        "opcode": 2,
+        "name": "text_bubble",
+        "y": 90,
+        "side": 2,
+        "text": "37"
+      },
+      {
+        "opcode": 11,
+        "name": "portrait_face",
+        "frame": 0,
+        "sprite": 2
+      },
+      {
+        "opcode": 0,
+        "name": "parallel",
+        "commands": [
+          {
+            "opcode": 18,
+            "name": "flash",
+            "duration": 3,
+            "color": 16777215
+          },
+          {
+            "opcode": 16,
+            "name": "portrait_mark",
+            "duration": 3,
+            "frame": 4
+          }
+        ]
+      },
+      {
+        "opcode": 2,
+        "name": "text_bubble",
+        "y": 90,
+        "side": 2,
+        "text": "38"
+      }
+    ],
+    "rawLength": 57
+  }
+]

@@ -55,6 +55,7 @@ Important distinction from a pure Boulder Dash clone:
 Original keypad/control behavior to preserve:
 
 - Move: directional pad or numeric keypad `2/4/6/8`.
+  - Pressing a direction different from the current facing turns in place first. Tap again after the turn, or keep holding through the source `18 -> 12 -> 6 -> 0` turn cadence, to move.
 - Action: `5`.
   - Uses the currently available action tool in the facing direction.
   - Magic/Mystic Hammer attacks or breaks eligible blocks.
@@ -123,8 +124,8 @@ Use this as the first acceptance checklist before adding more levels or art. If 
 | Checkpoints | High | Activate checkpoint, recall with life cost, and reset room/checkpoint state. | Required by level 1 or 2. |
 | Compass | Medium-high | Points toward magical checkpoint/progression marker. | Required as a HUD aid, exact art can be revised later. |
 | Mystic Hammer | High | Breaks eligible blocks and stuns/attacks enemies via action button. | Required by level 3 or 4. |
-| Mystic Hook / grapple | Medium-high | Pulls or grabs objects/items in facing direction; exact target list and range need footage verification. | Required by level 4. |
-| Freeze / ice tool | Medium | Later-game tool for ice/secret routing; exact mechanics still uncertain. | Optional for five-level Angkor slice. |
+| Mystic Hook / grapple | High | Bavaria Stage 3 raw `27` chest reward; pulls source-approved objects 2-3 horizontal cells away. | Required by the authored Angkor Stage 5 revisit. |
+| Freeze / ice tool | High | Siberia Stage 6 raw `26`; freezes moving snakes/center gems into physical raw `9` objects and thaws them. | Required by the Angkor Stage 8 secret route. |
 | Health and armor | High | Damage drains energy/health; upgrades improve survivability. | Required. |
 | Lives | High | Death/recall consumes lives; game-over behavior varies by version. | Required. |
 | Shop/upgrades | Medium-high | Purple diamonds buy armor/health or similar survivability upgrades. | Required in compact form. |
@@ -207,7 +208,7 @@ Expected remake requirements:
 
 ### Mystic Hook / Grappling Hook
 
-- Available in Bavaria Stage 3 according to guide comments and Angkor Stage 5 notes.
+- Decoded `world1/stage02` places raw `27` at `(24,25)` under foreground raw `14`, confirming the Bavaria Stage 3 chest. Angkor Stage 5 contains no raw `27`.
 - Used to grab/pull otherwise unreachable items or objects.
 - Angkor Wat Stage 5 and secret stages require or recommend it for full collection.
 - The hook is part of the reason the original has backtracking and is not just linear level solving.
@@ -367,7 +368,7 @@ Minimum remake implementation:
 
 ## Five-Level Remake Target
 
-The user's target is five polished levels, not all 40 original stages. The five-level pack should compress original progression rather than invent a Boulder Dash-only cave game.
+This was the early five-level target before the maintained runtime expanded to the complete Angkor stage-data slice. It remains useful as a compact design reference, but it no longer describes the current implementation boundary.
 
 Recommended five-level structure:
 
@@ -392,7 +393,7 @@ Recommended five-level structure:
 
 The maintained implementation is `cmd/originalrush` plus `internal/original` and `internal/originalgame`. It reads decoded original data and extracted source resources directly.
 
-The current playable slice is Angkor `stage00` through `stage04`. `AGENTS.md` records the source-derived rules and named route regressions that are already implemented. This broader research document remains useful for feature discovery, but it is not evidence that an untested behavior matches the original.
+The current playable slice covers all 14 stages packed in Angkor World 0. Stages 1-9 include both raw-`28` branches, Freeze Hammer puzzles, Great Anaconda, and the Angkor seal. Secret stages `stage09..12` follow the decoded type-1 map links and have full source-cadence route tests. The separate `stage13` tutorial runs for new progress and implements its `demo.f` camera/movement/dialog chain, Compass pickup, checkpoint reset/recall lessons, portraits, and final seal sequence. `AGENTS.md` records the source-derived rules and named regressions. This broader research document remains useful for feature discovery, but it is not evidence that an untested behavior matches the original.
 
 ## Verification Still Needed
 
@@ -401,9 +402,9 @@ Before claiming high fidelity:
 - Capture or locate footage for each original world at native aspect ratios.
 - Record exact HUD layout and counter names.
 - Verify tool acquisition stages and exact item names across versions.
-- Verify hook candidates and consequences again when later-world stages introduce IDs not exercised by the first five Angkor stages.
+- Verify hook candidates and consequences again when Bavaria/Tibet introduce IDs not exercised by Angkor.
 - Verify hammer targets again when later-world stages introduce new breakable classes or enemies.
 - Verify health damage numbers by hazard/enemy.
 - Verify checkpoint reset and life-cost semantics.
 - Verify shop item names, costs, and upgrade effects.
-- Verify boss mechanics for Angkor, Bavaria, and Tibet/Siberia.
+- Verify boss mechanics for Bavaria and Tibet/Siberia; Angkor's Great Anaconda is now source-mapped and route-tested.

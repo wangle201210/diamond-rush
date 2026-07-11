@@ -127,6 +127,40 @@ func drawSourcePanelLabel(dst *ebiten.Image, font *bitmapFont, text string, cent
 	font.drawText(dst, text, centerX, panelY+10, true, color.White)
 }
 
+func drawSourcePanelLines(dst *ebiten.Image, font *bitmapFont, lines []string, centerX, panelY int) {
+	if font == nil || len(lines) == 0 {
+		return
+	}
+	width := 0
+	for _, line := range lines {
+		width = max(width, font.stringWidth(line))
+	}
+	lineHeight := font.meta.FontHeight + 2
+	x := centerX - width/2 - 5
+	y := panelY - 5
+	w := width + 10
+	h := lineHeight*len(lines) + 8
+	drawRoundedRect(dst, x, y, w, h, 5, color.RGBA{0xce, 0x9b, 0x00, 0xff})
+	drawRoundedRect(dst, x+1, y+1, w-2, h-2, 4, color.RGBA{0x0c, 0x2f, 0x39, 0xff})
+	for index, line := range lines {
+		font.drawText(dst, line, centerX, panelY+8+index*lineHeight, true, color.White)
+	}
+}
+
+func drawControlKeycap(dst *ebiten.Image, font *bitmapFont, label string, centerX, top int) {
+	if dst == nil || font == nil || label == "" {
+		return
+	}
+	const height = 14
+	width := font.stringWidth(label) + 8
+	bounds := dst.Bounds()
+	x := clamp(centerX-width/2, bounds.Min.X+1, bounds.Max.X-width-1)
+	y := clamp(top, bounds.Min.Y+1, bounds.Max.Y-height-1)
+	drawRect(dst, x, y, width, height, color.RGBA{0xce, 0x9b, 0x00, 0xff})
+	drawRect(dst, x+1, y+1, width-2, height-2, color.RGBA{0x0c, 0x2f, 0x39, 0xff})
+	font.drawText(dst, label, x+width/2, y+sourceFontYOffset, true, color.White)
+}
+
 func drawRoundedRect(dst *ebiten.Image, x, y, width, height, radius int, fill color.Color) {
 	if width <= 0 || height <= 0 || radius <= 0 {
 		return

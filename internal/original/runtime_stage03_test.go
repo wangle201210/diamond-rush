@@ -2,6 +2,7 @@ package original
 
 import (
 	"fmt"
+	"slices"
 	"testing"
 )
 
@@ -12,9 +13,15 @@ func TestRuntimeStage03CanBeCompletedAtSourceCadence(t *testing.T) {
 		t.Fatal(err)
 	}
 	sourceTick := 0
+	demoPrompts := make([]int, 0, 3)
 	tickUpdate := func() {
 		sourceTick++
 		rt.TickSourceFrame(8, sourceTick, 0)
+		if prompt, ok := rt.TutorialPrompt(); ok {
+			if rt.AdvanceTutorialPrompt() {
+				demoPrompts = append(demoPrompts, prompt.TextIndex)
+			}
+		}
 		rt.TickBreakables()
 		rt.TickForegroundTriggers()
 		if rt.PlayerMotion.Remaining > 0 {
@@ -22,7 +29,7 @@ func TestRuntimeStage03CanBeCompletedAtSourceCadence(t *testing.T) {
 		}
 	}
 	busy := func() bool {
-		return rt.PlayerMotion.Remaining > 0 || rt.HurtTicks > 0 || rt.ChestOpening || rt.LockOpening || rt.Hammering || rt.Hooking || rt.RecallPending
+		return rt.PlayerMotion.Remaining > 0 || rt.HurtTicks > 0 || rt.ChestOpening || rt.LockOpening || rt.Hammering || rt.Hooking || rt.RecallPending || rt.EnemyGateDemoActive || rt.TutorialScriptActive
 	}
 	move := func(label string, dx, dy, count int) {
 		t.Helper()
@@ -276,5 +283,8 @@ func TestRuntimeStage03CanBeCompletedAtSourceCadence(t *testing.T) {
 	move("enter Stage 4 goal", 1, 0, 4)
 	if rt.Player != (Point{X: 37, Y: 5}) || !rt.ReachedGoal {
 		t.Fatalf("Stage 4 finish player=%+v reached=%v tick=%d", rt.Player, rt.ReachedGoal, sourceTick)
+	}
+	if !slices.Equal(demoPrompts, []int{20, 21, 22}) {
+		t.Fatalf("Stage 4 mystic-mallet prompts=%v, want [20 21 22]", demoPrompts)
 	}
 }

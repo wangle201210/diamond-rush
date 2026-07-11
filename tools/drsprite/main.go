@@ -107,7 +107,25 @@ type animationFrame struct {
 func main() {
 	in := flag.String("in", "/Users/wanna/mine/github/wangle201210/DiamondRushSource/src/main/resources", "resource directory containing .f files")
 	out := flag.String("out", "decoded/sprites", "output directory")
+	demoSprites := flag.String("demo-sprites", "", "optional demoSpr.bin file to export instead of .f resources")
 	flag.Parse()
+	if *demoSprites != "" {
+		if err := os.MkdirAll(*out, 0o755); err != nil {
+			fatal(err)
+		}
+		infos, err := exportDemoSpriteFile(*demoSprites, *out)
+		if err != nil {
+			fatal(err)
+		}
+		if err := writeJSON(filepath.Join(*out, "manifest.json"), infos); err != nil {
+			fatal(err)
+		}
+		if err := writeHTMLIndex(filepath.Join(*out, "index.html"), infos); err != nil {
+			fatal(err)
+		}
+		fmt.Printf("exported %d demo sprites into %s\n", len(infos), *out)
+		return
+	}
 
 	paths, err := filepath.Glob(filepath.Join(*in, "*.f"))
 	if err != nil {
@@ -191,54 +209,107 @@ func exportFile(path, outRoot string) ([]chunkInfo, error) {
 			continue
 		}
 		prefix := fmt.Sprintf("chunk%02d", i)
-		m := &meta{
-			Modules:       len(sp.modules),
-			Frames:        len(sp.frameCounts),
-			Animations:    len(sp.animationCounts),
-			Palettes:      len(sp.palettes),
-			Colors:        sp.colorsPerPalette,
-			DataFormat:    sp.dataFormat,
-			AnimationJSON: prefix + "-animations.json",
-		}
-		if len(sp.modules) > 0 && sp.hasModuleData {
-			name := prefix + "-modules.png"
-			if err := writePNG(filepath.Join(outDir, name), sp.renderModuleSheet(0)); err != nil {
-				return nil, err
-			}
-			m.ModuleSheet = name
-		}
-		if len(sp.frameCounts) > 0 && sp.hasModuleData {
-			name := prefix + "-frames.png"
-			if err := writePNG(filepath.Join(outDir, name), sp.renderFrameSheet(0)); err != nil {
-				return nil, err
-			}
-			m.FrameSheet = name
-		}
-		for palette := 1; palette < len(sp.palettes); palette++ {
-			sheets := paletteSheet{Palette: palette}
-			if len(sp.modules) > 0 && sp.hasModuleData {
-				name := fmt.Sprintf("%s-palette%02d-modules.png", prefix, palette)
-				if err := writePNG(filepath.Join(outDir, name), sp.renderModuleSheet(palette)); err != nil {
-					return nil, err
-				}
-				sheets.ModuleSheet = name
-			}
-			if len(sp.frameCounts) > 0 && sp.hasModuleData {
-				name := fmt.Sprintf("%s-palette%02d-frames.png", prefix, palette)
-				if err := writePNG(filepath.Join(outDir, name), sp.renderFrameSheet(palette)); err != nil {
-					return nil, err
-				}
-				sheets.FrameSheet = name
-			}
-			m.PaletteSheets = append(m.PaletteSheets, sheets)
-		}
-		if err := writeJSON(filepath.Join(outDir, m.AnimationJSON), sp.animationSummary()); err != nil {
+		m, err := writeSpriteOutputs(sp, outDir, prefix)
+		if err != nil {
 			return nil, err
 		}
 		info.Sprite = m
 		infos = append(infos, info)
 	}
 	return infos, nil
+}
+
+func exportDemoSpriteFile(path, outRoot string) ([]chunkInfo, error) {
+	data, err := os.ReadFile(filepath.Clean(path))
+	if err != nil {
+		return nil, err
+	}
+	if len(data) < 2 {
+		return nil, fmt.Errorf("demo sprite resource is truncated: %s", path)
+	}
+	count := le16(data[:2])
+	ptr := 2
+	outDir := filepath.Join(outRoot, strings.TrimSuffix(filepath.Base(path), filepath.Ext(path)))
+	if err := os.MkdirAll(outDir, 0o755); err != nil {
+		return nil, err
+	}
+	infos := make([]chunkInfo, 0, count)
+	for entry := 0; entry < count; entry++ {
+		if ptr+6 > len(data) {
+			return nil, fmt.Errorf("demo sprite header %d exceeds file", entry)
+		}
+		id := le16(data[ptr : ptr+2])
+		length := le32(data[ptr+2 : ptr+6])
+		start := ptr + 6
+		end := start + length
+		if length <= 0 || end > len(data) {
+			return nil, fmt.Errorf("demo sprite %d has invalid range", id)
+		}
+		info := chunkInfo{Index: id, Offset: start, Length: length, File: filepath.Base(path)}
+		sp, err := parseSprite(data[start:end])
+		if err != nil {
+			info.Error = err.Error()
+			infos = append(infos, info)
+			ptr = end
+			continue
+		}
+		m, err := writeSpriteOutputs(sp, outDir, fmt.Sprintf("sprite%02d", id))
+		if err != nil {
+			return nil, err
+		}
+		info.Sprite = m
+		infos = append(infos, info)
+		ptr = end
+	}
+	return infos, nil
+}
+
+func writeSpriteOutputs(sp *sprite, outDir, prefix string) (*meta, error) {
+	m := &meta{
+		Modules:       len(sp.modules),
+		Frames:        len(sp.frameCounts),
+		Animations:    len(sp.animationCounts),
+		Palettes:      len(sp.palettes),
+		Colors:        sp.colorsPerPalette,
+		DataFormat:    sp.dataFormat,
+		AnimationJSON: prefix + "-animations.json",
+	}
+	if len(sp.modules) > 0 && sp.hasModuleData {
+		name := prefix + "-modules.png"
+		if err := writePNG(filepath.Join(outDir, name), sp.renderModuleSheet(0)); err != nil {
+			return nil, err
+		}
+		m.ModuleSheet = name
+	}
+	if len(sp.frameCounts) > 0 && sp.hasModuleData {
+		name := prefix + "-frames.png"
+		if err := writePNG(filepath.Join(outDir, name), sp.renderFrameSheet(0)); err != nil {
+			return nil, err
+		}
+		m.FrameSheet = name
+	}
+	for palette := 1; palette < len(sp.palettes); palette++ {
+		sheets := paletteSheet{Palette: palette}
+		if len(sp.modules) > 0 && sp.hasModuleData {
+			name := fmt.Sprintf("%s-palette%02d-modules.png", prefix, palette)
+			if err := writePNG(filepath.Join(outDir, name), sp.renderModuleSheet(palette)); err != nil {
+				return nil, err
+			}
+			sheets.ModuleSheet = name
+		}
+		if len(sp.frameCounts) > 0 && sp.hasModuleData {
+			name := fmt.Sprintf("%s-palette%02d-frames.png", prefix, palette)
+			if err := writePNG(filepath.Join(outDir, name), sp.renderFrameSheet(palette)); err != nil {
+				return nil, err
+			}
+			sheets.FrameSheet = name
+		}
+		m.PaletteSheets = append(m.PaletteSheets, sheets)
+	}
+	if err := writeJSON(filepath.Join(outDir, m.AnimationJSON), sp.animationSummary()); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func parseSprite(data []byte) (*sprite, error) {

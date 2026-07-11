@@ -7,6 +7,7 @@ import (
 	"image/png"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -14,103 +15,172 @@ import (
 )
 
 const (
-	angkorWorldFrameSheet    = "decoded/sprites/0/chunk02-frames.png"
-	angkorBoulderFrameSheet  = "decoded/sprites/0/chunk00-frames.png"
-	angkorDiggableFrameSheet = "decoded/sprites/0/chunk01-frames.png"
-	angkorFloorSheet         = "decoded/sprites/0/chunk03-modules.png"
-	violetGemSheet           = "decoded/sprites/cm/chunk02-frames.png"
-	redDiamondSheet          = "decoded/sprites/cm/chunk02-palette01-frames.png"
-	checkpointSheet          = "decoded/sprites/cm/chunk06-frames.png"
-	quotaModules             = "decoded/sprites/cm/chunk05-modules.png"
-	quotaMetadata            = "decoded/sprites/cm/chunk05-animations.json"
-	goalSheet                = "decoded/sprites/cm/chunk00-modules.png"
-	doorModuleSheet          = "decoded/sprites/cm/chunk01-modules.png"
-	doorMetadata             = "decoded/sprites/cm/chunk01-animations.json"
-	snakeSheet               = "decoded/sprites/gen1/chunk05-frames.png"
-	snakeModuleSheet         = "decoded/sprites/gen1/chunk05-modules.png"
-	snakeMetadata            = "decoded/sprites/gen1/chunk05-animations.json"
-	redSnakeSheet            = "decoded/sprites/gen1/chunk05-palette01-frames.png"
-	redSnakeModuleSheet      = "decoded/sprites/gen1/chunk05-palette01-modules.png"
-	crawlerModules           = "decoded/sprites/gen1/chunk04-modules.png"
-	crawlerMetadata          = "decoded/sprites/gen1/chunk04-animations.json"
-	commonPickupSheet        = "decoded/sprites/gen0/chunk08-frames.png"
-	commonPickupModules      = "decoded/sprites/gen0/chunk08-modules.png"
-	commonPickupMetadata     = "decoded/sprites/gen0/chunk08-animations.json"
-	breakableSheet           = "decoded/sprites/gen0/chunk07-frames.png"
-	breakableModules         = "decoded/sprites/gen0/chunk07-modules.png"
-	breakableMetadata        = "decoded/sprites/gen0/chunk07-animations.json"
-	goldLockSheet            = "decoded/sprites/gen2/chunk08-frames.png"
-	goldLockModules          = "decoded/sprites/gen2/chunk08-modules.png"
-	goldLockMetadata         = "decoded/sprites/gen2/chunk08-animations.json"
-	silverLockSheet          = "decoded/sprites/gen2/chunk08-palette01-frames.png"
-	silverLockModules        = "decoded/sprites/gen2/chunk08-palette01-modules.png"
-	foregroundEffectSheet    = "decoded/sprites/gen0/chunk04-frames.png"
-	foregroundEffectModules  = "decoded/sprites/gen0/chunk04-modules.png"
-	foregroundEffectMetadata = "decoded/sprites/gen0/chunk04-animations.json"
-	hiddenOverlaySheet       = "decoded/sprites/gen3/chunk03-frames.png"
-	hiddenOverlayModules     = "decoded/sprites/gen3/chunk03-modules.png"
-	hiddenOverlayMetadata    = "decoded/sprites/gen3/chunk03-animations.json"
-	specialContainerSheet    = "decoded/sprites/gen2/chunk02-frames.png"
-	specialContainerModules  = "decoded/sprites/gen2/chunk02-modules.png"
-	specialContainerMetadata = "decoded/sprites/gen2/chunk02-animations.json"
-	goldKeyModules           = "decoded/sprites/gen0/chunk02-modules.png"
-	silverKeyModules         = "decoded/sprites/gen0/chunk02-palette01-modules.png"
-	keyMetadata              = "decoded/sprites/gen0/chunk02-animations.json"
-	toolModules              = "decoded/sprites/gen1/chunk09-modules.png"
-	toolMetadata             = "decoded/sprites/gen1/chunk09-animations.json"
-	worldMapIconSheet        = "decoded/sprites/ms/chunk00-frames.png"
-	worldMapIconModules      = "decoded/sprites/ms/chunk00-modules.png"
-	worldMapIconMetadata     = "decoded/sprites/ms/chunk00-animations.json"
-	worldMapGroundSheet      = "decoded/sprites/ms/chunk01-frames.png"
-	worldMapGroundModules    = "decoded/sprites/ms/chunk01-modules.png"
-	worldMapGroundMetadata   = "decoded/sprites/ms/chunk01-animations.json"
-	worldMapHeaderSheet      = "decoded/sprites/ms/chunk02-frames.png"
-	worldMapHeaderModules    = "decoded/sprites/ms/chunk02-modules.png"
-	worldMapHeaderMetadata   = "decoded/sprites/ms/chunk02-animations.json"
-	pickupEffectSheet        = "decoded/sprites/cm/chunk07-frames.png"
-	pickupEffectModules      = "decoded/sprites/cm/chunk07-modules.png"
-	pickupEffectMetadata     = "decoded/sprites/cm/chunk07-animations.json"
-	resultSparkModules       = "decoded/sprites/cm/chunk04-modules.png"
-	resultSparkMetadata      = "decoded/sprites/cm/chunk04-animations.json"
-	resultMedalModules       = "decoded/sprites/ui/chunk04-modules.png"
-	resultMedalMetadata      = "decoded/sprites/ui/chunk04-animations.json"
-	hazardEmitterSheet       = "decoded/sprites/gen0/chunk09-frames.png"
-	hazardFlameSheet         = "decoded/sprites/gen1/chunk00-frames.png"
-	hazardFlameModuleSheet   = "decoded/sprites/gen1/chunk00-modules.png"
-	hazardFlameMetadata      = "decoded/sprites/gen1/chunk00-animations.json"
-	pressureSwitchModules    = "decoded/sprites/gen2/chunk09-modules.png"
-	pressureSwitchMetadata   = "decoded/sprites/gen2/chunk09-animations.json"
-	hudSheet                 = "decoded/sprites/ui/chunk02-frames.png"
-	hudModuleSheet           = "decoded/sprites/ui/chunk02-modules.png"
-	hudMetadata              = "decoded/sprites/ui/chunk02-animations.json"
-	heroFrameSheet           = "decoded/sprites/o/chunk00-frames.png"
-	heroModuleSheet          = "decoded/sprites/o/chunk00-modules.png"
-	heroMetadata             = "decoded/sprites/o/chunk00-animations.json"
-	fontSmallSheet           = "decoded/fonts/freej2me-small.png"
-	fontSmallMetadata        = "decoded/fonts/freej2me-small.json"
-	fontMediumSheet          = "decoded/fonts/freej2me-medium.png"
-	fontMediumMetadata       = "decoded/fonts/freej2me-medium.json"
-	originalAudioDir         = "decoded/audio"
-	defaultWorldDir          = "decoded/world0"
-	resultLoadingSteps       = 12
-	resultTitleTicks         = 40
-	resultGemMinimumTicks    = 40
-	resultRedDiamondTicks    = 40
-	resultHitTicks           = 10
-	resultRetryTicks         = 10
-	stageIntroDuration       = 60
-	deathTransitionTicks     = 80
-	chestRewardTick          = 39
-	chestRewardSequence      = 13
-	chestShortRewardTick     = 23
-	chestShortRewardSequence = 6
-	sourceTPS                = 20
-	framePadding             = 2
-	frameCols                = 16
-	diggableFrameCellW       = 35
-	diggableFrameCellH       = 27
-	playfieldHeight          = 240
-	playfieldTop             = 40
+	desktopActionKeyLabel = "SPACE"
+	desktopRecallKeyLabel = "ENTER"
+	desktopSkipKeyLabel   = "S"
+
+	angkorWorldFrameSheet      = "decoded/sprites/0/chunk02-frames.png"
+	angkorBoulderFrameSheet    = "decoded/sprites/0/chunk00-frames.png"
+	angkorDiggableFrameSheet   = "decoded/sprites/0/chunk01-frames.png"
+	angkorFloorSheet           = "decoded/sprites/0/chunk03-modules.png"
+	violetGemSheet             = "decoded/sprites/cm/chunk02-frames.png"
+	redDiamondSheet            = "decoded/sprites/cm/chunk02-palette01-frames.png"
+	checkpointSheet            = "decoded/sprites/cm/chunk06-frames.png"
+	quotaModules               = "decoded/sprites/cm/chunk05-modules.png"
+	quotaMetadata              = "decoded/sprites/cm/chunk05-animations.json"
+	goalSheet                  = "decoded/sprites/cm/chunk00-modules.png"
+	doorModuleSheet            = "decoded/sprites/cm/chunk01-modules.png"
+	doorMetadata               = "decoded/sprites/cm/chunk01-animations.json"
+	snakeSheet                 = "decoded/sprites/gen1/chunk05-frames.png"
+	snakeModuleSheet           = "decoded/sprites/gen1/chunk05-modules.png"
+	snakeMetadata              = "decoded/sprites/gen1/chunk05-animations.json"
+	redSnakeSheet              = "decoded/sprites/gen1/chunk05-palette01-frames.png"
+	redSnakeModuleSheet        = "decoded/sprites/gen1/chunk05-palette01-modules.png"
+	crawlerModules             = "decoded/sprites/gen1/chunk04-modules.png"
+	crawlerMetadata            = "decoded/sprites/gen1/chunk04-animations.json"
+	commonPickupSheet          = "decoded/sprites/gen0/chunk08-frames.png"
+	commonPickupModules        = "decoded/sprites/gen0/chunk08-modules.png"
+	commonPickupMetadata       = "decoded/sprites/gen0/chunk08-animations.json"
+	frozenVioletSheet          = "decoded/sprites/gen0/chunk01-frames.png"
+	frozenVioletModules        = "decoded/sprites/gen0/chunk01-modules.png"
+	frozenVioletMetadata       = "decoded/sprites/gen0/chunk01-animations.json"
+	frozenSnakeSheet           = "decoded/sprites/gen1/chunk06-frames.png"
+	frozenSnakeModules         = "decoded/sprites/gen1/chunk06-modules.png"
+	frozenSnakeMetadata        = "decoded/sprites/gen1/chunk06-animations.json"
+	breakableSheet             = "decoded/sprites/gen0/chunk07-frames.png"
+	breakableModules           = "decoded/sprites/gen0/chunk07-modules.png"
+	breakableMetadata          = "decoded/sprites/gen0/chunk07-animations.json"
+	goldLockSheet              = "decoded/sprites/gen2/chunk08-frames.png"
+	goldLockModules            = "decoded/sprites/gen2/chunk08-modules.png"
+	goldLockMetadata           = "decoded/sprites/gen2/chunk08-animations.json"
+	silverLockSheet            = "decoded/sprites/gen2/chunk08-palette01-frames.png"
+	silverLockModules          = "decoded/sprites/gen2/chunk08-palette01-modules.png"
+	foregroundEffectSheet      = "decoded/sprites/gen0/chunk04-frames.png"
+	foregroundEffectModules    = "decoded/sprites/gen0/chunk04-modules.png"
+	foregroundEffectMetadata   = "decoded/sprites/gen0/chunk04-animations.json"
+	hiddenOverlaySheet         = "decoded/sprites/gen3/chunk03-frames.png"
+	hiddenOverlayModules       = "decoded/sprites/gen3/chunk03-modules.png"
+	hiddenOverlayMetadata      = "decoded/sprites/gen3/chunk03-animations.json"
+	specialContainerSheet      = "decoded/sprites/gen2/chunk02-frames.png"
+	specialContainerModules    = "decoded/sprites/gen2/chunk02-modules.png"
+	specialContainerMetadata   = "decoded/sprites/gen2/chunk02-animations.json"
+	goldKeyModules             = "decoded/sprites/gen0/chunk02-modules.png"
+	silverKeyModules           = "decoded/sprites/gen0/chunk02-palette01-modules.png"
+	keyMetadata                = "decoded/sprites/gen0/chunk02-animations.json"
+	toolModules                = "decoded/sprites/gen1/chunk09-modules.png"
+	toolMetadata               = "decoded/sprites/gen1/chunk09-animations.json"
+	toolPromptModules          = "decoded/sprites/gen2/chunk00-modules.png"
+	toolPromptMetadata         = "decoded/sprites/gen2/chunk00-animations.json"
+	compassPickupModules       = "decoded/sprites/gen3/chunk01-modules.png"
+	compassPickupMetadata      = "decoded/sprites/gen3/chunk01-animations.json"
+	tutorialRecallHintSheet    = "decoded/sprites/gen3/chunk00-frames.png"
+	tutorialRecallHintModules  = "decoded/sprites/gen3/chunk00-modules.png"
+	tutorialRecallHintMetadata = "decoded/sprites/gen3/chunk00-animations.json"
+	worldMapIconSheet          = "decoded/sprites/ms/chunk00-frames.png"
+	worldMapIconModules        = "decoded/sprites/ms/chunk00-modules.png"
+	worldMapIconMetadata       = "decoded/sprites/ms/chunk00-animations.json"
+	worldMapGroundSheet        = "decoded/sprites/ms/chunk01-frames.png"
+	worldMapGroundModules      = "decoded/sprites/ms/chunk01-modules.png"
+	worldMapGroundMetadata     = "decoded/sprites/ms/chunk01-animations.json"
+	worldMapHeaderSheet        = "decoded/sprites/ms/chunk02-frames.png"
+	worldMapHeaderModules      = "decoded/sprites/ms/chunk02-modules.png"
+	worldMapHeaderMetadata     = "decoded/sprites/ms/chunk02-animations.json"
+	pickupEffectSheet          = "decoded/sprites/cm/chunk07-frames.png"
+	pickupEffectModules        = "decoded/sprites/cm/chunk07-modules.png"
+	pickupEffectMetadata       = "decoded/sprites/cm/chunk07-animations.json"
+	resultSparkModules         = "decoded/sprites/cm/chunk04-modules.png"
+	resultSparkMetadata        = "decoded/sprites/cm/chunk04-animations.json"
+	resultMedalModules         = "decoded/sprites/ui/chunk04-modules.png"
+	resultMedalMetadata        = "decoded/sprites/ui/chunk04-animations.json"
+	hazardEmitterSheet         = "decoded/sprites/gen0/chunk09-frames.png"
+	hazardFlameSheet           = "decoded/sprites/gen1/chunk00-frames.png"
+	hazardFlameModuleSheet     = "decoded/sprites/gen1/chunk00-modules.png"
+	hazardFlameMetadata        = "decoded/sprites/gen1/chunk00-animations.json"
+	pressureSwitchModules      = "decoded/sprites/gen2/chunk09-modules.png"
+	pressureSwitchMetadata     = "decoded/sprites/gen2/chunk09-animations.json"
+	fallingFireSheet           = "decoded/sprites/mm0/chunk00-frames.png"
+	fallingFireModules         = "decoded/sprites/mm0/chunk00-modules.png"
+	fallingFireMetadata        = "decoded/sprites/mm0/chunk00-animations.json"
+	fallingTorchSheet          = "decoded/sprites/mm0/chunk01-frames.png"
+	fallingTorchModules        = "decoded/sprites/mm0/chunk01-modules.png"
+	fallingTorchMetadata       = "decoded/sprites/mm0/chunk01-animations.json"
+	fallingDebrisModules       = "decoded/sprites/mm0/chunk02-modules.png"
+	fallingDebrisMetadata      = "decoded/sprites/mm0/chunk02-animations.json"
+	anacondaModules            = "decoded/sprites/b0/chunk00-modules.png"
+	anacondaMetadata           = "decoded/sprites/b0/chunk00-animations.json"
+	anacondaPlatformModules    = "decoded/sprites/b0/chunk01-modules.png"
+	anacondaPlatformMetadata   = "decoded/sprites/b0/chunk01-animations.json"
+	angkorSealModules          = "decoded/sprites/mmv/chunk03-modules.png"
+	angkorSealMetadata         = "decoded/sprites/mmv/chunk03-animations.json"
+	tutorialSealModules        = "decoded/sprites/mmv/chunk00-modules.png"
+	tutorialSealMetadata       = "decoded/sprites/mmv/chunk00-animations.json"
+	siberiaSealModules         = "decoded/sprites/mmv/chunk01-modules.png"
+	siberiaSealMetadata        = "decoded/sprites/mmv/chunk01-animations.json"
+	bavariaSealModules         = "decoded/sprites/mmv/chunk02-modules.png"
+	bavariaSealMetadata        = "decoded/sprites/mmv/chunk02-animations.json"
+	sealArrowModules           = "decoded/sprites/mmv/chunk04-modules.png"
+	sealArrowMetadata          = "decoded/sprites/mmv/chunk04-animations.json"
+	softkeyModules             = "decoded/sprites/ui/chunk03-modules.png"
+	softkeyMetadata            = "decoded/sprites/ui/chunk03-animations.json"
+	splashBackgroundImage      = "decoded/sprites/splash/background.png"
+	splashLogoImage            = "decoded/sprites/splash/logo.png"
+	splashCopyrightImage       = "decoded/sprites/splash/copyright.png"
+	demoUIModules              = "decoded/sprites/demoui/chunk00-modules.png"
+	demoUIBlueModules          = "decoded/sprites/demoui/chunk00-palette01-modules.png"
+	demoUIMetadata             = "decoded/sprites/demoui/chunk00-animations.json"
+	tutorialFaceModules        = "decoded/sprites/tutorial/demoSpr/sprite00-modules.png"
+	tutorialFaceMetadata       = "decoded/sprites/tutorial/demoSpr/sprite00-animations.json"
+	tutorialMarkModules        = "decoded/sprites/tutorial/demoSpr/sprite01-modules.png"
+	tutorialMarkMetadata       = "decoded/sprites/tutorial/demoSpr/sprite01-animations.json"
+	tutorialPortraitModules    = "decoded/sprites/tutorial/demoSpr/sprite02-modules.png"
+	tutorialPortraitMetadata   = "decoded/sprites/tutorial/demoSpr/sprite02-animations.json"
+	hudSheet                   = "decoded/sprites/ui/chunk02-frames.png"
+	hudModuleSheet             = "decoded/sprites/ui/chunk02-modules.png"
+	hudMetadata                = "decoded/sprites/ui/chunk02-animations.json"
+	heroFrameSheet             = "decoded/sprites/o/chunk00-frames.png"
+	heroModuleSheet            = "decoded/sprites/o/chunk00-modules.png"
+	heroMetadata               = "decoded/sprites/o/chunk00-animations.json"
+	fontSmallSheet             = "decoded/fonts/freej2me-small.png"
+	fontSmallMetadata          = "decoded/fonts/freej2me-small.json"
+	fontMediumSheet            = "decoded/fonts/freej2me-medium.png"
+	fontMediumMetadata         = "decoded/fonts/freej2me-medium.json"
+	originalAudioDir           = "decoded/audio"
+	defaultWorldDir            = "decoded/world0"
+	resultLoadingSteps         = 12
+	sealLoadingSteps           = 11
+	resultTitleTicks           = 40
+	resultGemMinimumTicks      = 40
+	resultRedDiamondTicks      = 40
+	resultHitTicks             = 10
+	resultRetryTicks           = 10
+	resultStageTitleY          = 15
+	resultCompleteY            = 32
+	resultVioletLabelY         = 75
+	resultVioletCountY         = 91
+	resultRedLabelY            = 131
+	resultRedCountY            = 147
+	resultHitsIconY            = 191
+	resultHitsLabelY           = 187
+	resultHitsCountY           = 203
+	resultRetriesIconY         = 243
+	resultRetriesLabelY        = 243
+	resultRetriesCountY        = 259
+	stageIntroDuration         = 60
+	secretExitDuration         = 30
+	deathTransitionTicks       = 80
+	chestRewardTick            = 39
+	chestRewardSequence        = 13
+	chestShortRewardTick       = 23
+	chestShortRewardSequence   = 6
+	sourceTPS                  = 20
+	sourceHeroTurnStartOffset  = 18
+	sourceHeroTurnStep         = 6
+	framePadding               = 2
+	frameCols                  = 16
+	diggableFrameCellW         = 35
+	diggableFrameCellH         = 27
+	playfieldHeight            = 240
+	playfieldTop               = 40
 )
 
 var hookRopeColor = color.RGBA{211, 215, 231, 255}
@@ -161,79 +231,134 @@ type gameMode int
 const (
 	gameModeStage gameMode = iota
 	gameModeWorldMap
+	gameModeWorldSelect
+	gameModeStartMenu
 )
 
 type Game struct {
-	pack                  *original.WorldPack
-	rt                    *original.Runtime
-	worldFrames           *ebiten.Image
-	boulder               *ebiten.Image
-	diggable              *ebiten.Image
-	floor                 *ebiten.Image
-	violetGem             *ebiten.Image
-	redDiamond            *ebiten.Image
-	checkpoint            *ebiten.Image
-	quota                 *spriteSheet
-	goal                  *ebiten.Image
-	door                  *spriteSheet
-	hazard                *ebiten.Image
-	snakes                *spriteSheet
-	redSnakes             *spriteSheet
-	crawler               *spriteSheet
-	commonPickups         *spriteSheet
-	breakables            *spriteSheet
-	goldLock              *spriteSheet
-	silverLock            *spriteSheet
-	foregroundEffects     *spriteSheet
-	hiddenOverlay         *spriteSheet
-	specialContainer      *spriteSheet
-	goldKey               *spriteSheet
-	silverKey             *spriteSheet
-	tools                 *spriteSheet
-	worldMapIcons         *spriteSheet
-	worldMapGround        *spriteSheet
-	worldMapHeader        *spriteSheet
-	pickupEffects         *spriteSheet
-	resultSpark           *spriteSheet
-	resultMedal           *spriteSheet
-	flames                *spriteSheet
-	pressureSwitch        *spriteSheet
-	hud                   *spriteSheet
-	hero                  *spriteSheet
-	fontSmall             *bitmapFont
-	fontMedium            *bitmapFont
-	worldCanvas           *ebiten.Image
-	worldDir              string
-	worldMap              *worldMapData
-	mode                  gameMode
-	stageIndex            int
-	worldMapLoadingStep   int
-	worldMapSelectedStage int
-	worldMapTravelFrom    int
-	worldMapTravelTo      int
-	worldMapTravelTick    int
-	message               string
-	tick                  int
-	worldDone             bool
-	resultPhase           int
-	resultPhaseTicks      int
-	resultLoadingStep     int
-	resultAwards          byte
-	resultNewAwards       byte
-	introTicks            int
-	lastDX                int
-	lastDY                int
-	heroMoveStart         int
-	heroMoveOffset        int
-	entranceSteps         int
-	checkpointBannerUntil int
-	compassDirection      int
-	cameraX               int
-	cameraY               int
-	worldEffects          []worldEffect
-	sounds                *originalSounds
-	progressPath          string
-	progress              originalProgress
+	pack                   *original.WorldPack
+	rt                     *original.Runtime
+	worldFrames            *ebiten.Image
+	boulder                *ebiten.Image
+	diggable               *ebiten.Image
+	floor                  *ebiten.Image
+	violetGem              *ebiten.Image
+	redDiamond             *ebiten.Image
+	checkpoint             *ebiten.Image
+	quota                  *spriteSheet
+	goal                   *ebiten.Image
+	door                   *spriteSheet
+	hazard                 *ebiten.Image
+	snakes                 *spriteSheet
+	redSnakes              *spriteSheet
+	crawler                *spriteSheet
+	commonPickups          *spriteSheet
+	frozenViolet           *spriteSheet
+	frozenSnake            *spriteSheet
+	breakables             *spriteSheet
+	goldLock               *spriteSheet
+	silverLock             *spriteSheet
+	foregroundEffects      *spriteSheet
+	hiddenOverlay          *spriteSheet
+	specialContainer       *spriteSheet
+	goldKey                *spriteSheet
+	silverKey              *spriteSheet
+	tools                  *spriteSheet
+	toolPrompt             *spriteSheet
+	compassPickup          *spriteSheet
+	tutorialRecallHint     *spriteSheet
+	worldMapIcons          *spriteSheet
+	worldMapGround         *spriteSheet
+	worldMapHeader         *spriteSheet
+	pickupEffects          *spriteSheet
+	resultSpark            *spriteSheet
+	resultMedal            *spriteSheet
+	flames                 *spriteSheet
+	pressureSwitch         *spriteSheet
+	fallingFire            *spriteSheet
+	fallingTorches         *spriteSheet
+	fallingDebris          *spriteSheet
+	anaconda               *spriteSheet
+	anacondaPlatform       *spriteSheet
+	angkorSeal             *spriteSheet
+	tutorialSeal           *spriteSheet
+	siberiaSeal            *spriteSheet
+	bavariaSeal            *spriteSheet
+	sealArrow              *spriteSheet
+	softkeys               *spriteSheet
+	splashBackground       *ebiten.Image
+	splashLogo             *ebiten.Image
+	splashCopyright        *ebiten.Image
+	demoUI                 *spriteSheet
+	demoUIBlue             *spriteSheet
+	tutorialFaces          *spriteSheet
+	tutorialMarks          *spriteSheet
+	tutorialPortrait       *spriteSheet
+	hud                    *spriteSheet
+	hero                   *spriteSheet
+	fontSmall              *bitmapFont
+	fontMedium             *bitmapFont
+	worldCanvas            *ebiten.Image
+	worldDir               string
+	worldMap               *worldMapData
+	mode                   gameMode
+	stageIndex             int
+	worldMapLoadingStep    int
+	worldMapSelectedStage  int
+	worldMapTravelFrom     int
+	worldMapTravelTo       int
+	worldMapTravelTick     int
+	pendingMapTarget       int
+	message                string
+	tick                   int
+	worldDone              bool
+	secretExitActive       bool
+	secretExitTicks        int
+	sealExitActive         bool
+	sealExitTicks          int
+	worldSelectPosition    int
+	worldSelectArrowX      int
+	worldSelectArrowY      int
+	worldSelectTargetX     int
+	worldSelectTargetY     int
+	worldSelectMoveTick    int
+	worldSelectArrowTick   int
+	worldSelectIncoming    int
+	worldSelectRelicX      int
+	worldSelectRelicY      int
+	worldSelectFlashTick   int
+	worldSelectEffectTick  int
+	worldSelectUnlocking   int
+	worldSelectUnlockTick  int
+	worldSelectUnlockFlash int
+	startMenuHasProgress   bool
+	startMenuSelection     int
+	startMenuConfirmNew    bool
+	startMenuConfirmChoice int
+	resultPhase            int
+	resultPhaseTicks       int
+	resultLoadingStep      int
+	resultAwards           byte
+	resultNewAwards        byte
+	introTicks             int
+	lastDX                 int
+	lastDY                 int
+	heroMoveStart          int
+	heroMoveOffset         int
+	heroTurnOffset         int
+	entranceSteps          int
+	checkpointBannerUntil  int
+	compassDirection       int
+	cameraX                int
+	cameraY                int
+	demoCameraLocked       bool
+	demoCameraStartX       int
+	demoCameraStartY       int
+	demoCameraPhase        int
+	worldEffects           []worldEffect
+	sounds                 *originalSounds
+	progressPath           string
+	progress               originalProgress
 }
 
 func Run() error {
@@ -241,11 +366,30 @@ func Run() error {
 	if err != nil {
 		return err
 	}
-	if err := g.enableProgress(originalProgressPath()); err != nil {
+	progressPath := originalProgressPath()
+	hasProgress, err := originalProgressExists(progressPath)
+	if err != nil {
 		return err
 	}
+	if err := g.enableProgress(progressPath); err != nil {
+		return err
+	}
+	if stageText := os.Getenv("ORIGINALRUSH_STAGE"); stageText != "" {
+		stageNumber, err := strconv.Atoi(stageText)
+		if err != nil || stageNumber < 1 || stageNumber > len(g.pack.Stages) || !angkorStageImplemented(stageNumber-1) {
+			return fmt.Errorf("invalid ORIGINALRUSH_STAGE %q", stageText)
+		}
+		g.progress.unlockStage(stageNumber - 1)
+		g.loadStage(stageNumber - 1)
+	} else {
+		g.enterStartMenu(hasProgress)
+	}
 	g.sounds.Enable()
-	g.sounds.Play(original.SoundAngkorMusic)
+	if g.mode == gameModeStartMenu {
+		g.sounds.Play(original.SoundTitleMusic)
+	} else {
+		g.sounds.Play(original.SoundAngkorMusic)
+	}
 	defer g.sounds.Stop()
 	ebiten.SetTPS(sourceTPS)
 	ebiten.SetWindowTitle("Diamond Rush Original Runtime - Angkor World 0")
@@ -319,6 +463,14 @@ func New(worldDir string) (*Game, error) {
 	if err != nil {
 		return nil, fmt.Errorf("load common pickups: %w", err)
 	}
+	frozenViolet, err := loadSpriteSheetWithModules(frozenVioletSheet, frozenVioletModules, frozenVioletMetadata)
+	if err != nil {
+		return nil, fmt.Errorf("load frozen violet sprite: %w", err)
+	}
+	frozenSnake, err := loadSpriteSheetWithModules(frozenSnakeSheet, frozenSnakeModules, frozenSnakeMetadata)
+	if err != nil {
+		return nil, fmt.Errorf("load frozen snake sprite: %w", err)
+	}
 	breakables, err := loadSpriteSheetWithModules(breakableSheet, breakableModules, breakableMetadata)
 	if err != nil {
 		return nil, fmt.Errorf("load breakable wall sprite: %w", err)
@@ -355,6 +507,18 @@ func New(worldDir string) (*Game, error) {
 	if err != nil {
 		return nil, fmt.Errorf("load source tool icons: %w", err)
 	}
+	toolPrompt, err := loadModuleSpriteSheet(toolPromptModules, toolPromptMetadata)
+	if err != nil {
+		return nil, fmt.Errorf("load source tool prompt: %w", err)
+	}
+	compassPickup, err := loadModuleSpriteSheet(compassPickupModules, compassPickupMetadata)
+	if err != nil {
+		return nil, fmt.Errorf("load compass pickup: %w", err)
+	}
+	tutorialRecallHint, err := loadSpriteSheetWithModules(tutorialRecallHintSheet, tutorialRecallHintModules, tutorialRecallHintMetadata)
+	if err != nil {
+		return nil, fmt.Errorf("load tutorial recall hint: %w", err)
+	}
 	worldMapIcons, err := loadSpriteSheetWithModules(worldMapIconSheet, worldMapIconModules, worldMapIconMetadata)
 	if err != nil {
 		return nil, fmt.Errorf("load world-map icons: %w", err)
@@ -387,6 +551,82 @@ func New(worldDir string) (*Game, error) {
 	if err != nil {
 		return nil, fmt.Errorf("load pressure switch: %w", err)
 	}
+	fallingFire, err := loadSpriteSheetWithModules(fallingFireSheet, fallingFireModules, fallingFireMetadata)
+	if err != nil {
+		return nil, fmt.Errorf("load falling-torches fire: %w", err)
+	}
+	fallingTorches, err := loadSpriteSheetWithModules(fallingTorchSheet, fallingTorchModules, fallingTorchMetadata)
+	if err != nil {
+		return nil, fmt.Errorf("load falling torches: %w", err)
+	}
+	fallingDebris, err := loadModuleSpriteSheet(fallingDebrisModules, fallingDebrisMetadata)
+	if err != nil {
+		return nil, fmt.Errorf("load falling-torches debris: %w", err)
+	}
+	anaconda, err := loadModuleSpriteSheet(anacondaModules, anacondaMetadata)
+	if err != nil {
+		return nil, fmt.Errorf("load Great Anaconda sprite: %w", err)
+	}
+	anacondaPlatform, err := loadModuleSpriteSheet(anacondaPlatformModules, anacondaPlatformMetadata)
+	if err != nil {
+		return nil, fmt.Errorf("load Great Anaconda platforms: %w", err)
+	}
+	angkorSeal, err := loadModuleSpriteSheet(angkorSealModules, angkorSealMetadata)
+	if err != nil {
+		return nil, fmt.Errorf("load Angkor seal: %w", err)
+	}
+	tutorialSeal, err := loadModuleSpriteSheet(tutorialSealModules, tutorialSealMetadata)
+	if err != nil {
+		return nil, fmt.Errorf("load tutorial seal: %w", err)
+	}
+	siberiaSeal, err := loadModuleSpriteSheet(siberiaSealModules, siberiaSealMetadata)
+	if err != nil {
+		return nil, fmt.Errorf("load Siberia seal: %w", err)
+	}
+	bavariaSeal, err := loadModuleSpriteSheet(bavariaSealModules, bavariaSealMetadata)
+	if err != nil {
+		return nil, fmt.Errorf("load Bavaria seal: %w", err)
+	}
+	sealArrow, err := loadModuleSpriteSheet(sealArrowModules, sealArrowMetadata)
+	if err != nil {
+		return nil, fmt.Errorf("load seal selector arrow: %w", err)
+	}
+	softkeys, err := loadModuleSpriteSheet(softkeyModules, softkeyMetadata)
+	if err != nil {
+		return nil, fmt.Errorf("load seal selector softkeys: %w", err)
+	}
+	splashBackground, err := loadTransparentSheet(splashBackgroundImage)
+	if err != nil {
+		return nil, fmt.Errorf("load title background: %w", err)
+	}
+	splashLogo, err := loadTransparentSheet(splashLogoImage)
+	if err != nil {
+		return nil, fmt.Errorf("load title logo: %w", err)
+	}
+	splashCopyright, err := loadTransparentSheet(splashCopyrightImage)
+	if err != nil {
+		return nil, fmt.Errorf("load title copyright: %w", err)
+	}
+	demoUI, err := loadModuleSpriteSheet(demoUIModules, demoUIMetadata)
+	if err != nil {
+		return nil, fmt.Errorf("load source panel border: %w", err)
+	}
+	demoUIBlue, err := loadModuleSpriteSheet(demoUIBlueModules, demoUIMetadata)
+	if err != nil {
+		return nil, fmt.Errorf("load blue source panel border: %w", err)
+	}
+	tutorialFaces, err := loadModuleSpriteSheet(tutorialFaceModules, tutorialFaceMetadata)
+	if err != nil {
+		return nil, fmt.Errorf("load tutorial faces: %w", err)
+	}
+	tutorialMarks, err := loadModuleSpriteSheet(tutorialMarkModules, tutorialMarkMetadata)
+	if err != nil {
+		return nil, fmt.Errorf("load tutorial punctuation: %w", err)
+	}
+	tutorialPortrait, err := loadModuleSpriteSheet(tutorialPortraitModules, tutorialPortraitMetadata)
+	if err != nil {
+		return nil, fmt.Errorf("load tutorial portrait: %w", err)
+	}
 	hud, err := loadSpriteSheetWithModules(hudSheet, hudModuleSheet, hudMetadata)
 	if err != nil {
 		return nil, fmt.Errorf("load HUD sprite: %w", err)
@@ -416,52 +656,78 @@ func New(worldDir string) (*Game, error) {
 		return nil, err
 	}
 	g := &Game{
-		pack:              pack,
-		rt:                rt,
-		worldFrames:       frames,
-		boulder:           boulder,
-		diggable:          diggable,
-		floor:             floor,
-		violetGem:         violetGem,
-		redDiamond:        redDiamond,
-		checkpoint:        checkpoint,
-		quota:             quota,
-		goal:              goal,
-		door:              door,
-		hazard:            hazard,
-		snakes:            snakes,
-		redSnakes:         redSnakes,
-		crawler:           crawler,
-		commonPickups:     commonPickups,
-		breakables:        breakables,
-		goldLock:          goldLock,
-		silverLock:        silverLock,
-		foregroundEffects: foregroundEffects,
-		hiddenOverlay:     hiddenOverlay,
-		specialContainer:  specialContainer,
-		goldKey:           goldKey,
-		silverKey:         silverKey,
-		tools:             tools,
-		worldMapIcons:     worldMapIcons,
-		worldMapGround:    worldMapGround,
-		worldMapHeader:    worldMapHeader,
-		pickupEffects:     pickupEffects,
-		resultSpark:       resultSpark,
-		resultMedal:       resultMedal,
-		flames:            flames,
-		pressureSwitch:    pressureSwitch,
-		hud:               hud,
-		hero:              hero,
-		fontSmall:         fontSmall,
-		fontMedium:        fontMedium,
-		sounds:            sounds,
-		worldCanvas:       ebiten.NewImage(original.ScreenWidth, playfieldHeight),
-		worldDir:          resolvedWorldDir,
-		worldMap:          worldMap,
-		message:           "Original Angkor World 0 runtime",
-		lastDX:            1,
-		entranceSteps:     rt.EntranceScrollX,
-		progress:          newOriginalProgress(),
+		pack:                pack,
+		rt:                  rt,
+		worldFrames:         frames,
+		boulder:             boulder,
+		diggable:            diggable,
+		floor:               floor,
+		violetGem:           violetGem,
+		redDiamond:          redDiamond,
+		checkpoint:          checkpoint,
+		quota:               quota,
+		goal:                goal,
+		door:                door,
+		hazard:              hazard,
+		snakes:              snakes,
+		redSnakes:           redSnakes,
+		crawler:             crawler,
+		commonPickups:       commonPickups,
+		frozenViolet:        frozenViolet,
+		frozenSnake:         frozenSnake,
+		breakables:          breakables,
+		goldLock:            goldLock,
+		silverLock:          silverLock,
+		foregroundEffects:   foregroundEffects,
+		hiddenOverlay:       hiddenOverlay,
+		specialContainer:    specialContainer,
+		goldKey:             goldKey,
+		silverKey:           silverKey,
+		tools:               tools,
+		toolPrompt:          toolPrompt,
+		compassPickup:       compassPickup,
+		tutorialRecallHint:  tutorialRecallHint,
+		worldMapIcons:       worldMapIcons,
+		worldMapGround:      worldMapGround,
+		worldMapHeader:      worldMapHeader,
+		pickupEffects:       pickupEffects,
+		resultSpark:         resultSpark,
+		resultMedal:         resultMedal,
+		flames:              flames,
+		pressureSwitch:      pressureSwitch,
+		fallingFire:         fallingFire,
+		fallingTorches:      fallingTorches,
+		fallingDebris:       fallingDebris,
+		anaconda:            anaconda,
+		anacondaPlatform:    anacondaPlatform,
+		angkorSeal:          angkorSeal,
+		tutorialSeal:        tutorialSeal,
+		siberiaSeal:         siberiaSeal,
+		bavariaSeal:         bavariaSeal,
+		sealArrow:           sealArrow,
+		softkeys:            softkeys,
+		splashBackground:    splashBackground,
+		splashLogo:          splashLogo,
+		splashCopyright:     splashCopyright,
+		demoUI:              demoUI,
+		demoUIBlue:          demoUIBlue,
+		tutorialFaces:       tutorialFaces,
+		tutorialMarks:       tutorialMarks,
+		tutorialPortrait:    tutorialPortrait,
+		hud:                 hud,
+		hero:                hero,
+		fontSmall:           fontSmall,
+		fontMedium:          fontMedium,
+		sounds:              sounds,
+		worldCanvas:         ebiten.NewImage(original.ScreenWidth, playfieldHeight),
+		worldDir:            resolvedWorldDir,
+		worldMap:            worldMap,
+		pendingMapTarget:    -1,
+		worldSelectIncoming: -1,
+		message:             "Original Angkor World 0 runtime",
+		lastDX:              1,
+		entranceSteps:       rt.EntranceScrollX,
+		progress:            newOriginalProgress(),
 	}
 	g.resetCamera()
 	g.updateCompass()
@@ -473,8 +739,34 @@ func (g *Game) Update() error {
 	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
 		return ebiten.Termination
 	}
+	if g.mode == gameModeStartMenu {
+		_, dy := justPressedDirection()
+		g.updateStartMenu(centerActionPressed(), dy)
+		return nil
+	}
 	if g.mode == gameModeWorldMap {
 		g.updateWorldMap(centerActionPressed())
+		return nil
+	}
+	if g.mode == gameModeWorldSelect {
+		dx, dy := justPressedDirection()
+		g.updateWorldSelect(centerActionPressed(), dx, dy)
+		return nil
+	}
+	if g.sealExitActive {
+		g.sealExitTicks++
+		if g.sealExitTicks >= sealLoadingSteps {
+			g.sealExitActive = false
+			g.enterWorldSelect(sealPositionAngkor)
+		}
+		return nil
+	}
+	if g.secretExitActive {
+		g.secretExitTicks++
+		if g.secretExitTicks > secretExitDuration {
+			g.secretExitActive = false
+			g.enterWorldMap()
+		}
 		return nil
 	}
 	if g.introTicks < stageIntroDuration {
@@ -492,12 +784,35 @@ func (g *Game) Update() error {
 	lockOpeningAtFrameStart := g.rt.LockOpening
 	g.tickWorld()
 	g.syncHeroMotion()
-	if (recallPendingAtFrameStart && !g.rt.RecallPending) ||
-		(deadAtFrameStart && !g.rt.PlayerDead) ||
+	if g.heroTurnOffset > 0 && !g.rt.CanAcceptInput() {
+		g.setHeroTurnOffset(0)
+	}
+	if g.rt.TutorialComplete {
+		g.finishTutorial()
+		return nil
+	}
+	if g.rt.Anaconda.StageComplete {
+		g.beginAngkorSealExit()
+		g.updateCamera()
+		return nil
+	}
+	checkpointRestored := (recallPendingAtFrameStart && !g.rt.RecallPending) ||
+		(deadAtFrameStart && !g.rt.PlayerDead)
+	if checkpointRestored {
+		g.resetHeroFacing()
+	}
+	if checkpointRestored ||
 		(chestOpeningAtFrameStart && !g.rt.ChestOpening) ||
 		(lockOpeningAtFrameStart && !g.rt.LockOpening) {
 		g.updateCamera()
 		return nil
+	}
+	if g.rt.TutorialScriptActive {
+		if tutorialSkipPressed() {
+			g.rt.SkipTutorialScript()
+		} else if _, ok := g.rt.TutorialPrompt(); ok && centerActionPressed() {
+			g.rt.AdvanceTutorialPrompt()
+		}
 	}
 	if g.rt.ReachedGoal {
 		if g.rt.PlayerMotion.Remaining > 0 {
@@ -523,9 +838,14 @@ func (g *Game) Update() error {
 		g.updateCamera()
 		return nil
 	}
-	if g.rt.CanAcceptInput() && centerActionPressed() {
+	if g.rt.TutorialScriptActive {
+		g.updateCamera()
+		return nil
+	}
+	if g.rt.CanAcceptInput() && g.heroTurnOffset == 0 && centerActionPressed() {
 		if g.rt.IsCheckpoint(g.rt.Player.X, g.rt.Player.Y) {
 			if g.rt.ResetCheckpoint() {
+				g.resetHeroFacing()
 				g.message = "checkpoint reset"
 			}
 		} else if g.rt.UseSpecialBarrier(g.lastDX, g.lastDY) {
@@ -540,6 +860,10 @@ func (g *Game) Update() error {
 	if g.rt.CanAcceptInput() && recallPressed() {
 		onCheckpoint := g.rt.IsCheckpoint(g.rt.Player.X, g.rt.Player.Y)
 		if g.rt.RecallCheckpoint() {
+			g.setHeroTurnOffset(0)
+			if onCheckpoint {
+				g.resetHeroFacing()
+			}
 			switch {
 			case onCheckpoint:
 				g.message = "checkpoint reset"
@@ -553,9 +877,16 @@ func (g *Game) Update() error {
 		}
 		g.playPendingSounds()
 	}
+	if g.heroTurnOffset > 0 {
+		g.advanceHeroTurn()
+		g.updateCamera()
+		return nil
+	}
 	dx, dy := heldDirection()
 	if dx != 0 || dy != 0 {
-		g.startPlayerMove(dx, dy)
+		if g.rt.CanAcceptInput() {
+			g.handlePlayerDirection(dx, dy)
+		}
 	} else {
 		g.rt.ResetPushAttempt()
 	}
@@ -576,9 +907,13 @@ func (g *Game) tickWorld() {
 		flameReach = 1
 	}
 	playerBeforeFrame := g.rt.Player
+	g.rt.SetViewport(g.cameraX, g.cameraY)
 	result := g.rt.TickSourceFrame(8, g.tick, flameReach)
 	for _, point := range result.VioletPickups {
 		g.worldEffects = append(g.worldEffects, worldEffect{Point: point, Animation: 3})
+	}
+	if result.TutorialSealActivated {
+		g.worldEffects = append(g.worldEffects, worldEffect{Point: g.rt.Player, Animation: 5})
 	}
 	if g.rt.Player != playerBeforeFrame {
 		if g.rt.PlayerMotion.Remaining <= 0 {
@@ -589,6 +924,8 @@ func (g *Game) tickWorld() {
 	switch {
 	case result.HazardHits > 0:
 		g.message = fmt.Sprintf("horizontal hazard hit %d", result.HazardHits)
+	case result.RisingFireHits > 0:
+		g.message = "rising fire reached hero"
 	case result.GravityMoved > 0:
 		g.message = fmt.Sprintf("gravity moved %d object(s)", result.GravityMoved)
 	case result.SnakesMoved > 0:
@@ -639,6 +976,47 @@ func (g *Game) advanceWorldEffects() {
 	g.worldEffects = kept
 }
 
+func (g *Game) handlePlayerDirection(dx, dy int) bool {
+	if g == nil || g.rt == nil || (dx == 0 && dy == 0) {
+		return false
+	}
+	if dx != g.lastDX || dy != g.lastDY {
+		g.lastDX = dx
+		g.lastDY = dy
+		g.setHeroTurnOffset(sourceHeroTurnStartOffset)
+		g.rt.ResetPushAttempt()
+		return false
+	}
+	return g.startPlayerMove(dx, dy)
+}
+
+func (g *Game) advanceHeroTurn() bool {
+	if g == nil || g.heroTurnOffset <= 0 {
+		return false
+	}
+	g.setHeroTurnOffset(g.heroTurnOffset - sourceHeroTurnStep)
+	return true
+}
+
+func (g *Game) setHeroTurnOffset(offset int) {
+	if g == nil {
+		return
+	}
+	g.heroTurnOffset = max(0, offset)
+	if g.rt != nil {
+		g.rt.SetPlayerTurnOffset(g.heroTurnOffset)
+	}
+}
+
+func (g *Game) resetHeroFacing() {
+	if g == nil {
+		return
+	}
+	g.lastDX = 1
+	g.lastDY = 0
+	g.setHeroTurnOffset(0)
+}
+
 func (g *Game) startPlayerMove(dx, dy int) bool {
 	g.lastDX = dx
 	g.lastDY = dy
@@ -666,7 +1044,7 @@ func (g *Game) advanceHeroMotion() {
 }
 
 func (g *Game) advanceAfterGoal() {
-	if g.worldDone {
+	if g.worldDone || g.secretExitActive {
 		g.message = fmt.Sprintf("Angkor stage %02d complete", g.stageIndex+1)
 		return
 	}
@@ -684,6 +1062,23 @@ func (g *Game) advanceAfterGoal() {
 	}
 	if !complete {
 		g.message = fmt.Sprintf("Angkor stage %02d exit", g.stageIndex+1)
+		return
+	}
+	if g.rt.GoalExitSecret && g.stageIndex < angkorFirstSecretStage {
+		target := g.stageIndex
+		if next, ok := g.worldMap.exitTarget(g.stageIndex, true); ok {
+			target = next
+		}
+		g.pendingMapTarget = target
+		g.progress.recordSecretExit(g.stageIndex, target, g.rt)
+		if g.progressPath != "" {
+			if err := saveOriginalProgress(g.progressPath, g.progress); err != nil {
+				g.message = err.Error()
+			}
+		}
+		g.secretExitActive = true
+		g.secretExitTicks = 0
+		g.message = "secret path unlocked"
 		return
 	}
 	g.worldDone = true
@@ -709,12 +1104,43 @@ func (g *Game) beginStageResults() {
 	g.resultPhaseTicks = 0
 	g.resultLoadingStep = 0
 	g.resultAwards = stageResultAwards(g.rt)
-	g.resultNewAwards = g.progress.recordStageResult(g.stageIndex, g.rt)
+	g.pendingMapTarget = -1
+	if g.stageIndex >= angkorFirstSecretStage && g.rt.GoalExitSecret {
+		target := g.stageIndex
+		if next, ok := g.worldMap.exitTarget(g.stageIndex, true); ok {
+			target = next
+		}
+		g.resultNewAwards = g.progress.recordSecretStageResult(g.stageIndex, target, g.rt)
+		if g.progress.stageUnlocked(target) {
+			g.pendingMapTarget = target
+		}
+	} else {
+		g.resultNewAwards = g.progress.recordStageResult(g.stageIndex, g.rt)
+		if target, ok := g.worldMap.exitTarget(g.stageIndex, false); ok && g.progress.stageUnlocked(target) {
+			g.pendingMapTarget = target
+		}
+	}
 	if g.progressPath != "" {
 		if err := saveOriginalProgress(g.progressPath, g.progress); err != nil {
 			g.message = err.Error()
 		}
 	}
+}
+
+func (g *Game) beginAngkorSealExit() {
+	if g.sealExitActive || g.rt == nil || !g.rt.Anaconda.StageComplete {
+		return
+	}
+	g.progress.recordSealStageCompletion(g.stageIndex, g.rt)
+	if g.progressPath != "" {
+		if err := saveOriginalProgress(g.progressPath, g.progress); err != nil {
+			g.message = err.Error()
+		}
+	}
+	g.pendingMapTarget = -1
+	g.sealExitActive = true
+	g.sealExitTicks = 0
+	g.message = "Angkor seal recovered"
 }
 
 func (g *Game) enableProgress(path string) error {
@@ -760,7 +1186,7 @@ func (g *Game) updateStageResults(skip bool) {
 }
 
 func (g *Game) loadStage(index int) {
-	if index < 0 || index >= len(g.pack.Stages) || index >= angkorReplicaStageCount {
+	if index < 0 || index >= len(g.pack.Stages) || !angkorStageImplemented(index) {
 		g.message = fmt.Sprintf("invalid Angkor stage %d", index+1)
 		return
 	}
@@ -773,6 +1199,11 @@ func (g *Game) loadStage(index int) {
 	g.stageIndex = index
 	g.rt = rt
 	g.worldDone = false
+	g.secretExitActive = false
+	g.secretExitTicks = 0
+	g.sealExitActive = false
+	g.sealExitTicks = 0
+	g.pendingMapTarget = -1
 	g.resultPhase = resultPhaseLoading
 	g.resultPhaseTicks = 0
 	g.resultLoadingStep = 0
@@ -780,9 +1211,15 @@ func (g *Game) loadStage(index int) {
 	g.resultNewAwards = 0
 	g.worldEffects = nil
 	g.introTicks = 0
+	if rt.IsTutorialStage() {
+		g.introTicks = stageIntroDuration
+	}
 	g.heroMoveStart = 0
 	g.heroMoveOffset = 0
+	g.resetHeroFacing()
 	g.entranceSteps = rt.EntranceScrollX
+	g.demoCameraLocked = false
+	g.demoCameraPhase = 0
 	g.resetCamera()
 	g.updateCompass()
 	if g.sounds != nil && g.sounds.enabled {
@@ -802,12 +1239,55 @@ func (g *Game) applyCampaignProgress(rt *original.Runtime, stageIndex int) {
 	toolLevel := progress.ToolLevel
 	if stageIndex == 4 {
 		// Angkor Stage 5 is revisited after the Mystic Hook is obtained in
-		// Bavaria. This five-stage slice has no Bavaria node, so load the stage
+		// Bavaria. This Angkor-only slice has no Bavaria node, so load the stage
 		// with the same prerequisite state the original route expects.
 		toolLevel = maxToolLevel(toolLevel, 2)
 	}
+	if stageIndex == 7 {
+		// Angkor Stage 8's secret route is revisited with the Freeze Hammer.
+		// The intervening world is outside this Angkor-only campaign slice.
+		toolLevel = maxToolLevel(toolLevel, 8)
+	}
+	if stageIndex >= angkorFirstSecretStage && stageIndex < angkorTutorialStage {
+		// The four Angkor secret stages are revisited after the intervening
+		// worlds and shop upgrades. Supply that source-valid campaign state in
+		// this Angkor-only slice.
+		toolLevel = maxToolLevel(toolLevel, 8)
+		rt.MaxHealth = max(rt.MaxHealth, 8)
+		rt.Health = rt.MaxHealth
+	}
 	rt.SpecialItemMask = toolLevelSpecialItemMask(toolLevel)
+	rt.ApplyPersistentRewardCoordinates(persistentRewardsForStage(rt, stageIndex, progress))
 	rt.SaveSnapshot()
+}
+
+func persistentRewardsForStage(rt *original.Runtime, stageIndex int, progress originalProgress) []original.Point {
+	if rt == nil || rt.Stage == nil || stageIndex < 0 || stageIndex >= angkorStageCount {
+		return nil
+	}
+	points := append([]original.Point(nil), progress.StageConsumedRewards[stageIndex]...)
+	redComplete := rt.TotalRedDiamonds > 0 && progress.StageRedDiamonds[stageIndex] >= rt.TotalRedDiamonds
+	relicComplete := stageIndex == angkorSealStage && progress.RelicMask&1 != 0
+	if !redComplete && !relicComplete {
+		return points
+	}
+	for idx, id := range rt.Stage.Player {
+		if id != 2 && id != 53 {
+			continue
+		}
+		if id == 2 && !redComplete || id == 53 && !relicComplete {
+			continue
+		}
+		foreground := rt.Stage.Foreground[idx]
+		if foreground != 14 && foreground != 33 {
+			continue
+		}
+		point := original.Point{X: idx % rt.Width(), Y: idx / rt.Width()}
+		if !containsPoint(points, point) {
+			points = append(points, point)
+		}
+	}
+	return points
 }
 
 func toolLevelSpecialItemMask(level int) int {
@@ -825,8 +1305,24 @@ func toolLevelSpecialItemMask(level int) int {
 
 func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(color.RGBA{6, 8, 10, 255})
+	if g.mode == gameModeStartMenu {
+		g.drawStartMenu(screen)
+		return
+	}
 	if g.mode == gameModeWorldMap {
 		g.drawWorldMap(screen)
+		return
+	}
+	if g.mode == gameModeWorldSelect {
+		g.drawWorldSelect(screen)
+		return
+	}
+	if g.sealExitActive {
+		g.drawAngkorSealLoading(screen)
+		return
+	}
+	if g.secretExitActive {
+		g.drawSecretExit(screen)
 		return
 	}
 	if g.worldDone {
@@ -840,31 +1336,37 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	}
 	world.Fill(color.RGBA{6, 8, 10, 255})
 	camX, camY := g.cameraPixels()
-	firstX := camX / original.TileSize
-	firstY := camY / original.TileSize
-	offX := -(camX % original.TileSize)
-	offY := -(camY % original.TileSize)
-	for y := firstY; y <= firstY+playfieldHeight/original.TileSize+1; y++ {
-		for x := firstX; x <= firstX+original.ScreenWidth/original.TileSize+1; x++ {
-			if x < 0 || y < 0 || x >= g.rt.Width() || y >= g.rt.Height() {
-				continue
-			}
-			px := offX + (x-firstX)*original.TileSize
-			py := offY + (y-firstY)*original.TileSize
-			g.drawCell(world, x, y, px, py)
-		}
-	}
-	g.drawWorldEffects(world, camX, camY)
+	g.drawStageCells(world, camX, camY)
+	g.drawGreatAnaconda(world, camX, camY)
+	g.drawFallingTorchStage(world, camX, camY)
+	g.drawTutorialSealOverlay(world, camX, camY)
+	g.drawTutorialRecallHint(world, camX, camY)
 	playerX, playerY := g.renderedPlayerPixels()
 	renderedPlayerX := playerX - camX
 	renderedPlayerY := playerY - camY
-	g.drawPlayer(world, renderedPlayerX, renderedPlayerY)
-	g.drawChestRewardEffect(world, renderedPlayerX, renderedPlayerY)
+	if !g.rt.TutorialSealActivated {
+		g.drawPlayer(world, renderedPlayerX, renderedPlayerY)
+	}
+	g.drawStageForegroundOverlays(world, camX, camY)
+	g.drawWorldEffects(world, camX, camY)
+	if !g.rt.TutorialSealActivated {
+		g.drawChestRewardEffect(world, renderedPlayerX, renderedPlayerY)
+		g.drawSpecialBarrierPrompt(world, renderedPlayerX, renderedPlayerY)
+	}
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(0, playfieldTop)
 	screen.DrawImage(world, op)
 	g.drawHUD(screen)
-	if g.introTicks < stageIntroDuration {
+	g.drawGreatAnacondaHealth(screen)
+	g.drawTutorialFlash(screen)
+	if index, _, ok := g.rt.EnemyGateMessage(); ok {
+		drawSourcePanelLabel(screen, g.fontSmall, enemyGateMessageText(index), original.ScreenWidth/2, 223)
+	}
+	if _, ok := g.rt.TutorialPrompt(); ok {
+		g.drawTutorialPrompt(screen)
+	} else if g.rt.TutorialScriptActive {
+		g.drawTutorialChrome(screen)
+	} else if g.introTicks < stageIntroDuration {
 		g.drawStageIntro(screen)
 	} else if g.rt.ReachedGoal {
 		drawSourcePanelLabel(screen, g.fontMedium, "CONGRATULATIONS!", original.ScreenWidth/2, playfieldTop+160)
@@ -875,6 +1377,97 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		drawRect(screen, 0, 0, original.ScreenWidth, curtain, color.Black)
 		drawRect(screen, 0, original.ScreenHeight-curtain, original.ScreenWidth, curtain, color.Black)
 	}
+}
+
+func enemyGateMessageText(index int) string {
+	switch index {
+	case 51:
+		return "Defeat the Great Anaconda!"
+	case 58:
+		return "Light the torch!"
+	default:
+		return "Defeat everyone!"
+	}
+}
+
+// Java keeps the scrolling tile map in a background buffer, then scans dynamic
+// cells from -1 through 11 around the 240x240 viewport. Keeping those passes
+// separate prevents a later floor tile from clipping a moving object or flame.
+type stageCellViewport struct {
+	firstX, firstY     int
+	offX, offY         int
+	firstRel           int
+	lastRelX, lastRelY int
+}
+
+func sourceStageCellViewport(camX, camY int) stageCellViewport {
+	return stageCellViewport{
+		firstX:   camX / original.TileSize,
+		firstY:   camY / original.TileSize,
+		offX:     -(camX % original.TileSize),
+		offY:     -(camY % original.TileSize),
+		firstRel: -1,
+		lastRelX: original.ScreenWidth/original.TileSize + 2,
+		lastRelY: playfieldHeight/original.TileSize + 2,
+	}
+}
+
+func (g *Game) drawStageCells(dst *ebiten.Image, camX, camY int) {
+	view := sourceStageCellViewport(camX, camY)
+
+	for relY := view.firstRel; relY < view.lastRelY; relY++ {
+		for relX := view.firstRel; relX < view.lastRelX; relX++ {
+			x := view.firstX + relX
+			y := view.firstY + relY
+			if x < 0 || y < 0 || x >= g.rt.Width() || y >= g.rt.Height() {
+				continue
+			}
+			g.drawCellBackground(dst, x, y, view.offX+relX*original.TileSize, view.offY+relY*original.TileSize)
+		}
+	}
+	for relY := view.firstRel; relY < view.lastRelY; relY++ {
+		for relX := view.firstRel; relX < view.lastRelX; relX++ {
+			x := view.firstX + relX
+			y := view.firstY + relY
+			if x < 0 || y < 0 || x >= g.rt.Width() || y >= g.rt.Height() {
+				continue
+			}
+			g.drawCellObjects(dst, x, y, view.offX+relX*original.TileSize, view.offY+relY*original.TileSize)
+		}
+	}
+}
+
+func (g *Game) drawStageForegroundOverlays(dst *ebiten.Image, camX, camY int) {
+	view := sourceStageCellViewport(camX, camY)
+	for relY := view.firstRel; relY < view.lastRelY; relY++ {
+		for relX := view.firstRel; relX < view.lastRelX; relX++ {
+			x := view.firstX + relX
+			y := view.firstY + relY
+			if x < 0 || y < 0 || x >= g.rt.Width() || y >= g.rt.Height() {
+				continue
+			}
+			g.drawCellForegroundOverlay(dst, x, y, view.offX+relX*original.TileSize, view.offY+relY*original.TileSize)
+		}
+	}
+}
+
+func (g *Game) drawAngkorSealLoading(screen *ebiten.Image) {
+	screen.Fill(color.Black)
+	progress := min(230, (g.sealExitTicks+1)*230/sealLoadingSteps)
+	drawRect(screen, 5, 310, progress, 6, color.RGBA{0xce, 0x9b, 0x00, 0xff})
+	drawRect(screen, 4, 309, 231, 1, color.RGBA{0xfc, 0x9a, 0x04, 0xff})
+	drawRect(screen, 4, 316, 231, 1, color.RGBA{0xfc, 0x9a, 0x04, 0xff})
+	drawRect(screen, 4, 310, 1, 6, color.RGBA{0xfc, 0x9a, 0x04, 0xff})
+	drawRect(screen, 234, 310, 1, 6, color.RGBA{0xfc, 0x9a, 0x04, 0xff})
+	g.fontMedium.drawText(screen, "LOADING", original.ScreenWidth/2, 304, true, color.White)
+}
+
+func (g *Game) drawSecretExit(screen *ebiten.Image) {
+	screen.Fill(color.Black)
+	drawSourcePanelLines(screen, g.fontSmall, []string{
+		"Congratulations! You have",
+		"unlocked a secret path!",
+	}, original.ScreenWidth/2, 164)
 }
 
 func (g *Game) deathCurtainHeight() int {
@@ -894,46 +1487,46 @@ func (g *Game) drawStageResults(screen *ebiten.Image) {
 	screen.Fill(color.RGBA{0x26, 0x17, 0x07, 0xff})
 	textColor := color.White
 	titleOffset, completeOffset := stageResultTitleOffsets(g.resultPhase, g.resultPhaseTicks)
-	g.fontSmall.drawText(screen, fmt.Sprintf("STAGE %d", g.stageIndex+1), original.ScreenWidth/2+titleOffset, 10, true, textColor)
-	g.fontSmall.drawText(screen, "COMPLETE!", original.ScreenWidth/2+completeOffset, 25, true, textColor)
+	g.fontSmall.drawText(screen, fmt.Sprintf("STAGE %d", g.stageIndex+1), original.ScreenWidth/2+titleOffset, resultStageTitleY, true, textColor)
+	g.fontSmall.drawText(screen, "COMPLETE!", original.ScreenWidth/2+completeOffset, resultCompleteY, true, textColor)
 
 	if g.resultPhase >= resultPhaseVioletGems {
 		offset := stageResultRowOffset(g.resultPhase, resultPhaseVioletGems, g.resultPhaseTicks)
-		drawSpriteFrame(screen, g.violetGem, 0, 7+offset, 69)
-		g.fontSmall.drawText(screen, "DIAMONDS", original.ScreenWidth/2, 69, true, textColor)
+		drawSpriteFrame(screen, g.violetGem, 0, 7+offset, resultVioletLabelY)
+		g.fontSmall.drawText(screen, "DIAMONDS", original.ScreenWidth/2, resultVioletLabelY, true, textColor)
 		count := g.rt.VioletGems
 		if g.resultPhase == resultPhaseVioletGems {
 			count = min(g.resultPhaseTicks>>1, count)
 		}
-		g.fontSmall.drawText(screen, fmt.Sprintf("%d/%d", count, g.rt.TotalVioletGems), original.ScreenWidth/2, 81, true, textColor)
+		g.fontSmall.drawText(screen, fmt.Sprintf("%d/%d", count, g.rt.TotalVioletGems), original.ScreenWidth/2, resultVioletCountY, true, textColor)
 	}
 	if g.resultPhase >= resultPhaseRedDiamonds {
 		offset := stageResultRowOffset(g.resultPhase, resultPhaseRedDiamonds, g.resultPhaseTicks)
-		drawSpriteFrame(screen, g.redDiamond, 0, 7+offset, 127)
-		g.fontSmall.drawText(screen, "RED DIAMONDS", original.ScreenWidth/2, 127, true, textColor)
-		g.fontSmall.drawText(screen, fmt.Sprintf("%d/%d", g.rt.RedDiamonds, g.rt.TotalRedDiamonds), original.ScreenWidth/2, 139, true, textColor)
-		g.drawStageResultAward(screen, resultAwardVioletGems, resultPhaseRedDiamonds, 63, 80, resultEffectDoubleShort)
+		drawSpriteFrame(screen, g.redDiamond, 0, 7+offset, resultRedLabelY)
+		g.fontSmall.drawText(screen, "RED DIAMONDS", original.ScreenWidth/2, resultRedLabelY, true, textColor)
+		g.fontSmall.drawText(screen, fmt.Sprintf("%d/%d", g.rt.RedDiamonds, g.rt.TotalRedDiamonds), original.ScreenWidth/2, resultRedCountY, true, textColor)
+		g.drawStageResultAward(screen, resultAwardVioletGems, resultPhaseRedDiamonds, 69, 86, resultEffectDoubleShort)
 	}
 	if g.resultPhase >= resultPhaseHits {
 		offset := stageResultRowOffset(g.resultPhase, resultPhaseHits, g.resultPhaseTicks)
-		g.drawHeroResultIcon(screen, 10, 7+offset, 189)
-		g.fontSmall.drawText(screen, "HITS", original.ScreenWidth/2, 185, true, textColor)
-		g.fontSmall.drawText(screen, fmt.Sprintf("%d", g.rt.HitCount), original.ScreenWidth/2, 197, true, textColor)
-		g.drawStageResultAward(screen, resultAwardRedDiamonds, resultPhaseHits, 121, 138, resultEffectHalf)
+		g.drawHeroResultIcon(screen, 10, 7+offset, resultHitsIconY)
+		g.fontSmall.drawText(screen, "HITS", original.ScreenWidth/2, resultHitsLabelY, true, textColor)
+		g.fontSmall.drawText(screen, fmt.Sprintf("%d", g.rt.HitCount), original.ScreenWidth/2, resultHitsCountY, true, textColor)
+		g.drawStageResultAward(screen, resultAwardRedDiamonds, resultPhaseHits, 125, 142, resultEffectHalf)
 	}
 	if g.resultPhase >= resultPhaseRetries {
 		offset := stageResultRowOffset(g.resultPhase, resultPhaseRetries, g.resultPhaseTicks)
-		g.drawHeroResultIcon(screen, 12, 7+offset, 243)
-		g.fontSmall.drawText(screen, "RETRIES", original.ScreenWidth/2, 243, true, textColor)
-		g.fontSmall.drawText(screen, fmt.Sprintf("%d", g.rt.Retries), original.ScreenWidth/2, 255, true, textColor)
-		g.drawStageResultAward(screen, resultAwardNoHits, resultPhaseRetries, 179, 196, resultEffectHalf)
+		g.drawHeroResultIcon(screen, 12, 7+offset, resultRetriesIconY)
+		g.fontSmall.drawText(screen, "RETRIES", original.ScreenWidth/2, resultRetriesLabelY, true, textColor)
+		g.fontSmall.drawText(screen, fmt.Sprintf("%d", g.rt.Retries), original.ScreenWidth/2, resultRetriesCountY, true, textColor)
+		g.drawStageResultAward(screen, resultAwardNoHits, resultPhaseRetries, 181, 198, resultEffectHalf)
 	}
 	if g.resultPhase >= resultPhaseComplete {
 		g.drawStageResultAward(screen, resultAwardNoRetries, resultPhaseComplete, 237, 254, resultEffectDoubleLong)
 	}
-	prompt := "SKIP"
+	prompt := desktopActionKeyLabel + ": SKIP"
 	if g.resultPhase == resultPhaseComplete {
-		prompt = "CONTINUE"
+		prompt = desktopActionKeyLabel + ": CONTINUE"
 	}
 	g.fontSmall.drawText(screen, prompt, 5, 318, false, textColor)
 }
@@ -1043,7 +1636,15 @@ func (g *Game) Layout(_, _ int) (int, int) {
 }
 
 func (g *Game) cameraPixels() (int, int) {
-	return g.cameraX, g.cameraY
+	if g.rt == nil {
+		return g.cameraX, g.cameraY
+	}
+	shake := g.rt.FallingTorchShake(g.tick)
+	if g.rt.Anaconda.Enabled && g.rt.Anaconda.RumbleTicks > 0 {
+		rumble := g.rt.Anaconda.RumbleTicks
+		shake = max(shake, rumble*g.tick%((rumble>>1)+1)%12)
+	}
+	return g.cameraX, max(0, g.cameraY-shake)
 }
 
 func (g *Game) resetCamera() {
@@ -1059,6 +1660,49 @@ func (g *Game) updateCamera() {
 	if g.rt == nil {
 		return
 	}
+	if targetX, targetY, phase, elapsed, duration, ok := g.rt.TutorialCamera(); ok {
+		phase += 200
+		if !g.demoCameraLocked || g.demoCameraPhase != phase {
+			g.demoCameraLocked = true
+			g.demoCameraPhase = phase
+			g.demoCameraStartX = g.cameraX
+			g.demoCameraStartY = g.cameraY
+		}
+		g.cameraX = (targetX*elapsed + g.demoCameraStartX*(duration-elapsed)) / duration
+		g.cameraY = (targetY*elapsed + g.demoCameraStartY*(duration-elapsed)) / duration
+		return
+	}
+	if targetX, targetY, phase, elapsed, duration, ok := g.rt.EnemyGateDemoCamera(); ok {
+		if !g.demoCameraLocked || g.demoCameraPhase != phase {
+			g.demoCameraLocked = true
+			g.demoCameraPhase = phase
+			g.demoCameraStartX = g.cameraX
+			g.demoCameraStartY = g.cameraY
+		}
+		if duration <= 0 {
+			duration = 1
+		}
+		g.cameraX = (targetX*elapsed + g.demoCameraStartX*(duration-elapsed)) / duration
+		g.cameraY = (targetY*elapsed + g.demoCameraStartY*(duration-elapsed)) / duration
+		return
+	}
+	if targetX, targetY, elapsed, duration, ok := g.rt.ForegroundDemoCamera(); ok {
+		phase := 100 + g.rt.ForegroundDemoPhase
+		if !g.demoCameraLocked || g.demoCameraPhase != phase {
+			g.demoCameraLocked = true
+			g.demoCameraPhase = phase
+			g.demoCameraStartX = g.cameraX
+			g.demoCameraStartY = g.cameraY
+		}
+		if duration <= 0 {
+			duration = 1
+		}
+		g.cameraX = (targetX*elapsed + g.demoCameraStartX*(duration-elapsed)) / duration
+		g.cameraY = (targetY*elapsed + g.demoCameraStartY*(duration-elapsed)) / duration
+		return
+	}
+	g.demoCameraLocked = false
+	g.demoCameraPhase = 0
 	playerX, playerY := g.renderedPlayerPixels()
 	maxX := max(0, g.rt.Width()*original.TileSize-original.ScreenWidth)
 	maxY := max(0, g.rt.Height()*original.TileSize-playfieldHeight)
@@ -1140,8 +1784,86 @@ func (g *Game) drawHealth(screen *ebiten.Image) {
 	g.hud.drawModule(screen, rightModule, x, y)
 }
 
-func (g *Game) drawCell(dst *ebiten.Image, x, y, px, py int) {
-	cellPX, cellPY := px, py
+func (g *Game) drawFallingTorchStage(dst *ebiten.Image, camX, camY int) {
+	if g.rt == nil || !g.rt.IsFallingTorchStage() || g.fallingTorches == nil || g.fallingFire == nil {
+		return
+	}
+	torchY := 42*original.TileSize - camY
+	g.fallingTorches.drawAnimation(dst, g.rt.FallingTorchAnimation, g.rt.FallingTorchAnimationTicks, 10*original.TileSize-camX, torchY, 0)
+	g.fallingTorches.drawAnimation(dst, g.rt.FallingTorchAnimation, g.rt.FallingTorchAnimationTicks, 14*original.TileSize-camX, torchY, 1)
+
+	if g.rt.FallingTorchWarningTicks > 10 && g.fallingDebris != nil {
+		for particle := 3; particle < 13; particle += 2 {
+			period := 10 * (particle*2/5 + 1)
+			x := (period + g.tick/period) * particle % original.ScreenWidth
+			y := (original.ScreenHeight / period * g.tick) % original.ScreenHeight
+			g.fallingDebris.drawModule(dst, particle&1, x, y)
+		}
+	}
+
+	fireWorldY, active := g.rt.RisingFireWorldY()
+	if !active {
+		return
+	}
+	fireY := fireWorldY - camY
+	left := 168 - camX
+	for left <= -original.TileSize {
+		left += original.TileSize
+	}
+	if g.rt.RisingFireFillVisible() {
+		for y := fireY + 20; y < playfieldHeight; y += original.TileSize {
+			for x := left; x < original.ScreenWidth; x += original.TileSize {
+				sequence := ((g.tick >> 1) + x + y) & 1
+				g.fallingFire.drawAnimationSequenceFrame(dst, 1, sequence, x, y, 0)
+			}
+		}
+	}
+	topX := 168 + original.ScreenWidth/2 - camX
+	g.fallingFire.drawAnimation(dst, g.rt.RisingFireAnimation, g.rt.RisingFireAnimationTicks, topX, fireY, 0)
+	g.fallingFire.drawAnimation(dst, g.rt.RisingFireAnimation, g.rt.RisingFireAnimationTicks, topX, fireY, 1)
+
+	flash := (g.tick << 3) % 160
+	green := 160 - flash
+	if (g.tick/160)&1 != 0 {
+		green = flash
+	}
+	border := color.RGBA{255, uint8(clamp(green, 0, 255)), 0, 255}
+	drawRect(dst, 0, 0, original.ScreenWidth, 1, border)
+	drawRect(dst, 0, 0, 1, playfieldHeight, border)
+	drawRect(dst, original.ScreenWidth-1, 0, 1, playfieldHeight, border)
+}
+
+func (g *Game) drawGreatAnaconda(dst *ebiten.Image, camX, camY int) {
+	if g.rt == nil || !g.rt.Anaconda.Enabled || g.anaconda == nil || g.anacondaPlatform == nil {
+		return
+	}
+	boss := g.rt.Anaconda
+	g.anaconda.drawAnimation(dst, boss.Animation, boss.AnimationTicks, boss.X()*original.TileSize-camX, boss.BodyY-camY, 0)
+	if boss.TailVisible && g.flames != nil {
+		g.flames.drawAnimation(dst, boss.TailAnimation, boss.TailAnimationTicks, (boss.X()+1)*original.TileSize-camX, 96-camY, 0)
+	}
+	for column := 0; column < 3; column++ {
+		x := 10 + column*(2+boolToInt(column > 0))
+		g.anacondaPlatform.drawFrame(dst, 1, x*original.TileSize-camX, 216-camY, 0)
+	}
+}
+
+func (g *Game) drawGreatAnacondaHealth(screen *ebiten.Image) {
+	if g.rt == nil || !g.rt.Anaconda.Enabled || g.rt.Anaconda.Health <= 0 {
+		return
+	}
+	phase := g.rt.Anaconda.Phase
+	if phase == original.AnacondaPhaseDormant || phase == original.AnacondaPhaseComplete {
+		return
+	}
+	x := (original.ScreenWidth - 44) / 2
+	drawRect(screen, x, 5, 44, 12, color.Black)
+	for segment := 0; segment < g.rt.Anaconda.Health; segment++ {
+		drawRect(screen, x+2+segment*14, 7, 12, 8, color.RGBA{0x3b, 0xb7, 0x8f, 0xff})
+	}
+}
+
+func (g *Game) drawCellBackground(dst *ebiten.Image, x, y, px, py int) {
 	drawRect(dst, px, py, original.TileSize, original.TileSize, color.RGBA{18, 20, 24, 255})
 	playerID, _ := g.rt.At(original.PlayerLayer, x, y)
 	if playerID == original.EmptyRawID || playerID < 80 {
@@ -1149,6 +1871,11 @@ func (g *Game) drawCell(dst *ebiten.Image, x, y, px, py int) {
 	} else {
 		g.drawWorldFrame(dst, int(playerID-80), px, py)
 	}
+}
+
+func (g *Game) drawCellObjects(dst *ebiten.Image, x, y, px, py int) {
+	cellPX, cellPY := px, py
+	playerID, _ := g.rt.At(original.PlayerLayer, x, y)
 	foregroundID, _ := g.rt.At(original.ForegroundLayer, x, y)
 	if foregroundID != original.EmptyRawID {
 		id := foregroundID
@@ -1162,7 +1889,7 @@ func (g *Game) drawCell(dst *ebiten.Image, x, y, px, py int) {
 			}
 			drawSpriteFrame(dst, g.checkpoint, frame, px, py)
 		case id == 5 || id == 28:
-			drawSpriteFrame(dst, g.goal, 0, px, py)
+			drawSpriteFrame(dst, g.goal, sourceGoalFrame(g.stageIndex), px, py)
 		case id == 6:
 			g.drawPressureSwitch(dst, x, y, px, py, playerID)
 		case id == 7:
@@ -1177,12 +1904,8 @@ func (g *Game) drawCell(dst *ebiten.Image, x, y, px, py int) {
 		case id == 14:
 			state := clamp(g.objectStateAt(x, y), 0, 2)
 			g.specialContainer.drawAnimationSequenceFrame(dst, 0, state, px, py, 0)
-		case id == 32:
-			g.drawDiggableFrame(dst, clamp(g.objectStateAt(x, y), 0, len(diggableFrameBounds)-1), px, py)
-		case id >= 80:
-			g.drawWorldFrame(dst, int(id-80), px, py)
-		case id >= 20 && id < 26:
-			g.foregroundEffects.drawAnimation(dst, int(id-20), g.tick/2, px, py, 0)
+		case id == 33:
+			g.hiddenOverlay.drawFrame(dst, hiddenOverlayFrame(g.objectStateAt(x, y)), px, py, 0)
 		}
 	}
 	if playerID < 80 && playerID != original.EmptyRawID {
@@ -1190,7 +1913,7 @@ func (g *Game) drawCell(dst *ebiten.Image, x, y, px, py int) {
 		motion := original.ObjectMotion{}
 		if idx >= 0 && idx < len(g.rt.ObjectMotion) {
 			motion = g.rt.ObjectMotion[idx]
-			if playerID == 0 || playerID == 1 {
+			if playerID == 0 || playerID == 1 || playerID == 9 {
 				offsetX, offsetY := g.rt.GravityObjectRenderOffset(x, y, g.tick)
 				px += offsetX
 				py += offsetY
@@ -1216,6 +1939,13 @@ func (g *Game) drawCell(dst *ebiten.Image, x, y, px, py int) {
 				g.commonPickups.drawFrame(dst, 0, px, py, 0)
 			case 7:
 				g.commonPickups.drawFrame(dst, 1, px, py, 0)
+			case 9:
+				switch g.rt.FrozenOriginalAt(x, y) {
+				case 1:
+					g.frozenViolet.drawFrame(dst, 0, px, py, 0)
+				default:
+					g.frozenSnake.drawFrame(dst, 0, px, py, 0)
+				}
 			case 10:
 				g.drawDiggableFrame(dst, 0, px, py)
 			case 11:
@@ -1232,7 +1962,7 @@ func (g *Game) drawCell(dst *ebiten.Image, x, y, px, py int) {
 				g.breakables.drawAnimationSequenceFrame(dst, 0, frame, px, py, 0)
 			case 32:
 				g.drawHookSegment(dst, x, y, px, py)
-			case 24, 31, 33, 41, 79:
+			case 24, 31, 33, 41, 50, 79:
 				// These are hidden payload/marker objects. Their foreground container,
 				// lock, or stage-entry flow owns the visible source sprite.
 			case 19:
@@ -1254,10 +1984,32 @@ func (g *Game) drawCell(dst *ebiten.Image, x, y, px, py int) {
 			}
 		}
 	}
-	if foregroundID == 33 {
-		frame := hiddenOverlayFrame(g.objectStateAt(x, y))
-		g.hiddenOverlay.drawFrame(dst, frame, cellPX, cellPY, 0)
+	g.drawTutorialSealCell(dst, x, y, cellPX, cellPY)
+}
+
+func (g *Game) drawCellForegroundOverlay(dst *ebiten.Image, x, y, px, py int) {
+	foregroundID, _ := g.rt.At(original.ForegroundLayer, x, y)
+	switch {
+	case foregroundID == 32:
+		g.drawDiggableFrame(dst, clamp(g.rt.ForegroundStateAt(x, y), 0, len(diggableFrameBounds)-1), px, py)
+	case foregroundID >= 20 && foregroundID < 26:
+		g.foregroundEffects.drawAnimationSequenceFrame(dst, int(foregroundID-20), sourceForegroundEffectSequence(g.tick), px, py, 0)
+	default:
+		if frame, ok := sourceWorldOverlayFrame(foregroundID); ok {
+			g.drawWorldFrame(dst, frame, px, py)
+		}
 	}
+}
+
+func sourceForegroundEffectSequence(sourceTick int) int {
+	return sourceTick >> 2
+}
+
+func sourceWorldOverlayFrame(id original.RawID) (int, bool) {
+	if id == original.EmptyRawID || id < 80 {
+		return 0, false
+	}
+	return int(id - 80), true
 }
 
 func sourceCellObjectVisible(playerID, foregroundID original.RawID) bool {
@@ -1265,7 +2017,7 @@ func sourceCellObjectVisible(playerID, foregroundID original.RawID) bool {
 		return true
 	}
 	switch playerID {
-	case 2, 4, 5, 6, 7, 24, 26, 27, 41:
+	case 2, 4, 5, 6, 7, 24, 26, 27, 40, 41, 42, 51, 52, 53:
 		return false
 	default:
 		return true
@@ -1340,7 +2092,12 @@ func (g *Game) drawPressureSwitch(dst *ebiten.Image, x, y, px, py int, playerID 
 	if len(g.pressureSwitch.meta.Modules) > 0 {
 		height = g.pressureSwitch.meta.Modules[0].H
 	}
-	g.pressureSwitch.drawModule(dst, 0, px, py+original.TileSize-height+offset)
+	clip := image.Rect(px, py, px+original.TileSize, py+original.TileSize).Intersect(dst.Bounds())
+	if clip.Empty() {
+		return
+	}
+	clipped := dst.SubImage(clip).(*ebiten.Image)
+	g.pressureSwitch.drawModule(clipped, 0, px, py+original.TileSize-height+offset)
 }
 
 func (g *Game) pressureSwitchOffset(x, y int, playerID original.RawID) int {
@@ -1405,12 +2162,41 @@ func (g *Game) drawCenteredModule(dst *ebiten.Image, sheet *spriteSheet, module,
 	sheet.drawModule(dst, module, px+(original.TileSize-bounds.W)/2, py+(original.TileSize-bounds.H)/2)
 }
 
+func (g *Game) drawSpecialBarrierPrompt(dst *ebiten.Image, playerX, playerY int) {
+	toolModule, available, visible := g.rt.SpecialBarrierPrompt()
+	if !visible || g.toolPrompt == nil || g.tools == nil {
+		return
+	}
+	g.drawCenteredAt(dst, g.toolPrompt, 0, playerX-12, playerY-22)
+	if available {
+		g.drawCenteredAt(dst, g.tools, toolModule, playerX-12, playerY-24)
+		drawControlKeycap(dst, g.fontSmall, desktopActionKeyLabel, playerX+original.TileSize/2, playerY-54)
+		return
+	}
+	g.drawCenteredAt(dst, g.toolPrompt, 1, playerX-12, playerY-24)
+}
+
+func (g *Game) drawCenteredAt(dst *ebiten.Image, sheet *spriteSheet, module, centerX, centerY int) {
+	if sheet == nil || module < 0 || module >= len(sheet.meta.Modules) {
+		return
+	}
+	bounds := sheet.meta.Modules[module]
+	sheet.drawModule(dst, module, centerX-bounds.W/2, centerY-bounds.H/2)
+}
+
 func sourceGemFrame(sourceTick int) int {
 	frame := (sourceTick & 0x3f) >> 1
 	if frame >= 4 {
 		return 0
 	}
 	return frame
+}
+
+func sourceGoalFrame(stageIndex int) int {
+	if stageIndex == 4 || stageIndex == 7 {
+		return 1
+	}
+	return 0
 }
 
 func (g *Game) objectStateAt(x, y int) int {
@@ -1474,7 +2260,7 @@ func (g *Game) drawPlayer(dst *ebiten.Image, px, py int) {
 	}
 	animation, animationTick := g.heroAnimationState()
 	g.hero.drawAnimation(dst, animation, animationTick, px, py, 0)
-	if g.rt.ChestOpening && chestRewardIconVisible(g.hero, g.rt.ChestAnimation, g.rt.ChestTicks) {
+	if (g.rt.ChestOpening && chestRewardIconVisible(g.hero, g.rt.ChestAnimation, g.rt.ChestTicks)) || g.rt.RelicCelebrating {
 		g.drawChestRewardIcon(dst, px, py-original.TileSize)
 	}
 }
@@ -1497,6 +2283,9 @@ func (g *Game) heroAnimationState() (int, int) {
 			animation = 40
 		}
 		animationTick = g.rt.ChestTicks
+	} else if g.rt.RelicCelebrating {
+		animation = 47
+		animationTick = g.rt.RelicCelebrationTicks
 	} else if g.rt.LockOpening {
 		animation = g.rt.LockAnimation
 		animationTick = g.rt.LockTicks
@@ -1539,7 +2328,7 @@ func (g *Game) drawChestRewardEffect(dst *ebiten.Image, px, py int) {
 	g.pickupEffects.drawAnimation(dst, animation, effectTick, px, py-original.TileSize, 0)
 }
 
-func (g *Game) drawChestRewardIcon(dst *ebiten.Image, px, py int) {
+func (g *Game) drawChestRewardIcon(dst *ebiten.Image, px, py int) bool {
 	switch g.rt.ChestRewardID {
 	case 2:
 		drawSpriteFrame(dst, g.redDiamond, 0, px, py)
@@ -1560,7 +2349,14 @@ func (g *Game) drawChestRewardIcon(dst *ebiten.Image, px, py int) {
 	case 41:
 		drawSpriteFrame(dst, g.violetGem, 0, px, py)
 		g.hud.drawNumber(dst, g.rt.ChestRewardValue, px+original.TileSize, py+14)
+	case 42:
+		g.compassPickup.drawModule(dst, 0, px, py)
+	case 53:
+		g.drawCenteredModule(dst, g.angkorSeal, 0, px, py)
+	default:
+		return false
 	}
+	return true
 }
 
 func (g *Game) drawWorldEffects(dst *ebiten.Image, camX, camY int) {
@@ -1615,6 +2411,13 @@ func drawRect(dst *ebiten.Image, x, y, w, h int, c color.Color) {
 	dst.DrawImage(img, op)
 }
 
+func boolToInt(value bool) int {
+	if value {
+		return 1
+	}
+	return 0
+}
+
 func heldDirection() (int, int) {
 	return heldDirectionWith(ebiten.IsKeyPressed)
 }
@@ -1642,6 +2445,7 @@ func recallPressed() bool {
 func recallPressedWith(justPressed, pressed func(ebiten.Key) bool) bool {
 	return justPressed(ebiten.KeyNumpadMultiply) ||
 		justPressed(ebiten.KeyBackspace) ||
+		justPressed(ebiten.KeyEnter) ||
 		justPressed(ebiten.KeyR) ||
 		(justPressed(ebiten.KeyDigit8) && shiftPressed(pressed))
 }
@@ -1651,9 +2455,21 @@ func shiftPressed(pressed func(ebiten.Key) bool) bool {
 }
 
 func centerActionPressed() bool {
-	return inpututil.IsKeyJustPressed(ebiten.KeyDigit5) ||
-		inpututil.IsKeyJustPressed(ebiten.KeyNumpad5) ||
-		inpututil.IsKeyJustPressed(ebiten.KeyEnter)
+	return centerActionPressedWith(inpututil.IsKeyJustPressed)
+}
+
+func centerActionPressedWith(justPressed func(ebiten.Key) bool) bool {
+	return justPressed(ebiten.KeyDigit5) ||
+		justPressed(ebiten.KeyNumpad5) ||
+		justPressed(ebiten.KeySpace)
+}
+
+func tutorialSkipPressed() bool {
+	return tutorialSkipPressedWith(inpututil.IsKeyJustPressed)
+}
+
+func tutorialSkipPressedWith(justPressed func(ebiten.Key) bool) bool {
+	return justPressed(ebiten.KeyS)
 }
 
 func anyKeyPressed(pressed func(ebiten.Key) bool, keys ...ebiten.Key) bool {

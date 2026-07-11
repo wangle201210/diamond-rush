@@ -41,14 +41,28 @@ const (
 	gravityMoveLeft             = 0x800
 	snakeStunMask               = 0xf8
 	snakeStunDuration           = 0x78
+	fallingTorchStageIndex      = 5
+	fallingTorchWarningDuration = 120
+	fallingTorchWarningLoop     = 60
+	fallingTorchCollapseTicks   = 37
+	fallingFireStartTicks       = 29
+	fallingFireInitialHeight    = 816
+	fallingFireMaximumHeight    = 1704
+	foregroundDemoPanTicks      = 60
+	foregroundDemoWaitTicks     = 20
+	greatAnacondaStageIndex     = 8
+	angkorSealCompletionTicks   = 140
 )
 
 const (
 	SoundSwitch      = 0
+	SoundRiddle      = 1
 	SoundDeath       = 2
 	SoundChestOpen   = 3
 	SoundChestReward = 4
 	SoundHeroHurt    = 5
+	SoundHammerBlock = 6
+	SoundBossDeath   = 7
 	SoundCheckpoint  = 9
 	SoundEnemyHit    = 10
 	SoundBreak       = 11
@@ -57,6 +71,7 @@ const (
 	SoundDoor        = 8
 	SoundStageClear  = 15
 	SoundAngkorMusic = 16
+	SoundTitleMusic  = 19
 )
 
 type ObjectMotion struct {
@@ -68,116 +83,190 @@ type ObjectMotion struct {
 }
 
 type SourceFrameResult struct {
-	GravityMoved  int
-	SnakesMoved   int
-	CrawlersMoved int
-	HazardHits    int
-	RockHoldHits  int
-	DigCleared    int
-	VioletPickups []Point
+	GravityMoved          int
+	SnakesMoved           int
+	CrawlersMoved         int
+	HazardHits            int
+	RisingFireHits        int
+	RockHoldHits          int
+	DigCleared            int
+	AnacondaHits          int
+	AnacondaDefeated      bool
+	TutorialSealActivated bool
+	VioletPickups         []Point
 }
 
 type Runtime struct {
-	Stage                *Stage
-	Player               Point
-	PlayerMotion         ObjectMotion
-	EntranceMarker       Point
-	EntranceScrollX      int
-	EntranceDoor         Point
-	EntranceDoorSet      bool
-	PlayerLayer          []RawID
-	Background           []RawID
-	Foreground           []RawID
-	ObjectState          []int
-	ObjectMotion         []ObjectMotion
-	Pushing              bool
-	PushDX               int
-	PushTicks            int
-	pushTarget           Point
-	EnemyGateGroup       []int
-	EnemyGateCounters    map[int]int
-	ActiveEnemyGateGroup int
-	Checkpoints          []Point
-	GoalMarkers          []Point
-	Doors                []Point
-	TotalVioletGems      int
-	TotalRedDiamonds     int
-	VioletGems           int
-	RedDiamonds          int
-	KeyForForeground9    int
-	KeyForForeground8    int
-	ExtraLives           int
-	HealthRefills        int
-	BonusValue           int
-	BonusPickups         int
-	SpecialItemMask      int
-	Hammering            bool
-	HammerTicks          int
-	HammerAnimation      int
-	HammerTarget         Point
-	Hooking              bool
-	HookTicks            int
-	HookAnimation        int
-	HookTarget           Point
-	hookDX               int
-	hookStepsRemaining   int
-	hookCollect          bool
-	hookReturning        bool
-	hookTip              Point
-	hookOriginalState    int
-	SpecialPickup42      bool
-	CompassEnabled       bool
-	RelicMask            int
-	SpecialPickups       int
-	LastForegroundEvent  int
-	ForegroundEvents     int
-	BonusTarget          Point
-	BonusTargetSet       bool
-	BonusRemaining       int
-	BonusGateOpen        bool
-	LocksOpened          int
-	BreakableWalls       int
-	MaxHealth            int
-	Health               int
-	DamageTaken          int
-	HitCount             int
-	Retries              int
-	HurtTicks            int
-	InvulnerabilityTicks int
-	RockHoldTicks        int
-	PlayerDead           bool
-	DeathTicks           int
-	RecallUsed           bool
-	RecallPending        bool
-	RecallTicks          int
-	ExitOpen             bool
-	ReachedGoal          bool
-	GoalExitDirection    int
-	GoalExitComplete     bool
-	CheckpointProgress   int
-	CheckpointPending    bool
-	pendingCheckpoint    Point
-	pendingChest         Point
-	pendingChestSet      bool
-	ChestOpening         bool
-	ChestTicks           int
-	ChestRewarded        bool
-	ChestAnimation       int
-	ChestRewardID        RawID
-	ChestRewardValue     int
-	chestOpeningFresh    bool
-	LockOpening          bool
-	LockTicks            int
-	LockAnimation        int
-	LockPoint            Point
-	LockForegroundID     RawID
-	LockRewarded         bool
-	lastPickupTick       int
-	lastPickupTickSet    bool
-	gravitySourceTick    int
-	frameVioletPickups   []Point
-	soundEvents          []int
-	checkpoint           Snapshot
+	Stage                       *Stage
+	Player                      Point
+	PlayerMotion                ObjectMotion
+	playerTurnOffset            int
+	EntranceMarker              Point
+	EntranceScrollX             int
+	EntranceDoor                Point
+	EntranceDoorSet             bool
+	PlayerLayer                 []RawID
+	Background                  []RawID
+	Foreground                  []RawID
+	ForegroundState             []int
+	ObjectState                 []int
+	ObjectMotion                []ObjectMotion
+	FrozenOriginal              []RawID
+	ContainerLocked             []bool
+	ConsumedRewardCells         []bool
+	Pushing                     bool
+	PushDX                      int
+	PushTicks                   int
+	pushTarget                  Point
+	EnemyGateGroup              []int
+	EnemyGateCounters           map[int]int
+	EnemyGateMessages           map[int]int
+	ActiveEnemyGateGroup        int
+	EnemyGateDemoActive         bool
+	EnemyGateDemoPhase          int
+	EnemyGateDemoTicks          int
+	EnemyGateDemoOutboundTicks  int
+	EnemyGateDemoTarget         Point
+	EnemyGateDemoTargetSet      bool
+	EnemyGateMessageIndex       int
+	EnemyGateMessageTicks       int
+	Anaconda                    GreatAnaconda
+	Checkpoints                 []Point
+	GoalMarkers                 []Point
+	Doors                       []Point
+	DoorGroup                   []int
+	TotalVioletGems             int
+	TotalRedDiamonds            int
+	VioletGems                  int
+	RedDiamonds                 int
+	KeyForForeground9           int
+	KeyForForeground8           int
+	ExtraLives                  int
+	HealthRefills               int
+	BonusValue                  int
+	BonusPickups                int
+	SpecialItemMask             int
+	Hammering                   bool
+	HammerTicks                 int
+	HammerAnimation             int
+	HammerTarget                Point
+	Hooking                     bool
+	HookTicks                   int
+	HookAnimation               int
+	HookTarget                  Point
+	hookDX                      int
+	hookStepsRemaining          int
+	hookCollect                 bool
+	hookReturning               bool
+	hookTip                     Point
+	hookOriginalState           int
+	SpecialPickup42             bool
+	CompassEnabled              bool
+	RelicMask                   int
+	SpecialPickups              int
+	RelicCelebrating            bool
+	RelicCelebrationTicks       int
+	LastForegroundEvent         int
+	ForegroundEvents            int
+	ForegroundDemoActive        bool
+	ForegroundDemoID            int
+	ForegroundDemoPhase         int
+	ForegroundDemoTicks         int
+	foregroundDemoMoved         bool
+	pendingForegroundEvent      Point
+	pendingForegroundEventSet   bool
+	TutorialScriptActive        bool
+	TutorialScriptID            int
+	TutorialTextIndex           int
+	TutorialTextPlacement       int
+	TutorialTextY               int
+	TutorialTextSide            int
+	TutorialPromptX             int
+	TutorialComplete            bool
+	TutorialRecallHintVisible   bool
+	TutorialSealActivated       bool
+	TutorialCameraActive        bool
+	TutorialCameraTarget        Point
+	TutorialCameraTicks         int
+	TutorialCameraDuration      int
+	TutorialCameraPhase         int
+	TutorialPortraitVisible     bool
+	TutorialPortraitX           int
+	TutorialPortraitY           int
+	TutorialPortraitFace        int
+	TutorialPortraitMark        int
+	TutorialPortraitRevealTicks int
+	TutorialFlashVisible        bool
+	tutorialCommandIndex        int
+	tutorialCommandTicks        int
+	tutorialCommandStarted      bool
+	tutorialCommandMoveDone     bool
+	tutorialMoveStarted         bool
+	tutorialMoveAttempts        int
+	tutorialPromptAcknowledged  bool
+	tutorialSkipping            bool
+	tutorialQueuedScript        int
+	tutorialResetFirst          bool
+	tutorialResetSecond         bool
+	tutorialRecallHintTriggered bool
+	FallingTorchTriggers        int
+	FallingTorchWarningTicks    int
+	FallingTorchAnimation       int
+	FallingTorchAnimationTicks  int
+	RisingFireHeight            int
+	RisingFireAnimation         int
+	RisingFireAnimationTicks    int
+	viewportX                   int
+	viewportY                   int
+	viewportSet                 bool
+	BonusTarget                 Point
+	BonusTargetSet              bool
+	BonusRemaining              int
+	BonusGateOpen               bool
+	LocksOpened                 int
+	BreakableWalls              int
+	MaxHealth                   int
+	Health                      int
+	DamageTaken                 int
+	HitCount                    int
+	Retries                     int
+	HurtTicks                   int
+	InvulnerabilityTicks        int
+	RockHoldTicks               int
+	PlayerDead                  bool
+	DeathTicks                  int
+	RecallUsed                  bool
+	RecallPending               bool
+	RecallTicks                 int
+	ExitOpen                    bool
+	ReachedGoal                 bool
+	GoalExitSecret              bool
+	GoalExitDirection           int
+	GoalExitComplete            bool
+	CheckpointProgress          int
+	CheckpointPending           bool
+	pendingCheckpoint           Point
+	pendingChest                Point
+	pendingChestSet             bool
+	ChestOpening                bool
+	ChestTicks                  int
+	ChestRewarded               bool
+	ChestAnimation              int
+	ChestRewardID               RawID
+	ChestRewardValue            int
+	chestOpeningFresh           bool
+	LockOpening                 bool
+	LockTicks                   int
+	LockAnimation               int
+	LockPoint                   Point
+	LockForegroundID            RawID
+	LockRewarded                bool
+	lastPickupTick              int
+	lastPickupTickSet           bool
+	gravitySourceTick           int
+	frameVioletPickups          []Point
+	soundEvents                 []int
+	checkpoint                  Snapshot
 }
 
 type Snapshot struct {
@@ -187,11 +276,16 @@ type Snapshot struct {
 	PlayerLayer          []RawID
 	Background           []RawID
 	Foreground           []RawID
+	ForegroundState      []int
 	ObjectState          []int
 	ObjectMotion         []ObjectMotion
+	FrozenOriginal       []RawID
+	ContainerLocked      []bool
+	ConsumedRewardCells  []bool
 	EnemyGateGroup       []int
 	EnemyGateCounters    map[int]int
 	ActiveEnemyGateGroup int
+	Anaconda             GreatAnaconda
 	VioletGems           int
 	RedDiamonds          int
 	KeyForForeground9    int
@@ -206,6 +300,8 @@ type Snapshot struct {
 	SpecialPickups       int
 	LastForegroundEvent  int
 	ForegroundEvents     int
+	FallingTorchTriggers int
+	RisingFireHeight     int
 	BonusTarget          Point
 	BonusTargetSet       bool
 	BonusRemaining       int
@@ -214,6 +310,7 @@ type Snapshot struct {
 	BreakableWalls       int
 	ExitOpen             bool
 	ReachedGoal          bool
+	GoalExitSecret       bool
 	GoalExitDirection    int
 	GoalExitComplete     bool
 	CheckpointProgress   int
@@ -236,24 +333,43 @@ func NewRuntime(stage *Stage) (*Runtime, error) {
 		PlayerLayer:          append([]RawID(nil), stage.Player...),
 		Background:           append([]RawID(nil), stage.Background...),
 		Foreground:           append([]RawID(nil), stage.Foreground...),
+		ForegroundState:      make([]int, stage.Width*stage.Height),
 		ObjectState:          make([]int, stage.Width*stage.Height),
 		ObjectMotion:         make([]ObjectMotion, stage.Width*stage.Height),
+		FrozenOriginal:       make([]RawID, stage.Width*stage.Height),
+		ContainerLocked:      make([]bool, stage.Width*stage.Height),
+		ConsumedRewardCells:  make([]bool, stage.Width*stage.Height),
+		DoorGroup:            make([]int, stage.Width*stage.Height),
 		ActiveEnemyGateGroup: -1,
 		Checkpoints:          stage.Positions(ForegroundLayer, 4),
 		GoalMarkers:          append(stage.Positions(ForegroundLayer, 5), stage.Positions(ForegroundLayer, 28)...),
 		Doors:                stage.Positions(ForegroundLayer, 7),
-		TotalVioletGems:      countRaw(stage.Player, 1),
+		TotalVioletGems:      stageVioletTotal(stage),
 		TotalRedDiamonds:     countRaw(stage.Player, 2),
 		ExtraLives:           5,
 		MaxHealth:            4,
 		Health:               4,
-		CompassEnabled:       stage.Index != 13,
+		CompassEnabled:       stage.Index != tutorialStageIndex,
 		RockHoldTicks:        rockHoldDuration,
 		ChestRewardID:        EmptyRawID,
 	}
+	for idx := range rt.FrozenOriginal {
+		rt.FrozenOriginal[idx] = EmptyRawID
+		rt.DoorGroup[idx] = -1
+	}
+	if stage.Index == fallingTorchStageIndex {
+		rt.RisingFireHeight = fallingFireInitialHeight
+		rt.RisingFireAnimation = 2
+	}
+	if stage.Index == greatAnacondaStageIndex {
+		rt.Anaconda = newGreatAnaconda()
+	}
 	rt.initBonusTarget()
 	rt.initObjectState()
+	rt.initDoorStates()
 	rt.initEnemyGates()
+	rt.initGreatAnacondaStage()
+	rt.initTutorial()
 	rt.set(rt.PlayerLayer, entrance.X, entrance.Y, EmptyRawID)
 	rt.initEntranceDoor()
 	rt.TickForegroundTriggers()
@@ -272,9 +388,39 @@ func (rt *Runtime) initEntranceDoor() {
 	rt.EntranceDoor = point
 	rt.EntranceDoorSet = true
 	rt.Foreground[idx] = 7
+	rt.DoorGroup[idx] = -1
 	// Java stores (-193 << 8) | 7. Its merged high byte is 0x3f:
 	// open animation phase 3 and low-nibble temporary door id 15.
 	rt.Background[idx] = 0x3f
+}
+
+// initDoorStates mirrors the source's post-load Hashtable pass. The authored
+// background remains the immutable group identity, while the door's runtime
+// low nibble becomes the number of switches and keyed locks still to fire.
+func (rt *Runtime) initDoorStates() {
+	activators := map[int]int{}
+	for idx, foregroundID := range rt.Foreground {
+		if foregroundID != 6 && foregroundID != 8 && foregroundID != 9 {
+			continue
+		}
+		group := int(rt.Background[idx])
+		if group != int(EmptyRawID) {
+			activators[group]++
+		}
+	}
+	for idx, foregroundID := range rt.Foreground {
+		if foregroundID != 7 {
+			continue
+		}
+		group := int(rt.Background[idx])
+		if group == int(EmptyRawID) {
+			continue
+		}
+		rt.DoorGroup[idx] = group
+		if count := activators[group]; count > 0 {
+			rt.Background[idx] = RawID(count)
+		}
+	}
 }
 
 // CloseEntranceDoor mirrors doorHeadClose(playerX-1, playerY) on the final
@@ -329,7 +475,10 @@ func (rt *Runtime) initBonusTarget() {
 func (rt *Runtime) initObjectState() {
 	for idx, id := range rt.PlayerLayer {
 		switch {
-		case isSnake(id):
+		case id == 43:
+			dir := int(rt.Background[idx]) & objectDirectionMask
+			rt.ObjectState[idx] = dir | 0x10000
+		case id == 19:
 			dir := int(rt.Background[idx]) & 0x7
 			if dir >= 1 && dir <= 4 {
 				rt.ObjectState[idx] = dir
@@ -348,20 +497,32 @@ func (rt *Runtime) initEnemyGates() {
 		rt.EnemyGateGroup[i] = -1
 	}
 	rt.EnemyGateCounters = map[int]int{}
+	rt.EnemyGateMessages = map[int]int{}
 	for y := 1; y < rt.Height(); y++ {
 		for x := 0; x < rt.Width(); x++ {
 			idx := rt.index(x, y)
 			if rt.Foreground[idx] != 17 {
 				continue
 			}
+			aboveIdx := rt.index(x, y-1)
+			if isPickupContainer(rt.Foreground[aboveIdx]) {
+				rt.ContainerLocked[aboveIdx] = true
+			}
 			group := int(rt.Background[idx])
 			if group == int(EmptyRawID) {
 				continue
 			}
-			aboveIdx := rt.index(x, y-1)
 			if isEnemyGateTarget(rt.PlayerLayer[aboveIdx]) {
 				rt.EnemyGateCounters[group]++
 				rt.EnemyGateGroup[aboveIdx] = group
+				message := 56
+				if rt.PlayerLayer[aboveIdx] == 36 {
+					message = 58
+				}
+				if rt.Stage.Index == greatAnacondaStageIndex {
+					message = 51
+				}
+				rt.EnemyGateMessages[group] = message
 				rt.Foreground[idx] = EmptyRawID
 			}
 		}
@@ -401,10 +562,23 @@ func (rt *Runtime) SetForTest(layer Layer, x, y int, id RawID) bool {
 	case PlayerLayer:
 		rt.set(rt.PlayerLayer, x, y, id)
 		rt.ObjectMotion[rt.index(x, y)] = ObjectMotion{}
+		if id != 9 {
+			rt.FrozenOriginal[rt.index(x, y)] = EmptyRawID
+		}
 	case BackgroundLayer:
 		rt.set(rt.Background, x, y, id)
+		idx := rt.index(x, y)
+		if rt.Foreground[idx] == 7 && id != EmptyRawID && int(id)&0xf0 == 0 {
+			rt.DoorGroup[idx] = int(id)
+		}
 	case ForegroundLayer:
 		rt.set(rt.Foreground, x, y, id)
+		idx := rt.index(x, y)
+		if id != 7 {
+			rt.DoorGroup[idx] = -1
+		} else if rt.Background[idx] != EmptyRawID && int(rt.Background[idx])&0xf0 == 0 {
+			rt.DoorGroup[idx] = int(rt.Background[idx])
+		}
 	default:
 		return false
 	}
@@ -417,7 +591,11 @@ func (rt *Runtime) IsCheckpoint(x, y int) bool {
 }
 
 func (rt *Runtime) TryMove(dx, dy int) bool {
-	if !rt.CanAcceptInput() {
+	return rt.tryMove(dx, dy, false)
+}
+
+func (rt *Runtime) tryMove(dx, dy int, scripted bool) bool {
+	if (!scripted && !rt.CanAcceptInput()) || (scripted && !rt.canStartPlayerMove()) {
 		rt.ResetPushAttempt()
 		return false
 	}
@@ -432,7 +610,7 @@ func (rt *Runtime) TryMove(dx, dy int) bool {
 		return false
 	}
 	if dy == 0 && dx != 0 {
-		if playerID, _ := rt.At(PlayerLayer, x, y); playerID == 0 {
+		if playerID, _ := rt.At(PlayerLayer, x, y); playerID == 0 || playerID == 9 {
 			if !rt.pushAttemptReady(x, y, dx) {
 				return false
 			}
@@ -452,8 +630,10 @@ func (rt *Runtime) TryMove(dx, dy int) bool {
 	playerID, _ := rt.At(PlayerLayer, x, y)
 	foregroundID, _ := rt.At(ForegroundLayer, x, y)
 	if isPickupContainer(foregroundID) && isContainerReward(playerID) {
-		rt.pendingChest = Point{X: x, Y: y}
-		rt.pendingChestSet = true
+		if !rt.ContainerLocked[rt.index(x, y)] {
+			rt.pendingChest = Point{X: x, Y: y}
+			rt.pendingChestSet = true
+		}
 		return rt.finishMove(x, y, dx, dy)
 	}
 	switch playerID {
@@ -474,6 +654,7 @@ func (rt *Runtime) TryMove(dx, dy int) bool {
 		rt.set(rt.PlayerLayer, x, y, EmptyRawID)
 	case 7:
 		if rt.Health >= rt.MaxHealth {
+			rt.TotalVioletGems += 10
 			rt.collectBonusAt(x, y, 10)
 			return rt.finishMove(x, y, dx, dy)
 		}
@@ -493,6 +674,7 @@ func (rt *Runtime) TryMove(dx, dy int) bool {
 		rt.CompassEnabled = true
 		rt.SpecialPickups++
 		rt.set(rt.PlayerLayer, x, y, EmptyRawID)
+		rt.queueTutorialScript(11)
 	case 53:
 		rt.RelicMask |= 1
 		rt.SpecialPickups++
@@ -515,7 +697,7 @@ func (rt *Runtime) SettlePlayerMove() bool {
 	rt.pendingChestSet = false
 	playerID, playerOK := rt.At(PlayerLayer, point.X, point.Y)
 	foregroundID, foregroundOK := rt.At(ForegroundLayer, point.X, point.Y)
-	if !playerOK || !foregroundOK || !isContainerReward(playerID) || !isPickupContainer(foregroundID) {
+	if !playerOK || !foregroundOK || !isContainerReward(playerID) || !isPickupContainer(foregroundID) || rt.ContainerLocked[rt.index(point.X, point.Y)] {
 		return false
 	}
 	rt.startChestOpening(point, true)
@@ -531,6 +713,14 @@ func (rt *Runtime) startChestOpening(point Point, fresh bool) {
 	rewardValue := int(rt.Background[idx])
 	if rewardValue == int(EmptyRawID) {
 		rewardValue = 0
+	}
+	if rewardID == 6 && rt.ExtraLives >= 99 {
+		rewardID = 7
+	}
+	if rewardID == 7 && rt.Health >= rt.MaxHealth {
+		rewardID = 41
+		rewardValue = 10
+		rt.TotalVioletGems += 10
 	}
 	rt.PlayerLayer[idx] = EmptyRawID
 	rt.ObjectState[idx] = 1
@@ -551,25 +741,30 @@ func (rt *Runtime) finishMove(x, y, dx, dy int) bool {
 	foregroundID, _ := rt.At(ForegroundLayer, x, y)
 	rt.Player = Point{X: x, Y: y}
 	rt.PlayerMotion = ObjectMotion{DX: dx, DY: dy, Remaining: playerMoveStartOffset}
+	rt.playerTurnOffset = 0
 	rt.ResetPushAttempt()
 	rt.RockHoldTicks = rockHoldDuration
 	switch foregroundID {
-	case 0:
-		rt.collectForegroundEventAt(x, y)
+	case 0, 26:
+		rt.pendingForegroundEvent = Point{X: x, Y: y}
+		rt.pendingForegroundEventSet = true
 	case 1:
+		if rt.Stage.Index == fallingTorchStageIndex {
+			rt.FallingTorchWarningTicks = fallingTorchWarningDuration
+			rt.FallingTorchTriggers++
+		}
 		rt.clearForegroundBlob(x, y, 1)
 	case 4:
 		rt.activateCheckpointAt(x, y)
 	case 5, 28:
 		rt.ReachedGoal = true
+		rt.GoalExitSecret = foregroundID == 28
 		rt.GoalExitComplete = false
 		direction := int(rt.Background[rt.index(x, y)])
 		if direction < 1 || direction > 4 {
 			direction = 2
 		}
 		rt.GoalExitDirection = direction
-	case 26:
-		rt.activateEnemyGateTriggerAt(x, y)
 	}
 	rt.updatePressureDoors()
 	return true
@@ -587,9 +782,26 @@ func (rt *Runtime) AdvancePlayerMotion() bool {
 	return rt.PlayerMotion.Remaining == 0
 }
 
-// AdvanceGoalExit performs the source xBoolean auto-walk. Raw foreground 5
-// stores the exit direction in its background byte, and completion begins only
-// after the hero has moved more than five cells beyond the stage boundary.
+func (rt *Runtime) SetPlayerTurnOffset(offset int) {
+	if rt == nil {
+		return
+	}
+	rt.playerTurnOffset = max(0, offset)
+}
+
+func (rt *Runtime) playerSourceOffset() int {
+	if rt == nil {
+		return 0
+	}
+	if rt.PlayerMotion.Remaining > 0 {
+		return rt.PlayerMotion.Remaining
+	}
+	return rt.playerTurnOffset
+}
+
+// AdvanceGoalExit performs the source xBoolean auto-walk. Raw foreground 5 and
+// 28 store separate normal/secret directions; both use this movement cadence
+// before their completion branches diverge.
 func (rt *Runtime) AdvanceGoalExit() (moved, complete bool) {
 	if !rt.ReachedGoal || rt.GoalExitComplete || rt.PlayerMotion.Remaining > 0 {
 		return false, rt.GoalExitComplete
@@ -640,7 +852,7 @@ func (rt *Runtime) activateCheckpointAt(x, y int) bool {
 }
 
 func (rt *Runtime) CommitPendingCheckpoint() bool {
-	if !rt.CheckpointPending || rt.PlayerMotion.Remaining > 0 || rt.Player != rt.pendingCheckpoint {
+	if !rt.CheckpointPending || rt.playerSourceOffset() > 0 || rt.Player != rt.pendingCheckpoint {
 		return false
 	}
 	rt.CheckpointPending = false
@@ -665,6 +877,7 @@ func (rt *Runtime) collectBonusValue(value int) {
 	if value == int(EmptyRawID) || value < 0 {
 		value = 0
 	}
+	rt.VioletGems += value
 	rt.BonusValue += value
 	rt.BonusPickups++
 	rt.consumeBonusQuota(value)
@@ -677,6 +890,9 @@ func (rt *Runtime) collectSpecialItemAt(x, y, mask int) {
 	rt.SpecialItemMask |= mask
 	rt.SpecialPickups++
 	rt.set(rt.PlayerLayer, x, y, EmptyRawID)
+	if mask == 1 {
+		rt.queueTutorialScript(22)
+	}
 }
 
 func (rt *Runtime) consumeBonusQuota(value int) {
@@ -700,11 +916,15 @@ func (rt *Runtime) TryPushBoulder(x, y, dx int) bool {
 	if dx == 0 {
 		return false
 	}
+	id, ok := rt.At(PlayerLayer, x, y)
+	if !ok || id != 0 && id != 9 {
+		return false
+	}
 	targetX := x + dx
 	if !rt.cellEmptyForObject(targetX, y) {
 		return false
 	}
-	rt.moveObject(x, y, targetX, y, 0)
+	rt.moveObject(x, y, targetX, y, id)
 	return true
 }
 
@@ -792,7 +1012,7 @@ func (rt *Runtime) finishGravityMotionAt(x, y int, id RawID) {
 		return
 	}
 	rt.ObjectState[idx] &^= objectDirectionMask
-	if id == 0 {
+	if id == 0 || id == 9 {
 		rt.emitSound(SoundBoulder)
 	}
 }
@@ -917,17 +1137,23 @@ func (rt *Runtime) TickSourceFrame(radius, sourceTick, hazardReach int) SourceFr
 	rt.gravitySourceTick = sourceTick
 	rt.frameVioletPickups = rt.frameVioletPickups[:0]
 	chestOpeningFresh := rt.chestOpeningFresh
+	tutorialSealWasActivated := rt.TutorialSealActivated
 	rt.TickStatus()
+	result := SourceFrameResult{}
+	if rt.tickFallingTorchStage(sourceTick) {
+		result.RisingFireHits++
+	}
+	rt.tickForegroundDemo()
+	rt.tickEnemyGateDemo()
+	result.AnacondaHits, result.AnacondaDefeated = rt.tickGreatAnaconda(sourceTick)
 	rt.tickDoorAnimations(sourceTick)
-	if rt.PlayerMotion.Remaining <= 0 {
+	if rt.playerSourceOffset() <= 0 {
 		rt.CommitPendingCheckpoint()
 	}
 	minX := max(1, rt.Player.X-radius)
 	maxX := min(rt.Width()-2, rt.Player.X+radius)
 	minY := max(1, rt.Player.Y-radius)
 	maxY := min(rt.Height()-2, rt.Player.Y+radius)
-	crawlerProcessed := make([]bool, len(rt.PlayerLayer))
-	result := SourceFrameResult{}
 	if rt.tickRockHold() {
 		result.RockHoldHits++
 	}
@@ -955,13 +1181,18 @@ func (rt *Runtime) TickSourceFrame(radius, sourceTick, hazardReach int) SourceFr
 			case id == 10 && rt.ObjectState[idx] > 0:
 				rt.PlayerLayer[idx] = EmptyRawID
 				rt.Foreground[idx] = 32
+				rt.ForegroundState[idx] = 0
 				rt.ObjectState[idx] = 0
 			case id == 11:
-				if rt.tickCrawlerObjectAt(x, y, crawlerProcessed) {
+				if rt.tickCrawlerObjectAt(x, y) {
 					result.CrawlersMoved++
 				}
 			case id == 22 || id == 23:
 				if rt.horizontalHazardHitsPlayer(x, y, id, hazardReach) && rt.Hurt(1) {
+					result.HazardHits++
+				}
+			case id == 50:
+				if rt.playerSourceOffset() < gravityRollMoveOffset && rt.isPlayerAt(x, y) && rt.HurtFromDirection(1, rt.playerCollisionDirection()) {
 					result.HazardHits++
 				}
 			}
@@ -969,8 +1200,193 @@ func (rt *Runtime) TickSourceFrame(radius, sourceTick, hazardReach int) SourceFr
 	}
 	rt.updatePressureDoors()
 	rt.startAdjacentLockOpening()
+	rt.tickPendingForegroundEvent()
+	rt.tickTutorial()
+	result.TutorialSealActivated = !tutorialSealWasActivated && rt.TutorialSealActivated
 	result.VioletPickups = append(result.VioletPickups, rt.frameVioletPickups...)
 	return result
+}
+
+func (rt *Runtime) tickPendingForegroundEvent() {
+	if !rt.pendingForegroundEventSet || rt.playerSourceOffset() > 6 {
+		return
+	}
+	point := rt.pendingForegroundEvent
+	rt.pendingForegroundEventSet = false
+	if rt.Player != point {
+		return
+	}
+	id, ok := rt.At(ForegroundLayer, point.X, point.Y)
+	if !ok {
+		return
+	}
+	switch id {
+	case 0:
+		eventID := int(rt.Background[rt.index(point.X, point.Y)])
+		rt.collectForegroundEventAt(point.X, point.Y)
+		rt.startTutorialForegroundEvent(eventID)
+		if rt.Stage.Index == fallingTorchStageIndex && eventID == 3 {
+			rt.ForegroundDemoActive = true
+			rt.ForegroundDemoID = eventID
+			rt.ForegroundDemoPhase = 0
+			rt.ForegroundDemoTicks = 0
+			rt.foregroundDemoMoved = false
+		}
+	case 26:
+		rt.activateEnemyGateTriggerAt(point.X, point.Y)
+	}
+}
+
+func (rt *Runtime) tickForegroundDemo() {
+	if !rt.ForegroundDemoActive || rt.ForegroundDemoID != 3 {
+		return
+	}
+	switch rt.ForegroundDemoPhase {
+	case 0:
+		if !rt.foregroundDemoMoved {
+			if rt.tryMove(0, -1, true) {
+				rt.foregroundDemoMoved = true
+			}
+			return
+		}
+		if rt.PlayerMotion.Remaining > 0 {
+			return
+		}
+		rt.ForegroundDemoPhase = 1
+		rt.ForegroundDemoTicks = 0
+	case 1:
+		rt.ForegroundDemoTicks++
+		if rt.ForegroundDemoTicks > foregroundDemoPanTicks {
+			rt.ForegroundDemoPhase = 2
+			rt.ForegroundDemoTicks = 0
+		}
+	case 2:
+		rt.ForegroundDemoTicks++
+		if rt.ForegroundDemoTicks > foregroundDemoWaitTicks {
+			rt.ForegroundDemoActive = false
+			rt.ForegroundDemoPhase = 0
+			rt.ForegroundDemoTicks = 0
+			rt.foregroundDemoMoved = false
+		}
+	}
+}
+
+func (rt *Runtime) tickFallingTorchStage(sourceTick int) bool {
+	if rt.Stage.Index != fallingTorchStageIndex {
+		return false
+	}
+	if rt.FallingTorchWarningTicks > 0 {
+		rt.FallingTorchWarningTicks--
+	}
+	trigger := Point{X: 18, Y: 63}
+	if rt.FallingTorchTriggers == 0 && trigger.X < rt.Width() && trigger.Y < rt.Height() {
+		idx := rt.index(trigger.X, trigger.Y)
+		motion := rt.ObjectMotion[idx]
+		if rt.PlayerLayer[idx] == 0 && motion.Remaining <= 0 && motion.RollDX == 0 {
+			rt.FallingTorchWarningTicks = fallingTorchWarningDuration
+			rt.FallingTorchTriggers = 1
+		}
+	}
+	if rt.FallingTorchTriggers == 3 {
+		switch rt.FallingTorchAnimation {
+		case 0:
+			rt.FallingTorchAnimation = 1
+			rt.FallingTorchAnimationTicks = 0
+		case 1:
+			if rt.FallingTorchAnimationTicks >= fallingTorchCollapseTicks {
+				rt.FallingTorchAnimation = 2
+				rt.FallingTorchAnimationTicks = 0
+			}
+		}
+	} else if rt.FallingTorchAnimation != 0 {
+		rt.FallingTorchAnimation = 0
+		rt.FallingTorchAnimationTicks = 0
+	}
+	rt.FallingTorchAnimationTicks++
+	if rt.FallingTorchAnimation != 2 {
+		return false
+	}
+	if rt.FallingTorchWarningTicks == 10 {
+		rt.FallingTorchWarningTicks = fallingTorchWarningLoop
+	}
+	if rt.RisingFireAnimation != 0 {
+		rt.RisingFireAnimationTicks++
+		if rt.RisingFireAnimation == 2 && rt.RisingFireAnimationTicks >= fallingFireStartTicks {
+			rt.RisingFireAnimation = 0
+			rt.RisingFireAnimationTicks = 0
+		}
+		return false
+	}
+	rt.RisingFireAnimationTicks++
+	if rt.ForegroundDemoActive {
+		return false
+	}
+	if rt.RisingFireHeight < fallingFireMaximumHeight {
+		rt.RisingFireHeight++
+		viewportY := rt.viewportY
+		if !rt.viewportSet {
+			viewportY = clampRuntime(rt.Player.Y*TileSize-160, 0, max(0, rt.Height()*TileSize-(ScreenHeight-80)))
+		}
+		minimumHeight := rt.Height()*TileSize - (viewportY + ScreenHeight - 80)
+		if rt.RisingFireHeight < minimumHeight {
+			rt.RisingFireHeight = minimumHeight
+		}
+		if rt.RisingFireHeight > fallingFireMaximumHeight {
+			rt.RisingFireHeight = fallingFireMaximumHeight
+		}
+	}
+	if rt.Height()*TileSize-rt.RisingFireHeight <= rt.Player.Y*TileSize+18 && rt.Player.X < 17 {
+		return rt.HurtFromDirection(rt.MaxHealth, 1)
+	}
+	return false
+}
+
+func (rt *Runtime) SetViewport(x, y int) {
+	rt.viewportX = clampRuntime(x, 0, max(0, rt.Width()*TileSize-ScreenWidth))
+	rt.viewportY = clampRuntime(y, 0, max(0, rt.Height()*TileSize-(ScreenHeight-80)))
+	rt.viewportSet = true
+}
+
+func (rt *Runtime) SetViewportY(y int) {
+	rt.SetViewport(rt.viewportX, y)
+}
+
+func (rt *Runtime) ForegroundDemoCamera() (x, y, elapsed, duration int, ok bool) {
+	if !rt.ForegroundDemoActive || rt.ForegroundDemoID != 3 || rt.ForegroundDemoPhase < 1 {
+		return 0, 0, 0, 0, false
+	}
+	x = clampRuntime(12*TileSize-108, 0, max(0, rt.Width()*TileSize-ScreenWidth))
+	y = clampRuntime(42*TileSize-108, 0, max(0, rt.Height()*TileSize-(ScreenHeight-80)))
+	duration = foregroundDemoPanTicks
+	if rt.ForegroundDemoPhase == 1 {
+		elapsed = clampRuntime(rt.ForegroundDemoTicks, 0, duration)
+	} else {
+		elapsed = duration
+	}
+	return x, y, elapsed, duration, true
+}
+
+func (rt *Runtime) RisingFireWorldY() (int, bool) {
+	if rt.Stage.Index != fallingTorchStageIndex || rt.FallingTorchAnimation != 2 {
+		return 0, false
+	}
+	return rt.Height()*TileSize - rt.RisingFireHeight, true
+}
+
+func (rt *Runtime) IsFallingTorchStage() bool {
+	return rt.Stage.Index == fallingTorchStageIndex
+}
+
+func (rt *Runtime) RisingFireFillVisible() bool {
+	return rt.IsFallingTorchStage() && rt.FallingTorchAnimation == 2 && rt.RisingFireHeight > fallingFireInitialHeight
+}
+
+func (rt *Runtime) FallingTorchShake(sourceTick int) int {
+	if rt.Stage.Index != fallingTorchStageIndex || rt.FallingTorchWarningTicks <= 0 {
+		return 0
+	}
+	warning := rt.FallingTorchWarningTicks
+	return warning * sourceTick % ((warning >> 1) + 1) % 12
 }
 
 func (rt *Runtime) tickRockHold() bool {
@@ -1079,9 +1495,12 @@ func CompassDirection(dx, dy int) int {
 
 func (rt *Runtime) tickChestForegroundAt(x, y, sourceTick int, skipAdvance bool) {
 	idx := rt.index(x, y)
+	if rt.ContainerLocked[idx] {
+		return
+	}
 	state := rt.ObjectState[idx]
 	if state <= 0 {
-		if !rt.pendingChestSet || rt.PlayerMotion.Remaining > 0 || rt.Player != (Point{X: x, Y: y}) || !isContainerReward(rt.PlayerLayer[idx]) {
+		if rt.playerSourceOffset() > 0 || rt.Player != (Point{X: x, Y: y}) || !isContainerReward(rt.PlayerLayer[idx]) {
 			return
 		}
 		rt.pendingChestSet = false
@@ -1098,16 +1517,16 @@ func (rt *Runtime) tickChestForegroundAt(x, y, sourceTick int, skipAdvance bool)
 }
 
 func (rt *Runtime) tickDigAnimationAt(idx, sourceTick int) bool {
-	state := rt.ObjectState[idx]
+	state := rt.ForegroundState[idx]
 	if sourceTick&1 == 0 {
 		state++
 	}
 	if state >= digAnimationFrames {
 		rt.Foreground[idx] = EmptyRawID
-		rt.ObjectState[idx] = 0
+		rt.ForegroundState[idx] = 0
 		return true
 	}
-	rt.ObjectState[idx] = state
+	rt.ForegroundState[idx] = state
 	return false
 }
 
@@ -1118,7 +1537,16 @@ func (rt *Runtime) UseHammer(dx, dy int) bool {
 	x := rt.Player.X + dx
 	y := rt.Player.Y + dy
 	id, ok := rt.At(PlayerLayer, x, y)
-	if !ok || (id != 30 && !isSnake(id)) {
+	if !ok {
+		return false
+	}
+	foregroundID, _ := rt.At(ForegroundLayer, x, y)
+	blockedTarget := id == 0 || id != EmptyRawID && id >= 80 || foregroundID == 7 && !rt.foregroundDoorOpen(x, y)
+	canHit := id == 10 || id == 30 || isSnake(id) || blockedTarget
+	if rt.specialToolLevel() >= 8 {
+		canHit = canHit || id == 1 || id == 9 || rt.hasFreezeHammerTargetAt(x, y)
+	}
+	if !canHit {
 		return false
 	}
 	rt.Hammering = true
@@ -1173,20 +1601,64 @@ func (rt *Runtime) applyHammerImpact() bool {
 		return false
 	}
 	idx := rt.index(x, y)
-	switch {
-	case id == 30:
+	foregroundID, _ := rt.At(ForegroundLayer, x, y)
+	if id == 0 {
+		rt.emitSound(SoundHammerBlock)
+		if rt.specialToolLevel() < 8 {
+			return true
+		}
+		if rt.freezeHammerTargetsAt(x, y) {
+			rt.emitSound(SoundEnemyHit)
+		}
+		return true
+	}
+	if id != EmptyRawID && id >= 80 || foregroundID == 7 && !rt.foregroundDoorOpen(x, y) {
+		rt.emitSound(SoundHammerBlock)
+		return true
+	}
+	handled := false
+	if id == 10 {
+		if rt.ObjectState[idx] <= 0 {
+			rt.ObjectState[idx] = 1
+		}
+		return true
+	}
+	if id == 30 {
 		if rt.ObjectState[idx] == 0 {
 			rt.ObjectState[idx] = 1
 		}
 		rt.emitSound(SoundBreak)
+		// The source sets n13 for a breakable hit and skips the enhanced
+		// hammer's five-cell freeze scan for this swing.
 		return true
-	case id == 43 && rt.ObjectState[idx]&snakeStunMask == 0 && rt.ObjectState[idx]&0x18000 == 0:
-		rt.decrementEnemyGateForObjectAt(x, y)
-		rt.PlayerLayer[idx] = EmptyRawID
-		rt.ObjectState[idx] = 0
-		rt.ObjectMotion[idx] = ObjectMotion{}
-		rt.emitSound(SoundEnemyHit)
+	}
+	if rt.specialToolLevel() >= 8 {
+		if id == 9 {
+			if rt.thawFrozenAt(x, y) {
+				rt.emitSound(SoundBreak)
+				return true
+			}
+		}
+		if rt.freezeHammerTargetsAt(x, y) {
+			rt.emitSound(SoundEnemyHit)
+			handled = true
+		}
+	}
+	if handled {
 		return true
+	}
+	switch {
+	case id == 43 && rt.ObjectState[idx]&snakeStunMask == 0:
+		if rt.ObjectState[idx]&0x18000 == 0 {
+			rt.decrementEnemyGateForObjectAt(x, y)
+			rt.PlayerLayer[idx] = EmptyRawID
+			rt.ObjectState[idx] = 0
+			rt.ObjectMotion[idx] = ObjectMotion{}
+			rt.emitSound(SoundEnemyHit)
+			return true
+		}
+		rt.ObjectState[idx] = packRedSnakeHammerTarget(rt.ObjectState[idx], x, y)
+		fallthrough
 	case isSnake(id):
 		rt.ObjectState[idx] = (rt.ObjectState[idx] &^ snakeStunMask) | snakeStunDuration
 		rt.emitSound(SoundEnemyHit)
@@ -1196,12 +1668,130 @@ func (rt *Runtime) applyHammerImpact() bool {
 	}
 }
 
-func (rt *Runtime) UseSpecialBarrier(dx, dy int) bool {
-	if !rt.CanAcceptInput() || rt.specialToolLevel() < 2 || (dx == 0 && dy == 0) {
+func packRedSnakeHammerTarget(state, x, y int) int {
+	packed := uint32(state)
+	packed = ((packed - 0x8000) & 0xff01ffff) | uint32(x<<17)
+	packed = (packed & 0x80ffffff) | uint32(y<<24)
+	direction := state & objectDirectionMask
+	if direction == 1 || direction == 3 {
+		packed |= 0x80000000
+	} else {
+		packed &^= 0x80000000
+	}
+	return int(packed)
+}
+
+func (rt *Runtime) hasFreezeHammerTargetAt(x, y int) bool {
+	for _, delta := range []Point{{}, {X: -1}, {X: 1}, {Y: -1}, {Y: 1}} {
+		nx, ny := x+delta.X, y+delta.Y
+		id, ok := rt.At(PlayerLayer, nx, ny)
+		if !ok {
+			continue
+		}
+		if rt.freezeHammerEligibleAt(x, y, nx, ny, id) {
+			return true
+		}
+	}
+	return false
+}
+
+func (rt *Runtime) freezeHammerTargetsAt(x, y int) bool {
+	frozen := false
+	for _, delta := range []Point{{}, {X: -1}, {X: 1}, {Y: -1}, {Y: 1}} {
+		nx, ny := x+delta.X, y+delta.Y
+		id, ok := rt.At(PlayerLayer, nx, ny)
+		if !ok {
+			continue
+		}
+		if !rt.freezeHammerEligibleAt(x, y, nx, ny, id) {
+			continue
+		}
+		if rt.freezeObjectAt(nx, ny) {
+			frozen = true
+		}
+	}
+	return frozen
+}
+
+func (rt *Runtime) freezeHammerEligibleAt(impactX, impactY, objectX, objectY int, id RawID) bool {
+	if id == 1 {
+		return objectX == impactX && objectY == impactY
+	}
+	if !isSnake(id) {
 		return false
 	}
-	x := rt.Player.X + dx
-	y := rt.Player.Y + dy
+	idx := rt.index(objectX, objectY)
+	direction := rt.ObjectState[idx] & objectDirectionMask
+	timer := 0
+	if direction != 0 {
+		timer = rt.ObjectMotion[idx].Remaining
+	}
+	dx, dy := snakeStep(direction)
+	pixelX := objectX*TileSize - dx*timer
+	pixelY := objectY*TileSize - dy*timer
+	return absInt(impactX*TileSize-pixelX) < TileSize && absInt(impactY*TileSize-pixelY) < TileSize
+}
+
+func (rt *Runtime) freezeObjectAt(x, y int) bool {
+	idx := rt.index(x, y)
+	id := rt.PlayerLayer[idx]
+	if id != 1 && !isSnake(id) {
+		return false
+	}
+	rt.FrozenOriginal[idx] = id
+	rt.PlayerLayer[idx] = 9
+	return true
+}
+
+func (rt *Runtime) thawFrozenAt(x, y int) bool {
+	idx := rt.index(x, y)
+	if rt.PlayerLayer[idx] != 9 {
+		return false
+	}
+	original := rt.FrozenOriginal[idx]
+	if original != 1 && !isSnake(original) {
+		return false
+	}
+	rt.PlayerLayer[idx] = original
+	rt.FrozenOriginal[idx] = EmptyRawID
+	rt.ObjectMotion[idx] = ObjectMotion{}
+	if isSnake(original) {
+		direction := 1
+		if rt.Player.X == x && rt.Player.Y == y-1 {
+			direction = 2
+		}
+		// The thaw branch restores raw19/raw43, then deliberately calls
+		// bVoid(19,...), which applies the full snake stun without reducing
+		// red-snake durability.
+		rt.ObjectState[idx] = direction | snakeStunDuration
+	} else {
+		rt.ObjectState[idx] = 0
+	}
+	return true
+}
+
+func (rt *Runtime) FrozenOriginalAt(x, y int) RawID {
+	if x < 0 || y < 0 || x >= rt.Width() || y >= rt.Height() {
+		return EmptyRawID
+	}
+	return rt.FrozenOriginal[rt.index(x, y)]
+}
+
+func (rt *Runtime) ForegroundStateAt(x, y int) int {
+	if x < 0 || y < 0 || x >= rt.Width() || y >= rt.Height() {
+		return 0
+	}
+	return rt.ForegroundState[rt.index(x, y)]
+}
+
+func (rt *Runtime) UseSpecialBarrier(dx, dy int) bool {
+	if !rt.CanAcceptInput() || rt.specialToolLevel() < 2 {
+		return false
+	}
+	// Source movement allows the hero onto raw 2. Pressing 5 then clears the
+	// connected state-1 cluster under the hero; direction is irrelevant.
+	x := rt.Player.X
+	y := rt.Player.Y
 	foregroundID, ok := rt.At(ForegroundLayer, x, y)
 	if !ok || foregroundID != 2 {
 		return false
@@ -1210,6 +1800,32 @@ func (rt *Runtime) UseSpecialBarrier(dx, dy int) bool {
 		return false
 	}
 	return rt.clearForegroundBlob(x, y, 2) > 0
+}
+
+func (rt *Runtime) SpecialBarrierPrompt() (toolModule int, available, visible bool) {
+	if rt == nil || rt.Player.X < 0 || rt.Player.Y < 0 || rt.Player.X >= rt.Width() || rt.Player.Y >= rt.Height() {
+		return 0, false, false
+	}
+	idx := rt.index(rt.Player.X, rt.Player.Y)
+	if rt.Foreground[idx] != 2 {
+		return 0, false, false
+	}
+	state := int(rt.Background[idx])
+	switch state {
+	case 0:
+		return 0, rt.specialToolLevel() >= 1, true
+	case 1:
+		return 1, rt.specialToolLevel() >= 2, true
+	default:
+		return 0, false, false
+	}
+}
+
+func (rt *Runtime) ContainerLockedAt(x, y int) bool {
+	if rt == nil || x < 0 || y < 0 || x >= rt.Width() || y >= rt.Height() {
+		return false
+	}
+	return rt.ContainerLocked[rt.index(x, y)]
 }
 
 func (rt *Runtime) UseHook(dx, dy int) bool {
@@ -1316,7 +1932,7 @@ func (rt *Runtime) tickHookExtension() {
 	nextID := rt.PlayerLayer[nextIdx]
 	if hookSelectable(nextID) && (nextID != 48 || rt.ObjectState[nextIdx]&0x8 == 0) {
 		rt.HookTarget = next
-		rt.hookOriginalState = rt.ObjectState[nextIdx]
+		rt.hookOriginalState = sourceHookRestoreState(nextID, rt.ObjectState[nextIdx])
 		rt.hookCollect = nextID == 1
 		rt.hookStepsRemaining = absInt(next.X-rt.Player.X) - 1
 		if rt.hookCollect {
@@ -1347,6 +1963,15 @@ func (rt *Runtime) tickHookExtension() {
 	}
 	rt.ObjectMotion[nextIdx] = ObjectMotion{Remaining: timer}
 	rt.hookTip = next
+}
+
+func sourceHookRestoreState(id RawID, state int) int {
+	switch id {
+	case 0, 8, 9, 47:
+		return state &^ (0x7000 | gravityRollPreparing)
+	default:
+		return -1
+	}
 }
 
 func (rt *Runtime) tickHookPull() {
@@ -1405,6 +2030,7 @@ func (rt *Runtime) moveHookTarget(from, to Point, id RawID) {
 	toIdx := rt.index(to.X, to.Y)
 	state := rt.ObjectState[fromIdx]
 	group := rt.EnemyGateGroup[fromIdx]
+	frozenOriginal := rt.FrozenOriginal[fromIdx]
 	direction := 4
 	if to.X > from.X {
 		direction = 2
@@ -1417,6 +2043,8 @@ func (rt *Runtime) moveHookTarget(from, to Point, id RawID) {
 	rt.ObjectMotion[fromIdx] = ObjectMotion{}
 	rt.EnemyGateGroup[toIdx] = group
 	rt.EnemyGateGroup[fromIdx] = -1
+	rt.FrozenOriginal[toIdx] = frozenOriginal
+	rt.FrozenOriginal[fromIdx] = EmptyRawID
 }
 
 func (rt *Runtime) hasHookRope() bool {
@@ -1489,7 +2117,7 @@ func (rt *Runtime) objectOverlapsPlayer(x, y int) bool {
 
 func (rt *Runtime) TickBreakables() int {
 	broken := 0
-	for y := 0; y < rt.Height(); y++ {
+	for y := rt.Height() - 1; y >= 0; y-- {
 		for x := 0; x < rt.Width(); x++ {
 			idx := rt.index(x, y)
 			if rt.PlayerLayer[idx] != 30 || rt.ObjectState[idx] <= 0 {
@@ -1573,23 +2201,52 @@ func (rt *Runtime) tickSnakeObjectAt(x, y int) bool {
 	stunned := state&snakeStunMask != 0
 	if rt.advanceObjectMotion(idx, 3, 0) {
 		if !stunned {
-			rt.hurtFromSnakeAt(x, y, state&0x7)
+			if rt.hurtFromSnakeAt(x, y, state&0x7) {
+				rt.clearRedSnakeChase(idx, id)
+			}
 		}
 		return false
 	}
 	if stunned {
 		if rt.gravitySourceTick&3 == 0 {
 			remaining := max(0, (state&snakeStunMask)-8)
-			rt.ObjectState[idx] = (state &^ snakeStunMask) | remaining
+			state = (state &^ snakeStunMask) | remaining
+			if id == 43 && remaining == 0 {
+				state = (state &^ 0xf00) | 0xc00
+			}
+			rt.ObjectState[idx] = state
 		}
 		return false
+	}
+	if id == 43 && state&0xf00 != 0 {
+		dir := rt.snakeDirectionToward(x, y, rt.Player.X, rt.Player.Y)
+		state = (state &^ objectDirectionMask) | dir
+		state -= 0x100
+		rt.ObjectState[idx] = state
+	} else if uint32(state)&0x00fe0000 != 0 {
+		targetX := int(uint32(state)&0x00fe0000) >> 17
+		targetY := int(uint32(state)&0x7f000000) >> 24
+		if x == targetX && y == targetY {
+			dir := 2
+			if uint32(state)&0x80000000 != 0 {
+				dir = 1
+			}
+			state = (state & 0xff01ffff &^ objectDirectionMask) | dir
+			rt.ObjectState[idx] = state
+		} else {
+			dir := rt.snakeDirectionToward(x, y, targetX, targetY)
+			state = (state &^ objectDirectionMask) | dir
+			rt.ObjectState[idx] = state
+		}
 	}
 	dir := state & 0x7
 	usedPendingDirection := dir == 0
 	if dir == 0 {
 		dir = (state & 0x7000) >> 12
 		if dir == 0 {
-			rt.hurtFromSnakeAt(x, y, 0)
+			if rt.hurtFromSnakeAt(x, y, 0) {
+				rt.clearRedSnakeChase(idx, id)
+			}
 			return false
 		}
 		state = (state &^ 0x7) | dir
@@ -1602,13 +2259,17 @@ func (rt *Runtime) tickSnakeObjectAt(x, y int) bool {
 		if usedPendingDirection {
 			// A pending turn gets one target probe before the regular blocked
 			// branch schedules another turn cycle.
-			rt.hurtFromSnakeAt(x, y, dir)
+			if rt.hurtFromSnakeAt(x, y, dir) {
+				rt.clearRedSnakeChase(idx, id)
+			}
 			return false
 		}
 		reverse := reverseSnakeDirection(dir)
 		rt.ObjectState[idx] = (state &^ (0x7 | 0x7000)) | reverse<<12
 		rt.ObjectMotion[idx] = ObjectMotion{Remaining: 21}
-		rt.hurtFromSnakeAt(x, y, dir)
+		if rt.hurtFromSnakeAt(x, y, dir) {
+			rt.clearRedSnakeChase(idx, id)
+		}
 		return false
 	}
 	targetIdx := rt.index(targetX, targetY)
@@ -1619,8 +2280,63 @@ func (rt *Runtime) tickSnakeObjectAt(x, y int) bool {
 	rt.ObjectState[idx] = 0
 	rt.ObjectMotion[idx] = ObjectMotion{}
 	rt.transferEnemyGateGroup(idx, targetIdx)
-	rt.hurtFromSnakeAt(targetX, targetY, dir)
+	if rt.hurtFromSnakeAt(targetX, targetY, dir) {
+		rt.clearRedSnakeChase(targetIdx, id)
+	}
 	return true
+}
+
+func (rt *Runtime) snakeDirectionToward(x, y, targetX, targetY int) int {
+	dx := targetX - x
+	dy := targetY - y
+	dir := 0
+	if absInt(dx) > absInt(dy) {
+		if dx < 0 {
+			dir = 4
+		} else if dx > 0 {
+			dir = 2
+		}
+		if dir != 0 {
+			stepX, stepY := snakeStep(dir)
+			if !rt.cellEmptyForSnake(x+stepX, y+stepY) {
+				dir = 0
+			}
+		}
+	}
+	if dir != 0 {
+		return dir
+	}
+	if dy < 0 {
+		dir = 1
+	} else if dy > 0 {
+		dir = 3
+	}
+	if dir == 0 {
+		return 0
+	}
+	stepX, stepY := snakeStep(dir)
+	if rt.cellEmptyForSnake(x+stepX, y+stepY) {
+		return dir
+	}
+	if dx < 0 {
+		dir = 4
+	} else if dx > 0 {
+		dir = 2
+	} else {
+		return 0
+	}
+	stepX, stepY = snakeStep(dir)
+	playerID, ok := rt.At(PlayerLayer, x+stepX, y+stepY)
+	if !ok || playerID != EmptyRawID {
+		return 0
+	}
+	return dir
+}
+
+func (rt *Runtime) clearRedSnakeChase(idx int, id RawID) {
+	if id == 43 && idx >= 0 && idx < len(rt.ObjectState) {
+		rt.ObjectState[idx] &^= 0xf00
+	}
 }
 
 func (rt *Runtime) snakeCrushedAt(x, y int) bool {
@@ -1716,10 +2432,9 @@ func (rt *Runtime) TickCrawlersNearPlayer(radius int) int {
 
 func (rt *Runtime) tickCrawlersBounds(minX, maxX, minY, maxY int) int {
 	moved := 0
-	processed := make([]bool, len(rt.PlayerLayer))
 	for y := maxY; y >= minY; y-- {
 		for x := minX; x <= maxX; x++ {
-			if rt.tickCrawlerObjectAt(x, y, processed) {
+			if rt.tickCrawlerObjectAt(x, y) {
 				moved++
 			}
 		}
@@ -1727,82 +2442,140 @@ func (rt *Runtime) tickCrawlersBounds(minX, maxX, minY, maxY int) int {
 	return moved
 }
 
-func (rt *Runtime) tickCrawlerObjectAt(x, y int, processed []bool) bool {
+func (rt *Runtime) tickCrawlerObjectAt(x, y int) bool {
 	idx := rt.index(x, y)
-	if processed[idx] || rt.PlayerLayer[idx] != 11 {
+	if rt.PlayerLayer[idx] != 11 {
 		return false
 	}
-	processed[idx] = true
+	state := rt.ObjectState[idx]
+	deathPhase := (state & 0xf00) >> 8
+	if deathPhase != 0 {
+		if deathPhase >= 4 {
+			rt.PlayerLayer[idx] = EmptyRawID
+			rt.ObjectState[idx] = 0
+			rt.ObjectMotion[idx] = ObjectMotion{}
+		} else if (rt.gravitySourceTick>>1)&1 == 0 {
+			rt.ObjectState[idx] += 0x100
+		}
+		return false
+	}
+
+	moved := false
+	if rt.ObjectMotion[idx].Remaining <= 4 {
+		dir := state & objectDirectionMask
+		if dir == 0 {
+			dir = rt.initialCrawlerDirection(x, y, state&0x10 != 0)
+			rt.ObjectState[idx] = (state &^ objectDirectionMask) | dir
+		} else {
+			moved = rt.advanceCrawlerAt(x, y, dir, state)
+		}
+	}
+
+	// amVoid() tests contact at the crawler's source cell. A crawler moving
+	// right or up is visited again later in the same source scan, which is
+	// what makes those directions hit immediately and start at timer 13.
 	if rt.isPlayerAt(x, y) {
 		rt.Hurt(1)
 	}
-	if rt.advanceObjectMotion(idx, 5, 4) {
-		return false
+	if !moved && rt.PlayerLayer[idx] == 11 && rt.ObjectMotion[idx].Remaining > 0 {
+		rt.ObjectMotion[idx].Remaining -= 5
 	}
-	dir := rt.ObjectState[idx] & 0x7
-	if dir == 0 {
-		dir = rt.inferCrawlerDirection(x, y, rt.ObjectState[idx]&0x10 != 0)
-		rt.ObjectState[idx] = (rt.ObjectState[idx] &^ 0x7) | dir
-		if dir == 0 {
-			return false
+	return moved
+}
+
+func (rt *Runtime) advanceCrawlerAt(x, y, dir, state int) bool {
+	forwardX, forwardY := snakeStep(dir)
+	sideX, sideY := -forwardY, forwardX
+	if state&0x10 != 0 {
+		sideX, sideY = forwardY, -forwardX
+	}
+	forwardEmpty := rt.cellEmptyForSnake(x+forwardX, y+forwardY)
+	sideEmpty := rt.cellEmptyForSnake(x+sideX, y+sideY)
+	behindSideEmpty := rt.cellEmptyForSnake(x+sideX-forwardX, y+sideY-forwardY)
+
+	if forwardEmpty && sideEmpty && behindSideEmpty {
+		if rt.ObjectMotion[rt.index(x, y)].Remaining <= 0 {
+			return rt.moveCrawler(x, y, x+forwardX, y+forwardY, state)
 		}
-	}
-	dx, dy := snakeStep(dir)
-	targetX := x + dx
-	targetY := y + dy
-	if rt.isPlayerAt(x, y) || rt.isPlayerAt(targetX, targetY) {
-		rt.Hurt(1)
-	}
-	if !rt.cellEmptyForSnake(targetX, targetY) {
-		rt.ObjectState[idx] = (rt.ObjectState[idx] &^ 0x7) | reverseSnakeDirection(dir)
 		return false
 	}
-	targetIdx := rt.index(targetX, targetY)
+	if sideEmpty {
+		turnDir := directionForStep(sideX, sideY)
+		state = (state &^ objectDirectionMask) | turnDir
+		return rt.moveCrawler(x, y, x+sideX, y+sideY, state)
+	}
+	if forwardEmpty {
+		if rt.ObjectMotion[rt.index(x, y)].Remaining <= 0 {
+			return rt.moveCrawler(x, y, x+forwardX, y+forwardY, state)
+		}
+		return false
+	}
+	turnDir := directionForStep(-sideX, -sideY)
+	rt.ObjectState[rt.index(x, y)] = (state &^ objectDirectionMask) | turnDir
+	return false
+}
+
+func (rt *Runtime) moveCrawler(fromX, fromY, toX, toY int, state int) bool {
+	fromIdx := rt.index(fromX, fromY)
+	targetIdx := rt.index(toX, toY)
 	rt.PlayerLayer[targetIdx] = 11
-	rt.ObjectState[targetIdx] = rt.ObjectState[idx]
-	rt.ObjectMotion[targetIdx] = ObjectMotion{DX: dx, DY: dy, Remaining: 18}
-	rt.PlayerLayer[idx] = EmptyRawID
-	rt.ObjectState[idx] = 0
-	rt.ObjectMotion[idx] = ObjectMotion{}
-	processed[targetIdx] = true
+	rt.ObjectState[targetIdx] = state
+	rt.ObjectMotion[targetIdx] = ObjectMotion{DX: toX - fromX, DY: toY - fromY, Remaining: 18}
+	rt.PlayerLayer[fromIdx] = EmptyRawID
+	rt.ObjectState[fromIdx] = 0
+	rt.ObjectMotion[fromIdx] = ObjectMotion{}
 	return true
 }
 
-func (rt *Runtime) inferCrawlerDirection(x, y int, reversed bool) int {
+func (rt *Runtime) initialCrawlerDirection(x, y int, reversed bool) int {
+	dir := 0
+	leftOccupied := rt.playerCellOccupied(x-1, y)
+	rightOccupied := rt.playerCellOccupied(x+1, y)
+	belowOccupied := rt.playerCellOccupied(x, y+1)
+	if leftOccupied {
+		dir = 3
+		if reversed {
+			dir = 1
+		}
+	} else if belowOccupied {
+		dir = 4
+		if reversed {
+			dir = 2
+		}
+	}
+	if rightOccupied {
+		dir = 1
+		if reversed {
+			dir = 3
+		}
+	}
+	if !belowOccupied {
+		return dir
+	}
 	if reversed {
-		if rt.cellOccupiedForCrawler(x+1, y) {
-			return 3
-		}
-		if !rt.cellOccupiedForCrawler(x, y+1) {
-			return 0
-		}
-		if rt.cellOccupiedForCrawler(x-1, y) {
-			return 1
-		}
 		return 4
-	}
-	if rt.cellOccupiedForCrawler(x-1, y) {
-		return 3
-	}
-	if !rt.cellOccupiedForCrawler(x, y+1) {
-		return 0
-	}
-	if rt.cellOccupiedForCrawler(x+1, y) {
-		return 1
 	}
 	return 2
 }
 
-func (rt *Runtime) cellOccupiedForCrawler(x, y int) bool {
+func (rt *Runtime) playerCellOccupied(x, y int) bool {
 	playerID, ok := rt.At(PlayerLayer, x, y)
-	if !ok {
-		return true
+	return !ok || playerID != EmptyRawID
+}
+
+func directionForStep(dx, dy int) int {
+	switch {
+	case dy < 0:
+		return 1
+	case dx > 0:
+		return 2
+	case dy > 0:
+		return 3
+	case dx < 0:
+		return 4
+	default:
+		return 0
 	}
-	if playerID != EmptyRawID {
-		return true
-	}
-	foregroundID, _ := rt.At(ForegroundLayer, x, y)
-	return foregroundID != EmptyRawID
 }
 
 func (rt *Runtime) propagateBreakableDamage(x, y int) {
@@ -1811,9 +2584,7 @@ func (rt *Runtime) propagateBreakableDamage(x, y int) {
 		ny := y + delta.Y
 		if id, ok := rt.At(PlayerLayer, nx, ny); ok && id == 30 {
 			idx := rt.index(nx, ny)
-			if rt.ObjectState[idx] == 0 {
-				rt.ObjectState[idx] = 1
-			}
+			rt.ObjectState[idx]++
 		}
 	}
 }
@@ -1870,6 +2641,8 @@ func playerLayerPassable(playerID RawID) bool {
 		return true
 	case playerID == 53:
 		return true
+	case playerID == 50:
+		return true
 	case isContactEnemy(playerID):
 		return true
 	case playerID == 31:
@@ -1886,7 +2659,7 @@ func playerLayerPassable(playerID RawID) bool {
 func (rt *Runtime) foregroundPassable(x, y int, id RawID) bool {
 	switch id {
 	case 2:
-		return rt.Background[rt.index(x, y)] != 1
+		return true
 	case 7:
 		return rt.foregroundDoorOpen(x, y)
 	case 8, 9:
@@ -1905,16 +2678,12 @@ func (rt *Runtime) foregroundDoorOpen(x, y int) bool {
 }
 
 func (rt *Runtime) decrementEnemyGateForObjectAt(x, y int) {
-	if len(rt.EnemyGateGroup) == 0 {
-		return
-	}
 	idx := rt.index(x, y)
-	group := rt.EnemyGateGroup[idx]
-	if group < 0 {
-		return
+	if idx >= 0 && idx < len(rt.EnemyGateGroup) {
+		rt.EnemyGateGroup[idx] = -1
 	}
-	rt.EnemyGateGroup[idx] = -1
-	if rt.ActiveEnemyGateGroup != group {
+	group := rt.ActiveEnemyGateGroup
+	if group < 0 {
 		return
 	}
 	if rt.EnemyGateCounters[group] <= 0 {
@@ -1927,6 +2696,7 @@ func (rt *Runtime) decrementEnemyGateForObjectAt(x, y int) {
 }
 
 func (rt *Runtime) openEnemyGateGroup(group int) {
+	rt.emitSound(SoundDoor)
 	for y := 1; y < rt.Height(); y++ {
 		for x := 0; x < rt.Width(); x++ {
 			idx := rt.index(x, y)
@@ -1940,18 +2710,38 @@ func (rt *Runtime) openEnemyGateGroup(group int) {
 					rt.openDoorAt(x, y-1)
 				}
 			case 14, 33:
-				rt.Background[aboveIdx] = 0
+				rt.ContainerLocked[aboveIdx] = false
 			}
 		}
 	}
 }
 
+func (rt *Runtime) enemyGateGroupValid(group int) bool {
+	if group < 0 || group == int(EmptyRawID) {
+		return false
+	}
+	if _, ok := rt.EnemyGateCounters[group]; ok {
+		return true
+	}
+	for idx, id := range rt.Foreground {
+		if id == 17 && int(rt.Background[idx]) == group {
+			return true
+		}
+	}
+	return false
+}
+
 func (rt *Runtime) activateEnemyGateTriggerAt(x, y int) {
 	group := int(rt.Background[rt.index(x, y)])
-	if group == int(EmptyRawID) {
+	validGroup := rt.enemyGateGroupValid(group)
+	if !validGroup {
 		rt.ActiveEnemyGateGroup = -1
 	} else {
 		rt.ActiveEnemyGateGroup = group
+	}
+	rt.startEnemyGateDemo(x, y, group)
+	if validGroup {
+		rt.emitSound(SoundRiddle)
 	}
 	rt.set(rt.Foreground, x, y, EmptyRawID)
 }
@@ -1978,7 +2768,9 @@ func (rt *Runtime) updatePressureDoors() {
 			}
 			doorID &= 0x0F
 			if rt.pressureSwitchActive(x, y) {
-				rt.openDoorByID(doorID)
+				if rt.activateDoorByID(doorID) {
+					rt.emitSound(SoundDoor)
+				}
 				seen[doorID] = true
 			} else if !seen[doorID] {
 				rt.closeDoorByID(doorID)
@@ -2003,46 +2795,84 @@ func (rt *Runtime) pressureSwitchActive(x, y int) bool {
 	}
 }
 
-func (rt *Runtime) openDoorByID(doorID int) {
+func (rt *Runtime) activateDoorByID(doorID int) bool {
+	activated := false
 	for y := 0; y < rt.Height(); y++ {
 		for x := 0; x < rt.Width(); x++ {
 			idx := rt.index(x, y)
-			if rt.Foreground[idx] == 7 && rt.doorIDAt(idx) == doorID {
-				rt.openDoorAt(x, y)
+			if rt.Foreground[idx] != 7 || rt.doorGroupAt(idx) != doorID || int(rt.Background[idx])&0xf0 != 0 {
+				continue
 			}
+			remaining := int(rt.Background[idx]) & 0x0f
+			if remaining <= 0 {
+				continue
+			}
+			remaining--
+			if remaining == 0 {
+				// hVoid() starts phase 1 while retaining the low nibble from
+				// before the decrement. Closing later therefore restores 1.
+				rt.Background[idx] = RawID((int(rt.Background[idx]) & 0x0f) | 0x10)
+			} else {
+				rt.Background[idx] = RawID((int(rt.Background[idx]) & 0xf0) | remaining)
+			}
+			activated = true
 		}
 	}
+	return activated
 }
 
 func (rt *Runtime) closeDoorByID(doorID int) {
+	closed := false
 	for y := 0; y < rt.Height(); y++ {
 		for x := 0; x < rt.Width(); x++ {
 			idx := rt.index(x, y)
-			if rt.Foreground[idx] == 7 && rt.doorIDAt(idx) == doorID && !rt.isPlayerAt(x, y) {
-				rt.Background[idx] = RawID(doorID)
+			if rt.Foreground[idx] != 7 || rt.doorGroupAt(idx) != doorID || int(rt.Background[idx])&0xf0 == 0 || rt.PlayerLayer[idx] == 32 {
+				continue
 			}
+			rt.Background[idx] &= 0x0f
+			if !closed {
+				rt.emitSound(SoundBoulder)
+				closed = true
+			}
+			rt.resolveClosedDoorOccupant(x, y)
 		}
 	}
 }
 
-func (rt *Runtime) openDoorAt(x, y int) {
-	idx := rt.index(x, y)
-	doorID := rt.doorIDAt(idx)
-	if doorID < 0 {
-		doorID = 0
-	}
-	if rt.foregroundDoorOpen(x, y) || int(rt.Background[idx])&0xf0 != 0 {
+func (rt *Runtime) resolveClosedDoorOccupant(x, y int) {
+	if rt.isPlayerAt(x, y) {
+		rt.HurtFromDirection(rt.MaxHealth, 0)
+		rt.emitSound(SoundDeath)
 		return
 	}
-	rt.Background[idx] = RawID(0x10 | doorID)
+	idx := rt.index(x, y)
+	id := rt.PlayerLayer[idx]
+	switch id {
+	case 0, 1, 19, 43, 45:
+		// doorHeadClose() calls jVoid() for every listed object, including
+		// boulders and violet gems; jVoid() decrements the active cmInt group.
+		rt.decrementEnemyGateForObjectAt(x, y)
+		rt.PlayerLayer[idx] = EmptyRawID
+		rt.ObjectState[idx] = 0
+		rt.ObjectMotion[idx] = ObjectMotion{}
+		rt.FrozenOriginal[idx] = EmptyRawID
+	}
 }
 
-func (rt *Runtime) doorIDAt(idx int) int {
-	state := rt.Background[idx]
-	if state == EmptyRawID {
+func (rt *Runtime) openDoorAt(x, y int) bool {
+	idx := rt.index(x, y)
+	if rt.foregroundDoorOpen(x, y) || int(rt.Background[idx])&0xf0 != 0 {
+		return false
+	}
+	rt.Background[idx] = RawID(0x10 | int(rt.Background[idx])&0x0f)
+	return true
+}
+
+func (rt *Runtime) doorGroupAt(idx int) int {
+	if idx < 0 || idx >= len(rt.DoorGroup) {
 		return -1
 	}
-	return int(state) & 0x0F
+	return rt.DoorGroup[idx]
 }
 
 func (rt *Runtime) adjacentPlayerRaw(x, y int, id RawID) bool {
@@ -2130,12 +2960,12 @@ func (rt *Runtime) tryMoveGravityObject(fromX, fromY, toX, toY int, id RawID) bo
 			rt.ObjectMotion[rt.index(fromX, fromY)] = ObjectMotion{}
 			return true
 		}
-		if id == 0 && fallingStraightDown {
+		if (id == 0 || id == 9) && fallingStraightDown {
 			rt.Hurt(2)
 		}
 		return false
 	}
-	if playerID, ok := rt.At(PlayerLayer, toX, toY); ok && isContactEnemy(playerID) && id == 0 {
+	if playerID, ok := rt.At(PlayerLayer, toX, toY); ok && isContactEnemy(playerID) && (id == 0 || id == 9) {
 		rt.decrementEnemyGateForObjectAt(toX, toY)
 		rt.moveObject(fromX, fromY, toX, toY, id)
 		return true
@@ -2177,6 +3007,8 @@ func (rt *Runtime) moveObjectWithMotion(fromX, fromY, toX, toY int, id RawID, mo
 	fromIdx := rt.index(fromX, fromY)
 	toIdx := rt.index(toX, toY)
 	state := rt.ObjectState[fromIdx]
+	group := rt.EnemyGateGroup[fromIdx]
+	frozenOriginal := rt.FrozenOriginal[fromIdx]
 	if isGravityObject(id) {
 		switch {
 		case toY > fromY:
@@ -2195,8 +3027,15 @@ func (rt *Runtime) moveObjectWithMotion(fromX, fromY, toX, toY int, id RawID, mo
 	rt.ObjectState[fromIdx] = 0
 	rt.ObjectMotion[toIdx] = motion
 	rt.ObjectMotion[fromIdx] = ObjectMotion{}
-	rt.EnemyGateGroup[toIdx] = -1
+	if id == 9 {
+		rt.EnemyGateGroup[toIdx] = group
+		rt.FrozenOriginal[toIdx] = frozenOriginal
+	} else {
+		rt.EnemyGateGroup[toIdx] = -1
+		rt.FrozenOriginal[toIdx] = EmptyRawID
+	}
 	rt.EnemyGateGroup[fromIdx] = -1
+	rt.FrozenOriginal[fromIdx] = EmptyRawID
 }
 
 func (rt *Runtime) advanceBoulderRotation(idx int) {
@@ -2231,6 +3070,7 @@ func (rt *Runtime) Hurt(amount int) bool {
 		return false
 	}
 	rt.HurtTicks = hurtStateDuration
+	rt.playerTurnOffset = 0
 	rt.InvulnerabilityTicks = hurtInvulnerabilityDuration
 	rt.DamageTaken += amount
 	rt.HitCount++
@@ -2275,10 +3115,22 @@ func (rt *Runtime) HurtFromDirection(amount, direction int) bool {
 
 func (rt *Runtime) TickStatus() {
 	hurtWasActive := rt.HurtTicks > 0
+	if rt.EnemyGateMessageTicks > 0 {
+		rt.EnemyGateMessageTicks--
+		if rt.EnemyGateMessageTicks == 0 {
+			rt.EnemyGateMessageIndex = 0
+		}
+	}
 	rt.tickHammerAction()
 	rt.tickHookAction()
 	rt.tickChestOpening()
 	rt.tickLockOpening()
+	if rt.RelicCelebrating {
+		rt.RelicCelebrationTicks++
+		if rt.RelicCelebrationTicks > 42 {
+			rt.RelicCelebrating = false
+		}
+	}
 	if rt.RecallPending {
 		rt.RecallTicks++
 		if rt.RecallTicks >= recallAnimationDuration {
@@ -2303,7 +3155,7 @@ func (rt *Runtime) TickStatus() {
 }
 
 func (rt *Runtime) startAdjacentLockOpening() bool {
-	if rt.LockOpening || !rt.CanAcceptInput() || rt.Player.Y < 0 || rt.Player.Y >= rt.Height() {
+	if rt.LockOpening || !rt.CanAcceptInput() || rt.playerSourceOffset() > 6 || rt.Player.Y < 0 || rt.Player.Y >= rt.Height() {
 		return false
 	}
 	for x := rt.Player.X - 1; x <= rt.Player.X+1; x += 2 {
@@ -2353,7 +3205,7 @@ func (rt *Runtime) tickLockOpening() {
 				}
 			}
 			rt.ObjectState[idx] = 1
-			rt.openDoorByID(int(rt.Background[idx]) & 0x0f)
+			rt.activateDoorByID(int(rt.Background[idx]) & 0x0f)
 			rt.LocksOpened++
 			rt.emitSound(SoundDoor)
 		}
@@ -2401,6 +3253,14 @@ func (rt *Runtime) tickChestOpening() {
 	if !rt.ChestRewarded && rt.ChestTicks >= rewardTick {
 		rt.applyChestReward()
 		rt.ChestRewarded = true
+		if isRelicReward(rt.ChestRewardID) {
+			rt.lastPickupTick = rt.gravitySourceTick
+			rt.lastPickupTickSet = true
+			rt.ChestOpening = false
+			rt.ChestTicks = 0
+			rt.chestOpeningFresh = false
+			return
+		}
 	}
 	if rt.ChestTicks >= duration {
 		rt.lastPickupTick = rt.gravitySourceTick
@@ -2422,6 +3282,7 @@ func (rt *Runtime) applyChestReward() {
 	switch rt.ChestRewardID {
 	case 2:
 		rt.RedDiamonds++
+		rt.markPersistentRewardAt(rt.Player)
 	case 4:
 		rt.KeyForForeground9++
 	case 5:
@@ -2429,6 +3290,7 @@ func (rt *Runtime) applyChestReward() {
 	case 6:
 		if rt.ExtraLives < 99 {
 			rt.ExtraLives++
+			rt.markPersistentRewardAt(rt.Player)
 			rt.persistConsumedExtraLife()
 			return
 		}
@@ -2438,6 +3300,7 @@ func (rt *Runtime) applyChestReward() {
 	case 24:
 		rt.SpecialItemMask |= 1
 		rt.SpecialPickups++
+		rt.queueTutorialScript(22)
 	case 26:
 		rt.SpecialItemMask |= 8
 		rt.SpecialPickups++
@@ -2453,15 +3316,29 @@ func (rt *Runtime) applyChestReward() {
 		rt.SpecialPickup42 = true
 		rt.CompassEnabled = true
 		rt.SpecialPickups++
+		rt.queueTutorialScript(11)
 	case 51, 52, 53:
-		bit := int(rt.ChestRewardID - 51)
+		bit := 2
+		if rt.ChestRewardID == 53 {
+			bit = 0
+		} else if rt.ChestRewardID == 51 {
+			bit = 1
+		}
 		rt.RelicMask |= 1 << bit
 		rt.SpecialPickups++
+		rt.markPersistentRewardAt(rt.Player)
+		rt.RelicCelebrating = true
+		rt.RelicCelebrationTicks = 0
+		if rt.ChestRewardID == 53 && rt.Anaconda.Enabled {
+			rt.Anaconda.SealCollected = true
+			rt.Anaconda.SealTicks = 0
+		}
 	}
 }
 
 func (rt *Runtime) applyHealthRefillReward() {
 	if rt.Health >= rt.MaxHealth {
+		rt.TotalVioletGems += 10
 		rt.collectBonusValue(10)
 		return
 	}
@@ -2478,7 +3355,68 @@ func (rt *Runtime) persistConsumedExtraLife() {
 		return
 	}
 	rt.checkpoint.PlayerLayer[idx] = EmptyRawID
-	rt.checkpoint.ObjectState[idx] = max(rt.checkpoint.ObjectState[idx], 3)
+	rt.checkpoint.ObjectState[idx] = containerOpenState(rt.Foreground[idx])
+	rt.checkpoint.ConsumedRewardCells[idx] = true
+}
+
+func (rt *Runtime) markPersistentRewardAt(point Point) {
+	if point.X < 0 || point.Y < 0 || point.X >= rt.Width() || point.Y >= rt.Height() {
+		return
+	}
+	idx := rt.index(point.X, point.Y)
+	if isPickupContainer(rt.Foreground[idx]) {
+		rt.ConsumedRewardCells[idx] = true
+	}
+}
+
+// PersistentRewardCoordinates mirrors the mutable coordinate list in the
+// original RMS save. In Angkor, red diamonds, awarded extra lives, and relics
+// remove their container coordinate; keys, healing, and bonus gems do not.
+func (rt *Runtime) PersistentRewardCoordinates() []Point {
+	if rt == nil {
+		return nil
+	}
+	points := make([]Point, 0)
+	for idx, consumed := range rt.ConsumedRewardCells {
+		if consumed {
+			points = append(points, Point{X: idx % rt.Width(), Y: idx / rt.Width()})
+		}
+	}
+	return points
+}
+
+// ApplyPersistentRewardCoordinates applies the source stage-init aBoolean
+// check before the initial checkpoint is saved.
+func (rt *Runtime) ApplyPersistentRewardCoordinates(points []Point) {
+	if rt == nil {
+		return
+	}
+	for _, point := range points {
+		if point.X < 0 || point.Y < 0 || point.X >= rt.Width() || point.Y >= rt.Height() {
+			continue
+		}
+		idx := rt.index(point.X, point.Y)
+		if !isPickupContainer(rt.Foreground[idx]) {
+			continue
+		}
+		rt.ConsumedRewardCells[idx] = true
+		if rt.Anaconda.Enabled {
+			rt.PlayerLayer[idx] = 41
+			rt.Background[idx] = 10
+			rt.ObjectState[idx] = 0
+			rt.TotalVioletGems += 10
+			continue
+		}
+		rt.PlayerLayer[idx] = EmptyRawID
+		rt.ObjectState[idx] = containerOpenState(rt.Foreground[idx])
+	}
+}
+
+func containerOpenState(foreground RawID) int {
+	if foreground == 14 {
+		return 2
+	}
+	return 3
 }
 
 func (rt *Runtime) finishDeath() bool {
@@ -2555,6 +3493,11 @@ func (rt *Runtime) HealFull() {
 }
 
 func (rt *Runtime) CanAcceptInput() bool {
+	sealTransition := rt.Anaconda.Enabled && rt.Anaconda.SealCollected && !rt.Anaconda.StageComplete
+	return !sealTransition && !rt.ForegroundDemoActive && !rt.EnemyGateDemoActive && !rt.TutorialScriptActive && rt.canStartPlayerMove()
+}
+
+func (rt *Runtime) canStartPlayerMove() bool {
 	return !rt.PlayerDead && !rt.RecallPending && rt.HurtTicks <= 0 && rt.PlayerMotion.Remaining <= 0 && !rt.pendingChestSet && !rt.ChestOpening && !rt.LockOpening && !rt.Hammering && !rt.Hooking && !rt.ReachedGoal
 }
 
@@ -2567,7 +3510,7 @@ func isSnake(id RawID) bool {
 }
 
 func isGravityObject(id RawID) bool {
-	return id == 0 || id == 1
+	return id == 0 || id == 1 || id == 9
 }
 
 func isPickupContainer(id RawID) bool {
@@ -2581,6 +3524,10 @@ func isContainerReward(id RawID) bool {
 	default:
 		return false
 	}
+}
+
+func isRelicReward(id RawID) bool {
+	return id == 51 || id == 52 || id == 53
 }
 
 func isEnemyGateTarget(id RawID) bool {
@@ -2660,11 +3607,16 @@ func (rt *Runtime) SaveSnapshot() {
 		PlayerLayer:          append([]RawID(nil), rt.PlayerLayer...),
 		Background:           append([]RawID(nil), rt.Background...),
 		Foreground:           append([]RawID(nil), rt.Foreground...),
+		ForegroundState:      append([]int(nil), rt.ForegroundState...),
 		ObjectState:          append([]int(nil), rt.ObjectState...),
 		ObjectMotion:         append([]ObjectMotion(nil), rt.ObjectMotion...),
+		FrozenOriginal:       append([]RawID(nil), rt.FrozenOriginal...),
+		ContainerLocked:      append([]bool(nil), rt.ContainerLocked...),
+		ConsumedRewardCells:  append([]bool(nil), rt.ConsumedRewardCells...),
 		EnemyGateGroup:       append([]int(nil), rt.EnemyGateGroup...),
 		EnemyGateCounters:    cloneIntMap(rt.EnemyGateCounters),
 		ActiveEnemyGateGroup: rt.ActiveEnemyGateGroup,
+		Anaconda:             rt.Anaconda,
 		VioletGems:           rt.VioletGems,
 		RedDiamonds:          rt.RedDiamonds,
 		KeyForForeground9:    rt.KeyForForeground9,
@@ -2679,6 +3631,8 @@ func (rt *Runtime) SaveSnapshot() {
 		SpecialPickups:       rt.SpecialPickups,
 		LastForegroundEvent:  rt.LastForegroundEvent,
 		ForegroundEvents:     rt.ForegroundEvents,
+		FallingTorchTriggers: rt.FallingTorchTriggers,
+		RisingFireHeight:     rt.RisingFireHeight,
 		BonusTarget:          rt.BonusTarget,
 		BonusTargetSet:       rt.BonusTargetSet,
 		BonusRemaining:       rt.BonusRemaining,
@@ -2687,6 +3641,7 @@ func (rt *Runtime) SaveSnapshot() {
 		BreakableWalls:       rt.BreakableWalls,
 		ExitOpen:             rt.ExitOpen,
 		ReachedGoal:          rt.ReachedGoal,
+		GoalExitSecret:       rt.GoalExitSecret,
 		GoalExitDirection:    rt.GoalExitDirection,
 		GoalExitComplete:     rt.GoalExitComplete,
 		CheckpointProgress:   rt.CheckpointProgress,
@@ -2720,20 +3675,28 @@ func (rt *Runtime) RestoreCheckpoint() bool {
 	if !rt.checkpoint.Valid {
 		return false
 	}
+	tutorialResetFirst := rt.tutorialResetFirst
+	tutorialResetSecond := rt.tutorialResetSecond
 	if rt.Hooking {
 		rt.finishHookAction()
 	}
 	rt.Player = rt.checkpoint.Player
 	rt.PlayerMotion = rt.checkpoint.PlayerMotion
+	rt.playerTurnOffset = 0
 	rt.CheckpointPending = false
 	copy(rt.PlayerLayer, rt.checkpoint.PlayerLayer)
 	copy(rt.Background, rt.checkpoint.Background)
 	copy(rt.Foreground, rt.checkpoint.Foreground)
+	copy(rt.ForegroundState, rt.checkpoint.ForegroundState)
 	copy(rt.ObjectState, rt.checkpoint.ObjectState)
 	copy(rt.ObjectMotion, rt.checkpoint.ObjectMotion)
+	copy(rt.FrozenOriginal, rt.checkpoint.FrozenOriginal)
+	copy(rt.ContainerLocked, rt.checkpoint.ContainerLocked)
+	copy(rt.ConsumedRewardCells, rt.checkpoint.ConsumedRewardCells)
 	copy(rt.EnemyGateGroup, rt.checkpoint.EnemyGateGroup)
 	rt.EnemyGateCounters = cloneIntMap(rt.checkpoint.EnemyGateCounters)
 	rt.ActiveEnemyGateGroup = rt.checkpoint.ActiveEnemyGateGroup
+	rt.Anaconda = rt.checkpoint.Anaconda
 	rt.VioletGems = rt.checkpoint.VioletGems
 	rt.RedDiamonds = rt.checkpoint.RedDiamonds
 	rt.KeyForForeground9 = rt.checkpoint.KeyForForeground9
@@ -2748,6 +3711,8 @@ func (rt *Runtime) RestoreCheckpoint() bool {
 	rt.SpecialPickups = rt.checkpoint.SpecialPickups
 	rt.LastForegroundEvent = rt.checkpoint.LastForegroundEvent
 	rt.ForegroundEvents = rt.checkpoint.ForegroundEvents
+	rt.FallingTorchTriggers = rt.checkpoint.FallingTorchTriggers
+	rt.RisingFireHeight = rt.checkpoint.RisingFireHeight
 	rt.BonusTarget = rt.checkpoint.BonusTarget
 	rt.BonusTargetSet = rt.checkpoint.BonusTargetSet
 	rt.BonusRemaining = rt.checkpoint.BonusRemaining
@@ -2759,6 +3724,25 @@ func (rt *Runtime) RestoreCheckpoint() bool {
 	rt.RockHoldTicks = rockHoldDuration
 	rt.DeathTicks = 0
 	rt.pendingChestSet = false
+	rt.pendingForegroundEventSet = false
+	rt.ForegroundDemoActive = false
+	rt.ForegroundDemoID = 0
+	rt.ForegroundDemoPhase = 0
+	rt.ForegroundDemoTicks = 0
+	rt.foregroundDemoMoved = false
+	rt.EnemyGateDemoActive = false
+	rt.EnemyGateDemoPhase = 0
+	rt.EnemyGateDemoTicks = 0
+	rt.EnemyGateDemoOutboundTicks = 0
+	rt.EnemyGateDemoTarget = Point{}
+	rt.EnemyGateDemoTargetSet = false
+	rt.EnemyGateMessageIndex = 0
+	rt.EnemyGateMessageTicks = 0
+	rt.FallingTorchWarningTicks = 0
+	rt.FallingTorchAnimation = 0
+	rt.FallingTorchAnimationTicks = 0
+	rt.RisingFireAnimation = 2
+	rt.RisingFireAnimationTicks = 0
 	rt.RecallPending = false
 	rt.RecallTicks = 0
 	rt.ChestOpening = false
@@ -2768,6 +3752,8 @@ func (rt *Runtime) RestoreCheckpoint() bool {
 	rt.ChestRewardID = EmptyRawID
 	rt.ChestRewardValue = 0
 	rt.chestOpeningFresh = false
+	rt.RelicCelebrating = false
+	rt.RelicCelebrationTicks = 0
 	rt.LockOpening = false
 	rt.LockTicks = 0
 	rt.LockAnimation = 0
@@ -2782,9 +3768,18 @@ func (rt *Runtime) RestoreCheckpoint() bool {
 	rt.ResetPushAttempt()
 	rt.ExitOpen = rt.checkpoint.ExitOpen
 	rt.ReachedGoal = rt.checkpoint.ReachedGoal
+	rt.GoalExitSecret = rt.checkpoint.GoalExitSecret
 	rt.GoalExitDirection = rt.checkpoint.GoalExitDirection
 	rt.GoalExitComplete = rt.checkpoint.GoalExitComplete
 	rt.CheckpointProgress = rt.checkpoint.CheckpointProgress
+	if rt.Stage.Index == fallingTorchStageIndex && 18 < rt.Width() && 63 < rt.Height() {
+		idx := rt.index(18, 63)
+		rt.PlayerLayer[idx] = EmptyRawID
+		rt.ObjectState[idx] = 0
+		rt.ObjectMotion[idx] = ObjectMotion{}
+		rt.updatePressureDoors()
+	}
+	rt.restoreTutorialCheckpoint(tutorialResetFirst, tutorialResetSecond)
 	return true
 }
 
@@ -2794,6 +3789,10 @@ func (rt *Runtime) set(layer []RawID, x, y int, id RawID) {
 
 func (rt *Runtime) index(x, y int) int {
 	return x + y*rt.Width()
+}
+
+func clampRuntime(value, low, high int) int {
+	return min(max(value, low), high)
 }
 
 func cloneIntMap(in map[int]int) map[int]int {
@@ -2815,6 +3814,24 @@ func countRaw(layer []RawID, id RawID) int {
 		}
 	}
 	return count
+}
+
+func stageVioletTotal(stage *Stage) int {
+	if stage == nil {
+		return 0
+	}
+	total := countRaw(stage.Player, 1)
+	for idx, id := range stage.Player {
+		if id != 41 {
+			continue
+		}
+		value := int(stage.Background[idx])
+		if value == int(EmptyRawID) || value <= 0 {
+			value = 1
+		}
+		total += value
+	}
+	return total
 }
 
 func absInt(value int) int {

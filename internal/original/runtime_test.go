@@ -213,6 +213,20 @@ func TestRuntimeTracksStage00VioletGemsAsCollection(t *testing.T) {
 	}
 }
 
+func TestRuntimeWorld0VioletTotalsIncludeRaw41Values(t *testing.T) {
+	want := []int{21, 19, 37, 30, 97, 17, 67, 65, 0, 187, 116, 233, 398, 8}
+	for stageIndex, total := range want {
+		stage := mustLoadOriginalStage(t, fmt.Sprintf("stage%02d.json", stageIndex))
+		rt, err := NewRuntime(stage)
+		if err != nil {
+			t.Fatalf("Stage %d: %v", stageIndex+1, err)
+		}
+		if rt.TotalVioletGems != total {
+			t.Errorf("Stage %d total violet=%d, want raw1 + raw41 values = %d", stageIndex+1, rt.TotalVioletGems, total)
+		}
+	}
+}
+
 func TestRuntimeStage00GoalAutoWalksPastSourceBoundary(t *testing.T) {
 	stage := mustLoadOriginalStage(t, "stage00.json")
 	rt, err := NewRuntime(stage)
@@ -917,6 +931,75 @@ func TestRuntimeBoulderCanEnterDugRaw10Cell(t *testing.T) {
 	}
 }
 
+func TestRuntimeFallingBoulderKeepsSeparateDigForegroundState(t *testing.T) {
+	stage := mustLoadOriginalStage(t, "stage00.json")
+	rt, err := NewRuntime(stage)
+	if err != nil {
+		t.Fatal(err)
+	}
+	clearRuntimePlayerIDs(rt, 0, 1)
+	x, y := 2, 10
+	sourceIdx := rt.index(x, y)
+	targetIdx := rt.index(x, y+1)
+	rt.SetForTest(PlayerLayer, x, y, 0)
+	rt.SetForTest(PlayerLayer, x, y+1, EmptyRawID)
+	rt.SetForTest(PlayerLayer, x, y+2, 80)
+	rt.SetForTest(ForegroundLayer, x, y+1, 32)
+	rt.ObjectState[sourceIdx] = 0x18
+	rt.ForegroundState[targetIdx] = 3
+
+	if !rt.tickGravityObjectAt(x, y) {
+		t.Fatal("boulder did not fall into the raw32 removal-animation cell")
+	}
+	if id, _ := rt.At(PlayerLayer, x, y+1); id != 0 {
+		t.Fatalf("fallen object raw=%d, want boulder raw0", id)
+	}
+	wantObjectState := 0x18 | 3
+	if got := rt.ObjectState[targetIdx]; got != wantObjectState {
+		t.Fatalf("fallen boulder state=%#x, want rotation plus down direction %#x", got, wantObjectState)
+	}
+	if got := rt.ForegroundStateAt(x, y+1); got != 3 {
+		t.Fatalf("dig foreground state=%d after fall, want 3", got)
+	}
+
+	if rt.tickDigAnimationAt(targetIdx, 2) {
+		t.Fatal("dig foreground cleared before its final frame")
+	}
+	if got := rt.ForegroundStateAt(x, y+1); got != 4 {
+		t.Fatalf("advanced dig foreground state=%d, want 4", got)
+	}
+	if got := rt.ObjectState[targetIdx]; got != wantObjectState {
+		t.Fatalf("dig animation changed boulder state to %#x, want %#x", got, wantObjectState)
+	}
+
+	rt.ForegroundState[targetIdx] = digAnimationFrames - 1
+	if !rt.tickDigAnimationAt(targetIdx, 4) {
+		t.Fatal("final dig foreground frame did not clear")
+	}
+	if id, _ := rt.At(PlayerLayer, x, y+1); id != 0 || rt.ObjectState[targetIdx] != wantObjectState {
+		t.Fatalf("clearing grass changed boulder raw/state to %d/%#x", id, rt.ObjectState[targetIdx])
+	}
+}
+
+func TestRuntimeCheckpointPreservesForegroundAnimationState(t *testing.T) {
+	stage := mustLoadOriginalStage(t, "stage00.json")
+	rt, err := NewRuntime(stage)
+	if err != nil {
+		t.Fatal(err)
+	}
+	idx := rt.index(2, 10)
+	rt.Foreground[idx] = 32
+	rt.ForegroundState[idx] = 5
+	rt.SaveSnapshot()
+	rt.ForegroundState[idx] = 1
+	if !rt.RestoreCheckpoint() {
+		t.Fatal("checkpoint restore failed")
+	}
+	if got := rt.ForegroundStateAt(2, 10); got != 5 {
+		t.Fatalf("restored foreground state=%d, want 5", got)
+	}
+}
+
 func TestRuntimeRaw10DigAnimationClearsForeground(t *testing.T) {
 	stage := mustLoadOriginalStage(t, "stage00.json")
 	rt, err := NewRuntime(stage)
@@ -946,6 +1029,29 @@ func TestRuntimeRaw10DigAnimationClearsForeground(t *testing.T) {
 	foregroundID, _ := rt.At(ForegroundLayer, 1, 17)
 	if foregroundID != EmptyRawID {
 		t.Fatalf("finished dig foreground = %d, want empty", foregroundID)
+	}
+}
+
+func TestRuntimeHammerClearsAdjacentRaw10(t *testing.T) {
+	stage := mustLoadOriginalStage(t, "stage00.json")
+	rt, err := NewRuntime(stage)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rt.SpecialItemMask = 1
+	rt.Player = Point{X: 0, Y: 17}
+	rt.SetForTest(PlayerLayer, 1, 17, 10)
+	if !rt.UseHammer(1, 0) {
+		t.Fatal("hammer did not target adjacent raw10")
+	}
+	for tick := 1; rt.Hammering; tick++ {
+		rt.TickSourceFrame(8, tick, 0)
+	}
+	if id, _ := rt.At(PlayerLayer, 1, 17); id != EmptyRawID {
+		t.Fatalf("hammered raw10 player layer=%d, want empty", id)
+	}
+	if id, _ := rt.At(ForegroundLayer, 1, 17); id != 32 && id != EmptyRawID {
+		t.Fatalf("hammered raw10 foreground=%d, want removal animation", id)
 	}
 }
 
@@ -1943,14 +2049,16 @@ func TestRuntimeCrawlerContactDamagesAndAllowsPlayerEntry(t *testing.T) {
 		t.Fatal(err)
 	}
 	clearRuntimePlayerIDs(rt, 11)
-	rt.Player = Point{X: 0, Y: 17}
-	rt.SetForTest(PlayerLayer, 1, 17, 11)
-	rt.SetForTest(ForegroundLayer, 1, 17, EmptyRawID)
-	rt.SetForTest(ForegroundLayer, 2, 17, EmptyRawID)
+	prepareCrawlerTestArea(rt, 10, 10)
+	rt.Player = Point{X: 10, Y: 10}
+	rt.SetForTest(PlayerLayer, 11, 10, 11)
+	rt.SetForTest(PlayerLayer, 12, 10, 80)
+	rt.SetForTest(PlayerLayer, 11, 11, 80)
+	rt.ObjectState[rt.index(11, 10)] = 2
 	if !rt.TryMove(1, 0) {
 		t.Fatal("player did not enter source-passable crawler cell")
 	}
-	if rt.Player != (Point{X: 1, Y: 17}) {
+	if rt.Player != (Point{X: 11, Y: 10}) {
 		t.Fatalf("player = %+v, want crawler cell", rt.Player)
 	}
 	if rt.Health != 4 || rt.DamageTaken != 0 {
@@ -1960,9 +2068,9 @@ func TestRuntimeCrawlerContactDamagesAndAllowsPlayerEntry(t *testing.T) {
 	if rt.Health != 3 || rt.DamageTaken != 1 {
 		t.Fatalf("health=%d damage=%d after object frame, want 3/1", rt.Health, rt.DamageTaken)
 	}
-	id, _ := rt.At(PlayerLayer, 2, 17)
+	id, _ := rt.At(PlayerLayer, 11, 10)
 	if id != 11 {
-		t.Fatalf("crawler cell after contact frame = %d, want raw11 at (2,17)", id)
+		t.Fatalf("crawler cell after contact frame = %d, want raw11 at (11,10)", id)
 	}
 }
 
@@ -1973,21 +2081,31 @@ func TestRuntimeCrawlerInfersDirectionFromFloorAndMoves(t *testing.T) {
 		t.Fatal(err)
 	}
 	clearRuntimePlayerIDs(rt, 11)
-	rt.SetForTest(PlayerLayer, 1, 17, 11)
-	rt.SetForTest(PlayerLayer, 2, 17, EmptyRawID)
-	rt.SetForTest(ForegroundLayer, 2, 17, EmptyRawID)
-	rt.ObjectState[rt.index(1, 17)] = 0
+	prepareCrawlerTestArea(rt, 10, 10)
+	rt.SetForTest(PlayerLayer, 10, 10, 11)
+	rt.SetForTest(PlayerLayer, 10, 11, 80)
+	rt.ObjectState[rt.index(10, 10)] = 0
 	moved := rt.TickCrawlers()
-	if moved != 1 {
-		t.Fatalf("moved crawlers = %d, want 1", moved)
+	if moved != 0 {
+		t.Fatalf("initial crawler update moved %d times, want only a direction change", moved)
 	}
-	source, _ := rt.At(PlayerLayer, 1, 17)
-	target, _ := rt.At(PlayerLayer, 2, 17)
+	if got := rt.ObjectState[rt.index(10, 10)] & objectDirectionMask; got != 2 {
+		t.Fatalf("inferred crawler direction = %d, want right/2", got)
+	}
+	moved = rt.TickCrawlers()
+	if moved != 1 {
+		t.Fatalf("second crawler update moved %d times, want 1", moved)
+	}
+	source, _ := rt.At(PlayerLayer, 10, 10)
+	target, _ := rt.At(PlayerLayer, 11, 10)
 	if source != EmptyRawID || target != 11 {
 		t.Fatalf("crawler move source=%d target=%d, want empty/raw11", source, target)
 	}
-	if got := rt.ObjectState[rt.index(2, 17)] & 0x7; got != 2 {
+	if got := rt.ObjectState[rt.index(11, 10)] & objectDirectionMask; got != 2 {
 		t.Fatalf("crawler direction = %d, want inferred right/2", got)
+	}
+	if got := rt.ObjectMotion[rt.index(11, 10)].Remaining; got != 13 {
+		t.Fatalf("right-moving crawler timer = %d, want source same-scan 13", got)
 	}
 }
 
@@ -1998,11 +2116,11 @@ func TestRuntimeCrawlerDamagesPlayerOnTick(t *testing.T) {
 		t.Fatal(err)
 	}
 	clearRuntimePlayerIDs(rt, 11)
-	rt.Player = Point{X: 2, Y: 17}
-	rt.SetForTest(PlayerLayer, 1, 17, 11)
-	rt.SetForTest(PlayerLayer, 2, 17, EmptyRawID)
-	rt.SetForTest(ForegroundLayer, 2, 17, EmptyRawID)
-	rt.ObjectState[rt.index(1, 17)] = 2
+	prepareCrawlerTestArea(rt, 10, 10)
+	rt.Player = Point{X: 11, Y: 10}
+	rt.SetForTest(PlayerLayer, 10, 10, 11)
+	rt.SetForTest(PlayerLayer, 10, 11, 80)
+	rt.ObjectState[rt.index(10, 10)] = 2
 	moved := rt.TickCrawlers()
 	if moved != 1 {
 		t.Fatalf("moved crawlers = %d, want 1 while entering player cell", moved)
@@ -2010,7 +2128,7 @@ func TestRuntimeCrawlerDamagesPlayerOnTick(t *testing.T) {
 	if rt.Health != 3 || rt.DamageTaken != 1 {
 		t.Fatalf("health=%d damage=%d, want 3/1", rt.Health, rt.DamageTaken)
 	}
-	id, _ := rt.At(PlayerLayer, 2, 17)
+	id, _ := rt.At(PlayerLayer, 11, 10)
 	if id != 11 {
 		t.Fatalf("attacking crawler target cell = %d, want raw11", id)
 	}
@@ -2057,26 +2175,86 @@ func TestRuntimeHurtStatePreventsRepeatedContactDamage(t *testing.T) {
 	}
 }
 
-func TestRuntimeCrawlerReversesWhenBlocked(t *testing.T) {
+func TestRuntimeCrawlerTurnsAwayWhenForwardAndWallSideAreBlocked(t *testing.T) {
 	stage := mustLoadOriginalStage(t, "stage00.json")
 	rt, err := NewRuntime(stage)
 	if err != nil {
 		t.Fatal(err)
 	}
 	clearRuntimePlayerIDs(rt, 11)
-	rt.SetForTest(PlayerLayer, 1, 17, 11)
-	rt.SetForTest(PlayerLayer, 2, 17, 80)
-	rt.ObjectState[rt.index(1, 17)] = 2
+	prepareCrawlerTestArea(rt, 10, 10)
+	rt.SetForTest(PlayerLayer, 10, 10, 11)
+	rt.SetForTest(PlayerLayer, 11, 10, 80)
+	rt.SetForTest(PlayerLayer, 10, 11, 80)
+	rt.ObjectState[rt.index(10, 10)] = 2
 	moved := rt.TickCrawlers()
 	if moved != 0 {
 		t.Fatalf("moved crawlers = %d, want 0", moved)
 	}
-	id, _ := rt.At(PlayerLayer, 1, 17)
+	id, _ := rt.At(PlayerLayer, 10, 10)
 	if id != 11 {
 		t.Fatalf("blocked crawler cell = %d, want raw11", id)
 	}
-	if got := rt.ObjectState[rt.index(1, 17)] & 0x7; got != 4 {
-		t.Fatalf("reversed crawler direction = %d, want 4", got)
+	if got := rt.ObjectState[rt.index(10, 10)] & objectDirectionMask; got != 1 {
+		t.Fatalf("blocked crawler direction = %d, want turn away/up 1", got)
+	}
+}
+
+func TestRuntimeCrawlerTurnsAroundSourceOuterCorner(t *testing.T) {
+	stage := mustLoadOriginalStage(t, "stage00.json")
+	rt, err := NewRuntime(stage)
+	if err != nil {
+		t.Fatal(err)
+	}
+	clearRuntimePlayerIDs(rt, 11)
+	prepareCrawlerTestArea(rt, 10, 10)
+	rt.SetForTest(PlayerLayer, 10, 10, 11)
+	// The source's third probe is the diagonal cell behind the wall side.
+	rt.SetForTest(PlayerLayer, 9, 11, 80)
+	rt.ObjectState[rt.index(10, 10)] = 2
+	if moved := rt.TickCrawlers(); moved != 1 {
+		t.Fatalf("outer-corner moves = %d, want 1", moved)
+	}
+	id, _ := rt.At(PlayerLayer, 10, 11)
+	if id != 11 {
+		t.Fatalf("outer-corner target = %d, want raw11 below", id)
+	}
+	if got := rt.ObjectState[rt.index(10, 11)] & objectDirectionMask; got != 3 {
+		t.Fatalf("outer-corner direction = %d, want down/3", got)
+	}
+}
+
+func TestRuntimeCrawlerUsesSourceFivePixelMotionCadence(t *testing.T) {
+	stage := mustLoadOriginalStage(t, "stage00.json")
+	rt, err := NewRuntime(stage)
+	if err != nil {
+		t.Fatal(err)
+	}
+	clearRuntimePlayerIDs(rt, 11)
+	prepareCrawlerTestArea(rt, 10, 10)
+	rt.SetForTest(PlayerLayer, 10, 10, 11)
+	rt.SetForTest(PlayerLayer, 10, 11, 80)
+	rt.ObjectState[rt.index(10, 10)] = 2
+	rt.ObjectMotion[rt.index(10, 10)] = ObjectMotion{Remaining: 18}
+	for tick, want := range []int{13, 8, 3, -2} {
+		if moved := rt.TickCrawlers(); moved != 0 {
+			t.Fatalf("crawler moved early on cadence tick %d", tick+1)
+		}
+		if got := rt.ObjectMotion[rt.index(10, 10)].Remaining; got != want {
+			t.Fatalf("crawler timer on tick %d = %d, want %d", tick+1, got, want)
+		}
+	}
+	if moved := rt.TickCrawlers(); moved != 1 {
+		t.Fatalf("crawler moves after timer -2 = %d, want 1", moved)
+	}
+}
+
+func prepareCrawlerTestArea(rt *Runtime, centerX, centerY int) {
+	for y := centerY - 2; y <= centerY+2; y++ {
+		for x := centerX - 2; x <= centerX+2; x++ {
+			rt.SetForTest(PlayerLayer, x, y, EmptyRawID)
+			rt.SetForTest(ForegroundLayer, x, y, EmptyRawID)
+		}
 	}
 }
 
@@ -2249,13 +2427,22 @@ func TestRuntimeEnemyGateOpensDoorWhenGroupedSnakeCrushed(t *testing.T) {
 	rt.SetForTest(BackgroundLayer, 4, 11, 0)
 	rt.SetForTest(ForegroundLayer, 5, 10, 33)
 	rt.SetForTest(BackgroundLayer, 5, 10, EmptyRawID)
+	rt.ContainerLocked[rt.index(5, 10)] = true
 	rt.SetForTest(ForegroundLayer, 5, 11, 17)
 	rt.SetForTest(BackgroundLayer, 5, 11, 0)
 	if !rt.TryMove(1, 0) {
 		t.Fatal("failed to step onto raw26 enemy gate trigger")
 	}
+	rt.tickPendingForegroundEvent()
+	rt.AdvancePlayerMotion()
+	rt.tickPendingForegroundEvent()
+	rt.AdvancePlayerMotion()
+	rt.tickPendingForegroundEvent()
 	if rt.ActiveEnemyGateGroup != 0 {
 		t.Fatalf("active enemy gate group = %d, want 0", rt.ActiveEnemyGateGroup)
+	}
+	if events := rt.DrainSoundEvents(); len(events) != 1 || events[0] != SoundRiddle {
+		t.Fatalf("enemy-gate trigger sounds=%v, want [%d]", events, SoundRiddle)
 	}
 	trigger, _ := rt.At(ForegroundLayer, 1, 10)
 	if trigger != EmptyRawID {
@@ -2266,6 +2453,14 @@ func TestRuntimeEnemyGateOpensDoorWhenGroupedSnakeCrushed(t *testing.T) {
 	}
 	if rt.EnemyGateCounters[0] != 0 {
 		t.Fatalf("enemy gate counter = %d, want 0", rt.EnemyGateCounters[0])
+	}
+	events := rt.DrainSoundEvents()
+	foundDoorSound := false
+	for _, event := range events {
+		foundDoorSound = foundDoorSound || event == SoundDoor
+	}
+	if !foundDoorSound {
+		t.Fatalf("enemy-gate completion sounds=%v, want door sound %d", events, SoundDoor)
 	}
 	state, _ := rt.At(BackgroundLayer, 4, 10)
 	if state != 0x10 || rt.IsPassable(4, 10) {
@@ -2278,8 +2473,8 @@ func TestRuntimeEnemyGateOpensDoorWhenGroupedSnakeCrushed(t *testing.T) {
 	}
 	overlay, _ := rt.At(ForegroundLayer, 5, 10)
 	overlayState, _ := rt.At(BackgroundLayer, 5, 10)
-	if overlay != 33 || overlayState != 0 {
-		t.Fatalf("raw17 overlay side effect foreground=%d state=%d, want raw33/state0", overlay, overlayState)
+	if overlay != 33 || overlayState != EmptyRawID || rt.ContainerLockedAt(5, 10) {
+		t.Fatalf("raw17 overlay side effect foreground=%d payload-state=%d locked=%v, want raw33/unchanged/unlocked", overlay, overlayState, rt.ContainerLockedAt(5, 10))
 	}
 }
 
@@ -2325,6 +2520,29 @@ func TestRuntimeHammerRequiresToolLevel(t *testing.T) {
 	rt.SpecialItemMask = 1
 	if !rt.UseHammer(1, 0) {
 		t.Fatal("UseHammer with raw24 tool level = false, want true")
+	}
+}
+
+func TestRuntimeHammerBlockedByBoulderUsesSourceFeedback(t *testing.T) {
+	stage := mustLoadOriginalStage(t, "stage02.json")
+	rt, err := NewRuntime(stage)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rt.SpecialItemMask = 1
+	rt.Player = Point{X: 8, Y: 17}
+	rt.SetForTest(PlayerLayer, 9, 17, 0)
+	if !rt.UseHammer(1, 0) {
+		t.Fatal("blocked boulder did not start the source hammer action")
+	}
+	for sourceTick := 1; sourceTick <= hammerImpactTick; sourceTick++ {
+		rt.TickSourceFrame(8, sourceTick, 0)
+	}
+	if events := rt.DrainSoundEvents(); len(events) != 1 || events[0] != SoundHammerBlock {
+		t.Fatalf("blocked hammer sounds=%v, want [%d]", events, SoundHammerBlock)
+	}
+	if id, _ := rt.At(PlayerLayer, 9, 17); id != 0 {
+		t.Fatalf("blocked hammer changed boulder to raw %d", id)
 	}
 }
 
@@ -2408,6 +2626,7 @@ func TestRuntimeHammerDefeatsUnmarkedRedSnake(t *testing.T) {
 	}
 	rt.SpecialItemMask = 1
 	rt.Player = Point{X: 31, Y: 8}
+	rt.ObjectState[rt.index(32, 8)] = 0
 	if !rt.UseHammer(1, 0) {
 		t.Fatal("UseHammer() = false, want true against adjacent raw43 snake")
 	}
@@ -2416,6 +2635,57 @@ func TestRuntimeHammerDefeatsUnmarkedRedSnake(t *testing.T) {
 	}
 	if id, _ := rt.At(PlayerLayer, 32, 8); id != EmptyRawID {
 		t.Fatalf("hammered unmarked red snake raw=%d, want empty", id)
+	}
+}
+
+func TestRuntimeAuthoredRedSnakeUsesSourceThreeHammerHits(t *testing.T) {
+	stage := mustLoadOriginalStage(t, "stage03.json")
+	rt, err := NewRuntime(stage)
+	if err != nil {
+		t.Fatal(err)
+	}
+	point := Point{X: 32, Y: 8}
+	idx := rt.index(point.X, point.Y)
+	if got := rt.ObjectState[idx] & 0x18000; got != 0x10000 {
+		t.Fatalf("authored red-snake durability=%#x, want source %#x", got, 0x10000)
+	}
+	for hit, wantDurability := range []int{0x8000, 0, 0} {
+		rt.HammerTarget = point
+		if !rt.applyHammerImpact() {
+			t.Fatalf("red-snake hammer hit %d was not handled", hit+1)
+		}
+		if hit < 2 {
+			if id, _ := rt.At(PlayerLayer, point.X, point.Y); id != 43 {
+				t.Fatalf("red snake removed on hit %d: raw=%d", hit+1, id)
+			}
+			if got := rt.ObjectState[idx] & 0x18000; got != wantDurability {
+				t.Fatalf("red-snake durability after hit %d=%#x, want %#x", hit+1, got, wantDurability)
+			}
+			rt.ObjectState[idx] &^= snakeStunMask
+		} else if id, _ := rt.At(PlayerLayer, point.X, point.Y); id != EmptyRawID {
+			t.Fatalf("red snake raw=%d after third hit, want empty", id)
+		}
+	}
+}
+
+func TestRuntimeRedSnakeStopsSourceChaseAfterBitingHero(t *testing.T) {
+	stage := mustLoadOriginalStage(t, "stage03.json")
+	rt, err := NewRuntime(stage)
+	if err != nil {
+		t.Fatal(err)
+	}
+	clearRuntimePlayerIDs(rt, 19, 43)
+	point := Point{X: 10, Y: 10}
+	rt.Player = point
+	rt.SetForTest(PlayerLayer, point.X, point.Y, 43)
+	rt.SetForTest(ForegroundLayer, point.X, point.Y, EmptyRawID)
+	rt.ObjectState[rt.index(point.X, point.Y)] = 0xc00 | 0x10000
+	rt.TickSnakes()
+	if rt.Health != rt.MaxHealth-1 {
+		t.Fatalf("red-snake chase bite health=%d, want %d", rt.Health, rt.MaxHealth-1)
+	}
+	if got := rt.ObjectState[rt.index(point.X, point.Y)] & 0xf00; got != 0 {
+		t.Fatalf("red-snake chase state after bite=%#x, want cleared", got)
 	}
 }
 
@@ -2446,6 +2716,26 @@ func TestRuntimeBreakableWallDamagePropagatesToAdjacentRaw30(t *testing.T) {
 	}
 	if rt.BreakableWalls != 2 {
 		t.Fatalf("breakable walls = %d, want 2", rt.BreakableWalls)
+	}
+}
+
+func TestRuntimeBreakableChainUsesSourceBottomUpLeftRightScan(t *testing.T) {
+	stage := mustLoadOriginalStage(t, "stage02.json")
+	rt, err := NewRuntime(stage)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, point := range []Point{{X: 10, Y: 10}, {X: 11, Y: 10}, {X: 10, Y: 9}} {
+		rt.SetForTest(PlayerLayer, point.X, point.Y, 30)
+		rt.ObjectState[rt.index(point.X, point.Y)] = 3
+	}
+	rt.ObjectState[rt.index(10, 10)] = 4
+	rt.TickBreakables()
+	if got := rt.ObjectState[rt.index(11, 10)]; got != 5 {
+		t.Fatalf("right wall state after same-frame propagation = %d, want 5", got)
+	}
+	if got := rt.ObjectState[rt.index(10, 9)]; got != 5 {
+		t.Fatalf("upper wall state after bottom-up propagation = %d, want 5", got)
 	}
 }
 
@@ -2651,12 +2941,18 @@ func TestRuntimeStage01FullHealthChestBecomesTenPointBonus(t *testing.T) {
 	}
 	settleRuntimePlayerMotion(rt)
 	rt.TickSourceFrame(8, 1, 0)
+	if rt.ChestRewardID != 41 || rt.ChestRewardValue != 10 {
+		t.Fatalf("full-health chest reward=%d value=%d, want source raw41/10 before animation", rt.ChestRewardID, rt.ChestRewardValue)
+	}
 	for sourceTick := 2; sourceTick <= chestRewardTick+1; sourceTick++ {
 		rt.gravitySourceTick = sourceTick
 		rt.TickStatus()
 	}
 	if rt.HealthRefills != 0 || rt.BonusValue != 10 || rt.BonusPickups != 1 || rt.BonusRemaining != 5 {
 		t.Fatalf("full-health chest refills=%d bonus=%d pickups=%d remaining=%d, want 0/10/1/5", rt.HealthRefills, rt.BonusValue, rt.BonusPickups, rt.BonusRemaining)
+	}
+	if rt.VioletGems != 10 || rt.TotalVioletGems != 29 {
+		t.Fatalf("full-health chest violet=%d/%d, want source conversion 10/29", rt.VioletGems, rt.TotalVioletGems)
 	}
 }
 
@@ -2710,6 +3006,38 @@ func TestRuntimeStage01SecondChestUsesSourceAnimation48(t *testing.T) {
 	}
 	if events := rt.DrainSoundEvents(); len(events) != 1 || events[0] != SoundChestReward {
 		t.Fatalf("short chest reward sounds=%v, want [%d]", events, SoundChestReward)
+	}
+}
+
+func TestRuntimeMaxLifeChestFallsBackToHealthThenBonus(t *testing.T) {
+	stage := mustLoadOriginalStage(t, "stage02.json")
+	point := Point{X: 19, Y: 6}
+	rt, err := NewRuntime(stage)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rt.Player = point
+	rt.ExtraLives = 99
+	rt.Health = 2
+	rt.startChestOpening(point, true)
+	if rt.ChestRewardID != 7 {
+		t.Fatalf("max-life chest reward=%d, want health raw7", rt.ChestRewardID)
+	}
+	rt.applyChestReward()
+	if rt.Health != rt.MaxHealth || len(rt.PersistentRewardCoordinates()) != 0 {
+		t.Fatalf("max-life health fallback health=%d coordinates=%v, want full/replayable", rt.Health, rt.PersistentRewardCoordinates())
+	}
+
+	rt, err = NewRuntime(stage)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rt.Player = point
+	rt.ExtraLives = 99
+	rt.Health = rt.MaxHealth
+	rt.startChestOpening(point, true)
+	if rt.ChestRewardID != 41 || rt.ChestRewardValue != 10 {
+		t.Fatalf("max-life/full-health chest reward=%d/%d, want raw41/10", rt.ChestRewardID, rt.ChestRewardValue)
 	}
 }
 
@@ -2774,7 +3102,9 @@ func TestRuntimeForegroundRaw6PressureSwitchControlsDoor(t *testing.T) {
 	rt.SetForTest(ForegroundLayer, 2, 17, EmptyRawID)
 	rt.SetForTest(PlayerLayer, 4, 17, EmptyRawID)
 	rt.SetForTest(ForegroundLayer, 4, 17, 7)
-	rt.SetForTest(BackgroundLayer, 4, 17, 0)
+	// The source post-load pass stores one linked activator in the low nibble.
+	rt.SetForTest(BackgroundLayer, 4, 17, 1)
+	rt.DoorGroup[rt.index(4, 17)] = 0
 	rt.updatePressureDoors()
 	if rt.IsPassable(4, 17) {
 		t.Fatal("raw6-linked door is passable while switch is inactive")
@@ -2783,24 +3113,51 @@ func TestRuntimeForegroundRaw6PressureSwitchControlsDoor(t *testing.T) {
 		t.Fatal("failed to step onto raw6 pressure switch")
 	}
 	settleRuntimePlayerMotion(rt)
+	if events := rt.DrainSoundEvents(); len(events) != 1 || events[0] != SoundDoor {
+		t.Fatalf("pressure-door opening sounds=%v, want [%d]", events, SoundDoor)
+	}
 	state, _ := rt.At(BackgroundLayer, 4, 17)
-	if state != 0x10 || rt.IsPassable(4, 17) {
+	if state != 0x11 || rt.IsPassable(4, 17) {
 		t.Fatalf("pressure door phase1 state=%#x passable=%v, want blocking", state, rt.IsPassable(4, 17))
 	}
 	rt.tickDoorAnimations(3)
 	state, _ = rt.At(BackgroundLayer, 4, 17)
-	if state != 0x20 || !rt.IsPassable(4, 17) {
+	if state != 0x21 || !rt.IsPassable(4, 17) {
 		t.Fatalf("pressure door phase2 state=%#x passable=%v, want passable", state, rt.IsPassable(4, 17))
 	}
 	if !rt.TryMove(1, 0) {
 		t.Fatal("failed to step off raw6 pressure switch")
 	}
+	if events := rt.DrainSoundEvents(); len(events) != 1 || events[0] != SoundBoulder {
+		t.Fatalf("pressure-door closing sounds=%v, want [%d]", events, SoundBoulder)
+	}
 	if rt.IsPassable(4, 17) {
 		t.Fatal("raw6-linked door remains passable after switch is released")
 	}
 	state, _ = rt.At(BackgroundLayer, 4, 17)
-	if state != 0 {
-		t.Fatalf("closed pressure door state = %d, want 0", state)
+	if state != 1 {
+		t.Fatalf("closed pressure door state = %d, want retained count 1", state)
+	}
+}
+
+func TestRuntimeClosingPressureDoorCrushesHeroInside(t *testing.T) {
+	stage := mustLoadOriginalStage(t, "stage00.json")
+	rt, err := NewRuntime(stage)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rt.Player = Point{X: 4, Y: 17}
+	rt.PlayerMotion = ObjectMotion{}
+	rt.SetForTest(PlayerLayer, 4, 17, EmptyRawID)
+	rt.SetForTest(ForegroundLayer, 4, 17, 7)
+	rt.SetForTest(BackgroundLayer, 4, 17, 0x20)
+	rt.closeDoorByID(0)
+	if !rt.PlayerDead || rt.Health != 0 {
+		t.Fatalf("closing pressure door dead=%v health=%d, want lethal source crush", rt.PlayerDead, rt.Health)
+	}
+	events := rt.DrainSoundEvents()
+	if len(events) != 3 || events[0] != SoundBoulder || events[1] != SoundHeroHurt || events[2] != SoundDeath {
+		t.Fatalf("pressure-door crush sounds=%v, want [%d %d %d]", events, SoundBoulder, SoundHeroHurt, SoundDeath)
 	}
 }
 
@@ -2851,9 +3208,10 @@ func TestRuntimeForegroundRaw2State1RequiresHookLevelAction(t *testing.T) {
 	if state, _ := rt.At(BackgroundLayer, 20, 20); state != 1 {
 		t.Fatalf("test fixture raw2 state = %d, want 1", state)
 	}
-	if rt.TryMove(1, 0) {
-		t.Fatal("moved through state1 foreground raw2 before using the hook-level action")
+	if !rt.TryMove(1, 0) {
+		t.Fatal("source movement must allow the hero onto state1 foreground raw2")
 	}
+	settleRuntimePlayerMotion(rt)
 	if rt.UseSpecialBarrier(1, 0) {
 		t.Fatal("UseSpecialBarrier without tool = true, want false")
 	}
@@ -2869,8 +3227,34 @@ func TestRuntimeForegroundRaw2State1RequiresHookLevelAction(t *testing.T) {
 	if foreground != EmptyRawID {
 		t.Fatalf("foreground raw2 after action = %d, want empty", foreground)
 	}
-	if !rt.TryMove(1, 0) {
-		t.Fatal("failed to move through cleared state1 raw2")
+	if rt.Player != (Point{X: 20, Y: 20}) {
+		t.Fatalf("player=%+v after clearing state1 raw2, want standing on 20,20", rt.Player)
+	}
+}
+
+func TestRuntimeForegroundRaw2UsesSourceToolPrompt(t *testing.T) {
+	stage := mustLoadOriginalStage(t, "stage04.json")
+	rt, err := NewRuntime(stage)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rt.Player = Point{X: 20, Y: 20}
+	rt.SetForTest(PlayerLayer, 20, 20, EmptyRawID)
+	if module, available, visible := rt.SpecialBarrierPrompt(); module != 1 || available || !visible {
+		t.Fatalf("missing hook prompt=%d/%v/%v, want module1 unavailable visible", module, available, visible)
+	}
+	rt.SpecialItemMask = 2
+	if module, available, visible := rt.SpecialBarrierPrompt(); module != 1 || !available || !visible {
+		t.Fatalf("owned hook prompt=%d/%v/%v, want module1 available visible", module, available, visible)
+	}
+	rt.SetForTest(BackgroundLayer, 20, 20, 0)
+	rt.SpecialItemMask = 1
+	if module, available, visible := rt.SpecialBarrierPrompt(); module != 0 || !available || !visible {
+		t.Fatalf("owned hammer prompt=%d/%v/%v, want module0 available visible", module, available, visible)
+	}
+	rt.SetForTest(ForegroundLayer, 20, 20, EmptyRawID)
+	if _, _, visible := rt.SpecialBarrierPrompt(); visible {
+		t.Fatal("tool prompt remained after raw2 cleared")
 	}
 }
 
@@ -2902,7 +3286,7 @@ func TestRuntimeForegroundRaw1ClearsConnectedClusterOnEnter(t *testing.T) {
 	}
 }
 
-func TestRuntimeForegroundRaw0RecordsEventAndClearsOnEnter(t *testing.T) {
+func TestRuntimeForegroundRaw0RecordsEventAtSourceMotionOffset(t *testing.T) {
 	stage := mustLoadOriginalStage(t, "stage02.json")
 	rt, err := NewRuntime(stage)
 	if err != nil {
@@ -2920,6 +3304,17 @@ func TestRuntimeForegroundRaw0RecordsEventAndClearsOnEnter(t *testing.T) {
 	if !rt.TryMove(1, 0) {
 		t.Fatal("failed to enter foreground raw0 event")
 	}
+	if rt.ForegroundEvents != 0 {
+		t.Fatalf("foreground event triggered at movement offset %d, want source delay", rt.PlayerMotion.Remaining)
+	}
+	rt.TickSourceFrame(8, 1, 0)
+	rt.AdvancePlayerMotion()
+	rt.TickSourceFrame(8, 2, 0)
+	rt.AdvancePlayerMotion()
+	if rt.PlayerMotion.Remaining != 6 {
+		t.Fatalf("movement offset=%d, want 6 before foreground event scan", rt.PlayerMotion.Remaining)
+	}
+	rt.TickSourceFrame(8, 3, 0)
 	if rt.LastForegroundEvent != 30 || rt.ForegroundEvents != 1 {
 		t.Fatalf("foreground event last=%d count=%d, want 30/1", rt.LastForegroundEvent, rt.ForegroundEvents)
 	}
@@ -2997,6 +3392,9 @@ func TestRuntimeCollectsRaw41BonusValueFromBackground(t *testing.T) {
 	if rt.BonusValue != 15 || rt.BonusPickups != 1 {
 		t.Fatalf("bonus value=%d pickups=%d, want 15/1", rt.BonusValue, rt.BonusPickups)
 	}
+	if rt.VioletGems != 15 {
+		t.Fatalf("raw41 violet gems=%d, want source value 15", rt.VioletGems)
+	}
 	if rt.BonusRemaining != 10 || rt.BonusGateOpen {
 		t.Fatalf("bonus remaining=%d open=%v, want 10/false", rt.BonusRemaining, rt.BonusGateOpen)
 	}
@@ -3021,6 +3419,9 @@ func TestRuntimeBonusQuotaOpensAfterEnoughBonusValue(t *testing.T) {
 	}
 	if rt.BonusRemaining != 0 || !rt.BonusGateOpen {
 		t.Fatalf("bonus remaining=%d open=%v, want 0/true", rt.BonusRemaining, rt.BonusGateOpen)
+	}
+	if rt.VioletGems != 10 {
+		t.Fatalf("raw41 quota violet gems=%d, want 10", rt.VioletGems)
 	}
 }
 
@@ -3086,6 +3487,62 @@ func TestRuntimeFullHealthRefillBecomesBonusValue(t *testing.T) {
 	if rt.BonusValue != 10 || rt.BonusPickups != 1 {
 		t.Fatalf("bonus value=%d pickups=%d, want 10/1", rt.BonusValue, rt.BonusPickups)
 	}
+	if rt.VioletGems != 10 || rt.TotalVioletGems != 31 {
+		t.Fatalf("converted refill violet=%d/%d, want 10/31", rt.VioletGems, rt.TotalVioletGems)
+	}
+}
+
+func TestRuntimePersistsOnlySourcePermanentChestRewards(t *testing.T) {
+	stage := mustLoadOriginalStage(t, "stage00.json")
+	rt, err := NewRuntime(stage)
+	if err != nil {
+		t.Fatal(err)
+	}
+	chest := Point{X: 19, Y: 2}
+	rt.Player = chest
+	rt.ChestRewardID = 2
+	rt.applyChestReward()
+	if got := rt.PersistentRewardCoordinates(); len(got) != 1 || got[0] != chest {
+		t.Fatalf("red-diamond persistent coordinates=%v, want [%+v]", got, chest)
+	}
+
+	replay, err := NewRuntime(stage)
+	if err != nil {
+		t.Fatal(err)
+	}
+	replay.ApplyPersistentRewardCoordinates(rt.PersistentRewardCoordinates())
+	if id, _ := replay.At(PlayerLayer, chest.X, chest.Y); id != EmptyRawID {
+		t.Fatalf("consumed red-diamond chest payload=%d, want empty", id)
+	}
+	if replay.ObjectState[replay.index(chest.X, chest.Y)] != 3 {
+		t.Fatalf("consumed hidden chest state=%d, want final open frame 3", replay.ObjectState[replay.index(chest.X, chest.Y)])
+	}
+
+	rt.ConsumedRewardCells[rt.index(chest.X, chest.Y)] = false
+	rt.ChestRewardID = 4
+	rt.applyChestReward()
+	if got := rt.PersistentRewardCoordinates(); len(got) != 0 {
+		t.Fatalf("key chest persisted coordinates=%v, want replayable source key", got)
+	}
+}
+
+func TestRuntimeConsumedBossRelicBecomesTenPointBonus(t *testing.T) {
+	stage := mustLoadOriginalStage(t, "stage08.json")
+	rt, err := NewRuntime(stage)
+	if err != nil {
+		t.Fatal(err)
+	}
+	seal := Point{X: 27, Y: 6}
+	rt.ApplyPersistentRewardCoordinates([]Point{seal})
+	if id, _ := rt.At(PlayerLayer, seal.X, seal.Y); id != 41 {
+		t.Fatalf("replayed seal chest payload=%d, want raw41", id)
+	}
+	if value, _ := rt.At(BackgroundLayer, seal.X, seal.Y); value != 10 {
+		t.Fatalf("replayed seal chest value=%d, want 10", value)
+	}
+	if rt.TotalVioletGems != 10 {
+		t.Fatalf("replayed seal stage total violet=%d, want 10", rt.TotalVioletGems)
+	}
 }
 
 func TestRuntimeOpensForeground9LockWithRaw4Key(t *testing.T) {
@@ -3101,6 +3558,11 @@ func TestRuntimeOpensForeground9LockWithRaw4Key(t *testing.T) {
 		t.Fatal("started foreground raw 9 lock without raw 4 key")
 	}
 	rt.KeyForForeground9 = 1
+	rt.SetPlayerTurnOffset(12)
+	if rt.startAdjacentLockOpening() {
+		t.Fatal("started foreground raw 9 lock before turn jInt reached 6")
+	}
+	rt.SetPlayerTurnOffset(6)
 	if !rt.startAdjacentLockOpening() {
 		t.Fatal("failed to start foreground raw 9 lock with raw 4 key")
 	}
@@ -3126,7 +3588,7 @@ func TestRuntimeOpensForeground9LockWithRaw4Key(t *testing.T) {
 		t.Fatalf("opened lock player=%d foreground=%d state=%d, want raw31/raw9/state1", playerID, foregroundID, rt.ObjectState[rt.index(7, 17)])
 	}
 	doorState, _ := rt.At(BackgroundLayer, 7, 18)
-	if doorState != 0x10 || rt.IsPassable(7, 18) {
+	if doorState != 0x11 || rt.IsPassable(7, 18) {
 		t.Fatalf("linked door state=%#x passable=%v, want phase1/blocking", doorState, rt.IsPassable(7, 18))
 	}
 	rt.tickDoorAnimations(3)
@@ -3138,6 +3600,44 @@ func TestRuntimeOpensForeground9LockWithRaw4Key(t *testing.T) {
 	}
 	if rt.LockTicks != 0 || rt.CanAcceptInput() == false {
 		t.Fatalf("completed lock ticks=%d input=%v, want 0/true", rt.LockTicks, rt.CanAcceptInput())
+	}
+}
+
+func TestRuntimeSharedDoorWaitsForEveryKeyedLock(t *testing.T) {
+	stage := mustLoadOriginalStage(t, "stage07.json")
+	rt, err := NewRuntime(stage)
+	if err != nil {
+		t.Fatal(err)
+	}
+	door := Point{X: 27, Y: 15}
+	if state, _ := rt.At(BackgroundLayer, door.X, door.Y); state != 2 {
+		t.Fatalf("two-lock door initial count = %#x, want 2", state)
+	}
+	rt.KeyForForeground8 = 2
+	for lockIndex, y := range []int{13, 14} {
+		rt.Player = Point{X: 26, Y: y}
+		rt.PlayerMotion = ObjectMotion{}
+		if !rt.startAdjacentLockOpening() {
+			t.Fatalf("failed to start shared lock %d", lockIndex+1)
+		}
+		for !rt.LockRewarded {
+			rt.tickLockOpening()
+		}
+		state, _ := rt.At(BackgroundLayer, door.X, door.Y)
+		if lockIndex == 0 {
+			if state != 1 || rt.IsPassable(door.X, door.Y) {
+				t.Fatalf("door after first lock state=%#x passable=%v, want count1/closed", state, rt.IsPassable(door.X, door.Y))
+			}
+		} else if state != 0x11 || rt.IsPassable(door.X, door.Y) {
+			t.Fatalf("door after second lock state=%#x passable=%v, want phase1/blocking", state, rt.IsPassable(door.X, door.Y))
+		}
+		for rt.LockOpening {
+			rt.tickLockOpening()
+		}
+	}
+	rt.tickDoorAnimations(3)
+	if !rt.IsPassable(door.X, door.Y) {
+		t.Fatal("shared door did not become passable after the second lock")
 	}
 }
 
@@ -3227,6 +3727,23 @@ func tickGravityObjectUntilMoved(rt *Runtime, x, y, maxTicks int) (int, int) {
 func settleRuntimePlayerMotion(rt *Runtime) {
 	for rt.PlayerMotion.Remaining > 0 {
 		rt.AdvancePlayerMotion()
+	}
+}
+
+func TestPlayerTurnOffsetPreservesSourceJIntWithoutMovement(t *testing.T) {
+	rt := &Runtime{}
+	rt.SetPlayerTurnOffset(18)
+	if got := rt.playerSourceOffset(); got != 18 {
+		t.Fatalf("turn source offset=%d, want 18", got)
+	}
+	rt.PlayerMotion = ObjectMotion{DX: 1, Remaining: 12}
+	if got := rt.playerSourceOffset(); got != 12 {
+		t.Fatalf("movement source offset=%d, want movement to take precedence at 12", got)
+	}
+	rt.PlayerMotion = ObjectMotion{}
+	rt.SetPlayerTurnOffset(-1)
+	if got := rt.playerSourceOffset(); got != 0 {
+		t.Fatalf("clamped source offset=%d, want 0", got)
 	}
 }
 

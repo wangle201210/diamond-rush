@@ -320,6 +320,7 @@ Original source anchors:
 - Current Go runtime derives that tool level from collected source-special raw `24`/`27`/`26` effects; hammer/local action requires level `>=1`, hook requires level `>=2`.
 - The horizontal hook scan at lines 1278-1344 searches 2-3 cells and recognizes raw `0/1/8/9/11/14/19/43/47/48`; closed doors, intervening objects, overlay blockers, and raw `48` state bit `0x8` constrain the cast.
 - Original-JAR traces show raw `32` rope segments extending with `18 -> 12 -> 6 -> 0` timers. Physical targets are pulled all the way to the adjacent cell. Raw `1` is pulled one additional step into the hero cell and collected only after the hook finishes.
+- On release, the JAR restores a saved state only for raw `0/8/9/47`, after clearing pending-turn and roll-preparation bits. Other hook candidates receive state `-1`; hooked snakes therefore resume through the source negative packed-target branch instead of recovering their old patrol state.
 - The hammer/local neighborhood scan appears around lines 1345-1499. Hero animations `13/14/15/16` impact on tick `3` and last 11 ticks upward or 12 ticks in the other directions.
 - Hook sound ID is `SOUND_SFX_HOOKING = 12`.
 
@@ -427,38 +428,50 @@ Exit criteria:
 
 Current implementation:
 
-- `cmd/originalrush` loads `stage00` through `stage04` from the decoded Angkor pack and exposes their source nodes through the decoded `map_angkor.out` world map. Later Angkor nodes remain visible but cannot be entered in this five-stage slice.
+- `cmd/originalrush` loads all 14 stages from the decoded Angkor pack. `stage00..08` are the normal route and boss, `stage09..12` are the four secret stages exposed through the decoded `map_angkor.out` graph, and the non-map `stage13` tutorial runs before Stage 1 for a fresh save.
 - `internal/originalgame` renders the original `240x320` composition: a `40px` source HUD, a `240px` scrolling playfield with `24px` tiles, and a `40px` source HUD. It uses extracted Angkor floor/wall/boulder/vegetation art, source gem/checkpoint/goal/enemy/hazard art, and the original hero animation metadata.
 - HUD frames, hero frames, snake frames, foreground effects, and flame frames are composed from their extracted source modules and JSON offsets/flip flags. This avoids the clipping present in convenience `frames.png` sheets for non-zero frame anchors.
+- Rendering follows the Java pass order: first the scrolling tile background, then dynamic foreground/player objects over the relative `-1..11` source scan, then late foreground overlays. This keeps rolling rocks and horizontal flames from being overwritten by later floor cells, clips pressure switches to one tile, and preserves the authored foreground occlusion over the hero.
 - Angkor Stage 1 runs at the Java loop's `20 TPS`. Its 60-tick title is an overlay rather than a simulation pause, and player-layer raw `79` automatically walks the hero four cells from `(0,17)` to the first checkpoint before accepting movement input.
 - Stage initialization creates the source temporary foreground raw `7` entrance door at `(2,17)` with merged state `0x3f`. The fourth raw `79` auto-entry step runs `doorHeadClose`, changes it to blocking state `0x0f`, and emits source sound `14`.
 - Player movement uses the source `18 -> 12 -> 6 -> 0` sub-tile offset. The camera follows the rendered position with the Java horizontal and vertical dead zones instead of hard-centering each tile.
 - Player-layer raw `12` is a visible blocking quota gate. It remains in the runtime layer, renders `cm.f` chunk `5` with the remaining count, and clears only when raw `1`/`41` collection exhausts the quota. The readable decompile's initialization clear is contradicted by original-JAR runtime state and its own render branch. Raw `5` still does not inspect that quota, so an authored route that bypasses raw `12` may enter the exit independently.
 - Entering Stage 1 raw `5` reads exit direction `2` from its background byte, shows `CONGRATULATIONS!`, and auto-walks right with `18 -> 12 -> 6 -> 0` interpolation. Only after the hero reaches `x = stageWidth + 6` does the game run the Java `bByte=35` 12-step Loading transition and enter the `bByte=17` result sequence. Continue then returns to the Angkor map and unlocks the next implemented node.
-- The runtime walks through the opening corridor, commits ordered checkpoints on the source tick after movement settles, collects raw `1` violet gems through 24-pixel interpolation overlap, and plays `cm.f` chunk `7` animation `3`. Entered raw `10` vegetation remains for the movement frame, becomes foreground raw `32` on the next object scan, then advances its eight frames on source tick parity.
+- The runtime walks through the opening corridor, commits ordered checkpoints on the source tick after movement settles, collects raw `1` violet gems through 24-pixel interpolation overlap, and plays `cm.f` chunk `7` animation `3`. Entered raw `10` vegetation remains for the movement frame, becomes foreground raw `32` on the next object scan, then advances its eight frames on source tick parity. Its foreground frame state is stored separately from gravity-object direction/rotation state, including in checkpoint snapshots.
 - The `(19,2)` foreground raw `33` chest starts only on the settled-player object scan. Stage 1 uses hero animation `40` for 67 ticks, advances the lid through source states `1/2/3`, grants the red diamond on sequence index `13` at tick `39`, plays `cm.f` chunk `7` animation `0`, and displays the red diamond above the hero after the reward sequence.
 - Raw `0` and raw `1` fall vertically on the first eligible object frame with source offsets `18 -> 12 -> 6 -> 0`. Rolling uses packed direction/rotation bits plus Java's `0x200` preparation state: offset `1` to `12`, 24 to 27 source frames of visible rocking, then a diagonal transfer with vertical offset `12 -> 6 -> 0`. Purple gems can be collected during interpolation; boulders preserve partial damage/crush behavior and remove a snake below before occupying its cell. Landing clears the packed low direction bits, preserves rotation/side markers, and emits source sound `14`.
 - Green snakes preserve low/pending direction bits, `21 -> 18 -> ... -> 0` motion, same-pass rescans, source foreground passability, 24-pixel contact overlap, and directional knockback. Their extracted animation uses direct `(aSInt >> 1)` sequence selection. Horizontal fire reach remains tied to the extracted flame animation frame.
 - `*` away from a checkpoint emits source sound `2`, then plays the complete 42-tick hero animation `19` before consuming a life and restoring; `5` or `*` while standing on a checkpoint resets immediately with sound `9` and no life cost. Lethal damage uses the 88-tick hurt/death transition and restores at full `4/4` health when an extra life remains.
-- `TestRuntimeStage00CanBeCompletedAtSourceCadence` through `TestRuntimeStage04CanBeCompletedAtSourceCadence` replay full entrance-to-exit routes while advancing the unified 20 Hz object frame between player actions. They cover quotas `10/15/20/25/30`, ordered checkpoints, gravity puzzles, locks, enemy gates, hammer puzzles, and the Stage 5 hook route.
-- The runtime collects source-special low-frequency pickups raw `24`/`26`/`27`, raw `42`, and raw `53`, preserving their Java state effects as runtime flags/masks until their later-world UI/inventory use is needed.
+- `TestRuntimeStage00CanBeCompletedAtSourceCadence` through `TestRuntimeStage13TutorialCanBeCompletedAtSourceCadence` replay every packed Angkor stage while advancing the unified 20 Hz object frame between player actions. They cover quotas up to 99, ordered checkpoints, gravity puzzles, locks, enemy gates, hammer/hook/freeze puzzles, the Stage 6 falling-torches chase, both exits in Stages 7 and 8, four secret stages, three actual falling-boulder hits against Great Anaconda, and the complete tutorial script chain.
+- Stage 7 foreground raw `5` runs the normal result flow and unlocks normal node `7`. Foreground raw `28` keeps its separate `qByte/atBoolean=false` branch, skips results, displays the source 30-tick secret-path message, and unlocks map node `9` only.
+- Stage 8's normal route uses the `(33,12)` boulder on pressure switch `(32,17)` to reach the gold key and normal exit. Its secret route requires Freeze Hammer raw `9`: freeze the snake at `(8,2)`, push the settled block onto `(7,4)`, and use raw `28` to unlock map node `12` only.
+- Freeze Hammer stores source type separately while raw `9` participates in source gravity, rolling, pushing, hook, pressure, damage, enemy crush, movement interpolation, and checkpoint restore. Frozen violet/snake frames come from `gen0.f` chunk `1` and `gen1.f` chunk `6`.
+- Stage 9 uses the source `kByte=4` Great Anaconda state machine: three body columns, strict `>10/>20/>40` phase thresholds, raw `50` contact zones, y `7/8` falling-boulder vulnerability, 50-tick charge, 12-tick tail strike, health-dependent retraction, boulder regeneration, and the `>80` death-door delay.
+- The Great Anaconda body/platform/tail use extracted `b0.f` chunks `0/1` and `gen1.f` chunk `0` animation `2`. Its three-segment health bar, 30-tick regeneration shake, body contact bounds, gate-introduction camera, sounds, and checkpoint reset are source-mapped.
+- Stage 9's raw `53` chest is hidden until opened and maps to Angkor seal bit `0`. The reward switches to hero animation `47`, locks input until source tick `>140`, and uses an 11-step seal loading transition instead of ordinary results or medal awards.
+- Secret stages `09 -> 10 -> 11` follow the first raw-`28` map branch; `stage12` is the separate Stage 8 branch. Their route tests exercise pressure-rock chains, key/lock groups, enemy arenas, raw `30` wall clusters, the six-boulder key shaft, and terminal raw `28` exits without teleporting or mutating layer data. Stage 11 now solves all four enemy groups before opening their four source-locked key chests, including the three-snake ice stack and final boulder cascade.
+- Tutorial scripts run in source order `29 -> 10 -> 11 -> 13 -> 15 -> 16 -> 17 -> 28`, including camera/movement/foreground commands, source text indices, portraits, checkpoint reset, life-cost recall, white flash, and the final seal walk. The same decoded interpreter runs Stage 3 script `30`, Stage 4 tool script `22`, and Stage 9 Boss script `33`. Input is locked while a script is active; skipping text does not skip state-changing commands.
+- Tutorial portraits are extracted from `demoSpr.bin`; the final seal is composed from `mmv.f` chunk `0`. Compass raw `42` uses the original `gen3.f` chunk `1` 24x24 module for the overhead reward and enables the separate `ui.f` HUD direction frames.
+- Progress save version 6 stores explicit stage-node unlock bits, `TutorialComplete`, `RelicMask`, per-world unlock bits, and source-equivalent consumed reward coordinates. This preserves the non-sequential Angkor graph and permanently opens only collected red-diamond, awarded-extra-life, and relic chests.
+- The runtime collects and renders World 0's source-special pickups raw `24`/`26`/`27`, raw `42`, and raw `53`. Raw `53` includes its source seal bit, celebration, input lock, persistence, and transition; a later-world inventory/shop screen remains outside this Angkor slice.
+- Raw `41` is a value-bearing violet-diamond reward: it increments the bottom-right violet HUD count, stage result count, quota, and saved bank. Full-health raw `7` and max-life/full-health raw `6` convert to raw `41` before their reward animation.
+- Mystic Hook raw `27` is sourced from the foreground raw `14` chest at Bavaria Stage 3 `(24,25)`, not Angkor Stage 5. The Angkor-only Stage 5 entry models the post-Bavaria revisit prerequisite and must not invent a hook chest in World 0.
 - The runtime treats player-layer raw `33` as a passable persistent marker with no fallback object sprite; foreground raw `33` owns the visible overlay.
-- Foreground raw `7` uses merged high-nibble phases. Opening begins at `0x10`, advances every third source tick to passable `0x20` and final `0x30`, while closing restores the low door ID.
+- Foreground raw `7` uses merged high-nibble phases. Its low nibble is initialized to the number of same-group raw `6/8/9` activators still required; opening begins at `0x10` only when the count reaches zero, advances every third source tick to passable `0x20` and final `0x30`, and closing preserves the remaining count.
 - Foreground raw `6` is a pressure switch that opens linked raw `7` doors while pressed or occupied and closes them when released. Its `gen2.f` chunk `9` module follows source depression interpolation.
-- Foreground raw `0` is a source-anchored one-shot event, recording its decoded background/state and clearing the cell when the player enters it.
+- Foreground raw `0` is a source-anchored one-shot event. It triggers when movement interpolation reaches `jInt<=6`, records its decoded background/state and clears the cell; Stage 6 background `3` executes the decoded demo script rather than acting as a passive counter.
 - Foreground raw `1` is a clearable cluster, recursively clearing connected raw `1` cells when entered.
-- Foreground raw `2` blocks movement; state `0` blobs recursively clear once adjacent raw `30` walls are gone, while state `1` blobs require Action/5 with tool level `>=2`.
-- Foreground raw `17` enemy groups retain ownership as enemies move, decrement when matching enemies are removed, open same-group raw `7` doors, and clear same-group raw `14`/`33` overlay state.
-- The first-five-stage renderer uses extracted original art for every actually visible low raw ID, including the `cm.f` chunk `5` quota marker, `gen1.f` chunk `4` crawler, `gen2.f` chunk `9` pressure switch, and code-drawn raw `32` hook rope.
+- Foreground raw `2` is player-passable and exposes a current-cell tool prompt. State `0` blobs recursively clear once adjacent raw `30` walls are gone; state `1` blobs require the player to stand on the cell and press Action/5 with tool level `>=2`.
+- Foreground raw `17` cells are group markers; raw `26` selects Java's single active `cmInt`. Enemy/container removal decrements that active group regardless of the object's original marker, then opens same-group raw `7` doors or unlocks raw `14/33` containers without exposing payloads early.
+- The Angkor renderer uses extracted original art for every actually visible low raw ID across all 14 packed stages, including the `cm.f` chunk `5` quota marker, `gen1.f` chunk `4` crawler, `gen2.f` chunk `9` pressure switch, `gen0.f` chunk `1`/`gen1.f` chunk `6` frozen objects, code-drawn raw `32` hook rope, all three `mm0.f` falling-torches chunks, Stage 9 `b0.f`/`mmv.f` assets, the Compass module, and tutorial portrait/seal resources. All 120 closed-container payload cells are audited against early reveal.
 - Stage title, checkpoint, congratulations, loading, and result text use deterministic atlases exported from FreeJ2ME's logical `SansSerif Bold` 10px/12px fonts. Source panel fill/border colors and the original y-offset behavior are preserved.
 - `snd.f` is decoded into all 21 original standard-MIDI tracks. The Stage 1 runtime applies the JAR priority table and 50ms equal-priority guard, plays Angkor track `16`, and emits source IDs for door/boulder `14`, hurt `5`, checkpoint `9`, chest `3`/`4`, death `2`, and result `15`; macOS playback uses `AVMIDIPlayer`.
 - Result rendering follows original-JAR bytecode coordinates and phase threshold behavior, including flat animation-sequence indexing for the three different award effect shifts. Stage 1 clear state and the four award bits are persisted so already-earned effects do not replay as newly earned.
+- Stage 9's 11-step seal handoff enters the implemented four-position global seal selector. Angkor opens the decoded world map; Bavaria and Siberia use the source `10/25` red-diamond unlock thresholds and Shop participates in source navigation, while those three destinations explicitly remain outside the current Angkor content slice.
 
-Remaining work outside the five-stage gameplay slice:
+Remaining work outside the complete Angkor stage-data slice:
 
-- Implement the separate Angkor demo/tutorial `stage13` character dialog and compass acquisition before Stage 1.
 - Implement the shop, full RMS-equivalent economy/progression fields, Bavaria/Tibet maps, and the original cross-world trip that grants the hook before revisiting Stage 5.
-- Audit and implement Angkor Stage 6-13, including the original Angkor boss flow.
 - Wire the remaining sound IDs when their later-stage objects and global screens are implemented.
 
 ### Phase 2: Core Adventure Mechanics
@@ -472,7 +485,7 @@ Deliverables:
 
 Exit criteria:
 
-- Angkor Stage 1-5 have source-cadence entrance-to-exit route regressions with their actual decoded mechanics enabled.
+- All 14 packed Angkor stages have source-cadence route regressions with their actual decoded mechanics enabled, including both exits in Stages 7 and 8, all four secret stages, the Boss seal path, and the tutorial.
 
 ### Phase 3: Tools And Backtracking
 
@@ -506,7 +519,7 @@ Deliverables:
 
 - Five tuned levels, ideally adapted from original Angkor flow rather than invented cave boards.
 - Opening/menu/title flow.
-- Final Angkor boss/guardian approximation.
+- Source-mapped Great Anaconda boss, Angkor seal reward, and seal-specific transition.
 - Replacement assets and audio cues.
 
 Exit criteria:

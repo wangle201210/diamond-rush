@@ -105,7 +105,7 @@ func TestKnownRolesFromJavaAnchors(t *testing.T) {
 		{PlayerLayer, 31, "keyed lock body"},
 		{PlayerLayer, 33, "passable overlay raw 33"},
 		{PlayerLayer, 41, "bonus value pickup"},
-		{PlayerLayer, 42, "special pickup raw 42"},
+		{PlayerLayer, 42, "compass"},
 		{PlayerLayer, 53, "artifact pickup raw 53"},
 		{PlayerLayer, 79, "stage entrance marker"},
 		{PlayerLayer, 80, "world tile/frame reference"},
@@ -118,7 +118,7 @@ func TestKnownRolesFromJavaAnchors(t *testing.T) {
 		{ForegroundLayer, 8, "lock consuming player raw 5 key"},
 		{ForegroundLayer, 9, "lock consuming player raw 4 key"},
 		{ForegroundLayer, 14, "foreground gate overlay raw 14"},
-		{ForegroundLayer, 17, "enemy gate trigger"},
+		{ForegroundLayer, 17, "enemy gate group marker"},
 		{ForegroundLayer, 20, "animated foreground set"},
 		{ForegroundLayer, 26, "enemy gate trigger switch"},
 		{ForegroundLayer, 33, "foreground gate overlay raw 33"},
@@ -132,5 +132,26 @@ func TestKnownRolesFromJavaAnchors(t *testing.T) {
 		if role.Name != tt.name {
 			t.Fatalf("KnownRole(%s,%d) = %q, want %q", tt.layer, tt.id, role.Name, tt.name)
 		}
+	}
+}
+
+func TestMysticHookSourceChestIsBavariaStageThree(t *testing.T) {
+	stage, err := LoadStageFile(filepath.Join("..", "..", "decoded", "world1", "stage02.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	point := Point{X: 24, Y: 25}
+	if id, _ := stage.At(PlayerLayer, point.X, point.Y); id != 27 {
+		t.Fatalf("Bavaria Stage 3 hook payload=%d, want raw27", id)
+	}
+	if id, _ := stage.At(ForegroundLayer, point.X, point.Y); id != 14 {
+		t.Fatalf("Bavaria Stage 3 hook foreground=%d, want source chest raw14", id)
+	}
+	angkorStageFive, err := LoadStageFile(filepath.Join("..", "..", "decoded", "world0", "stage04.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := angkorStageFive.Histograms[PlayerLayer][27]; got != 0 {
+		t.Fatalf("Angkor Stage 5 raw27 count=%d, want no hook chest", got)
 	}
 }

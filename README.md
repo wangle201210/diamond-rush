@@ -1,6 +1,6 @@
 # Diamond Rush Original Runtime
 
-这是一个使用 Go + Ebitengine、依据本机 Java ME 原版源码与资源实现的 Diamond Rush 原作数据运行时。当前可玩范围是 Angkor World 0 的前五关，关卡直接读取 `decoded/world0/stage00.json` 到 `stage04.json`。
+这是一个使用 Go + Ebitengine、依据本机 Java ME 原版源码与资源实现的 Diamond Rush 原作数据运行时。当前可玩范围覆盖 Angkor World 0 打包的全部 14 个 stage：`stage00` 到 `stage08` 是普通路线与 Great Anaconda Boss，`stage09` 到 `stage12` 是四个秘密关，`stage13` 是新存档进入 Stage 1 前的原版教程。Stage 9 徽记结算后的全局封印世界选择也已接通；Angkor 可进入世界地图，Bavaria、Siberia 与 Shop 仅保留原作位置、解锁和演出，内容尚未复刻。
 
 ## 运行
 
@@ -17,11 +17,14 @@ go run ./cmd/originalrush
 | 原手机键 | macOS 键盘 |
 | --- | --- |
 | `2` / `4` / `6` / `8` | 方向键、主键盘数字键或数字小键盘 |
-| `5` | `5`、数字小键盘 `5` 或 `Enter` |
-| `*` | `Shift+8`、数字小键盘 `*`、`R` 或 `Backspace` |
+| `5`（宝箱、锤子、钩索、机关、菜单确认） | `Space`、`5` 或数字小键盘 `5` |
+| `*`（返回复活点并失去一条命） | `Enter`、`Shift+8`、数字小键盘 `*`、`R` 或 `Backspace` |
+| 教程 `SKIP` | `S` |
 | 退出 | `Esc` |
 
 `5` 是检查点及锤子/钩索的上下文动作键；`*` 用于主动召回检查点。
+
+人物静止时，如果按下的方向和当前朝向不同，第一次只会原地转身。转身后再次按同方向会前进；持续按住方向键则会在原作的短暂转身时序结束后自动前进。
 
 ## 仓库结构
 
@@ -41,6 +44,8 @@ macOS 进度默认保存到：
 ~/Library/Application Support/zskc-diamondrush/original-progress.json
 ```
 
+当前存档格式为 v6，持久化 Angkor 节点、收集/勋章、教程、三枚徽记、世界解锁状态，以及原作会永久消费的红钻/额外生命/徽记宝箱坐标。raw `41` 宝箱奖励计入右下角紫钻、关卡结算和可重玩累加的紫钻资产。
+
 ## 权威参考
 
 本机 Java 参考项目位于：
@@ -49,7 +54,7 @@ macOS 进度默认保存到：
 /Users/wanna/mine/github/wangle201210/DiamondRushSource
 ```
 
-实现判断以原始 JAR 字节码、`i.java`、FreeJ2ME 运行结果和解码资源为依据。详细流程见 `AGENTS.md`，源码位置见 `docs/diamond-rush-source-mapping.md`。
+实现判断以原始 JAR 字节码、`i.java`、FreeJ2ME 运行结果和解码资源为依据。详细流程见 `AGENTS.md`，源码位置见 `docs/diamond-rush-source-mapping.md`，World 0 完整审计见 `docs/angkor-world0-logic-audit.md`。
 
 ## 验证
 
@@ -57,5 +62,7 @@ macOS 进度默认保存到：
 go test ./...
 go build -o /tmp/originalrush-smoke ./cmd/originalrush
 ```
+
+开发时可用 `ORIGINALRUSH_STAGE=1..14 go run ./cmd/originalrush` 直达对应数据关；`14` 是教程。该覆盖不改变正常启动选择，但完成关卡仍会写入当前 `HOME` 下的进度文件。
 
 常用资源工具命令记录在 `AGENTS.md` 和 `decoded/README.md`。

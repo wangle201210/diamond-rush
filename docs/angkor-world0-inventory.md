@@ -22,14 +22,14 @@ This is an implementation checklist for rebuilding Diamond Rush World 0. Raw IDs
 | 03 | 40x23 | (3,17) | 2 special foreground barrier raw 2:3<br>4 checkpoint:7<br>5 exit/goal marker candidate:1<br>6 pressure door switch:2<br>7 stateful door:5<br>14 foreground gate overlay raw 14:1<br>+7 more | 0 boulder:8<br>1 violet gem:25<br>2 red diamond:2<br>6 extra life:1<br>7 health refill:2<br>10 diggable tile:11<br>+42 more |
 | 04 | 51x24 | (3,19) | 2 special foreground barrier raw 2:1<br>4 checkpoint:6<br>5 exit/goal marker candidate:1<br>6 pressure door switch:1<br>7 stateful door:4<br>9 lock consuming player raw 4 key:1<br>+7 more | 0 boulder:47<br>1 violet gem:37<br>2 red diamond:4<br>4 key for foreground raw 9:1<br>6 extra life:1<br>7 health refill:1<br>+47 more |
 | 05 | 30x75 | (2,70) | 0 one-shot foreground event raw 0:10<br>1 clearable foreground cluster raw 1:15<br>4 checkpoint:2<br>5 exit/goal marker candidate:1<br>6 pressure door switch:1<br>14 foreground gate overlay raw 14:1 | 0 boulder:14<br>1 violet gem:17<br>2 red diamond:1<br>10 diggable tile:22<br>12 bonus quota marker:1<br>79 stage entrance marker:1<br>+29 more |
-| 06 | 26x45 | (6,4) | 4 checkpoint:4<br>5 exit/goal marker candidate:1<br>6 pressure door switch:2<br>7 stateful door:5<br>9 lock consuming player raw 4 key:1<br>17 enemy gate trigger:4<br>+7 more | 0 boulder:21<br>1 violet gem:32<br>2 red diamond:3<br>4 key for foreground raw 9:1<br>6 extra life:2<br>7 health refill:2<br>+46 more |
+| 06 | 26x45 | (6,4) | 4 checkpoint:4<br>5 exit/goal marker candidate:1<br>6 pressure door switch:2<br>7 stateful door:5<br>9 lock consuming player raw 4 key:1<br>17 enemy gate group marker:4<br>+7 more | 0 boulder:21<br>1 violet gem:32<br>2 red diamond:3<br>4 key for foreground raw 9:1<br>6 extra life:2<br>7 health refill:2<br>+46 more |
 | 07 | 44x29 | (5,8) | 4 checkpoint:5<br>5 exit/goal marker candidate:1<br>6 pressure door switch:2<br>7 stateful door:6<br>8 lock consuming player raw 5 key:2<br>9 lock consuming player raw 4 key:1<br>+8 more | 0 boulder:35<br>1 violet gem:35<br>2 red diamond:1<br>4 key for foreground raw 9:1<br>5 key for foreground raw 8:2<br>6 extra life:3<br>+46 more |
-| 08 | 35x14 | (4,5) | 0 one-shot foreground event raw 0:1<br>4 checkpoint:1<br>7 stateful door:2<br>14 foreground gate overlay raw 14:1<br>17 enemy gate trigger:4<br>20 animated foreground set:2<br>+4 more | 0 boulder:2<br>31 keyed lock body:16<br>43 red snake:1<br>53 artifact pickup raw 53:1<br>79 stage entrance marker:1<br>80 world tile/frame reference:4<br>+29 more |
+| 08 | 35x14 | (4,5) | 0 one-shot foreground event raw 0:1<br>4 checkpoint:1<br>7 stateful door:2<br>14 foreground gate overlay raw 14:1<br>17 enemy gate group marker:4<br>20 animated foreground set:2<br>+4 more | 0 boulder:2<br>31 keyed lock body:16<br>43 red snake:1<br>53 artifact pickup raw 53:1<br>79 stage entrance marker:1<br>80 world tile/frame reference:4<br>+29 more |
 | 09 | 50x30 | (4,6) | 4 checkpoint:5<br>6 pressure door switch:5<br>7 stateful door:7<br>8 lock consuming player raw 5 key:1<br>9 lock consuming player raw 4 key:1<br>20 animated foreground set:14<br>+5 more | 0 boulder:19<br>1 violet gem:48<br>2 red diamond:3<br>4 key for foreground raw 9:1<br>5 key for foreground raw 8:1<br>6 extra life:5<br>+44 more |
 | 10 | 50x31 | (2,19) | 4 checkpoint:4<br>6 pressure door switch:2<br>7 stateful door:4<br>8 lock consuming player raw 5 key:3<br>9 lock consuming player raw 4 key:1<br>14 foreground gate overlay raw 14:1<br>+6 more | 0 boulder:25<br>1 violet gem:46<br>2 red diamond:4<br>4 key for foreground raw 9:1<br>5 key for foreground raw 8:3<br>6 extra life:2<br>+42 more |
-| 11 | 46x31 | (3,27) | 2 special foreground barrier raw 2:5<br>4 checkpoint:4<br>7 stateful door:1<br>9 lock consuming player raw 4 key:4<br>17 enemy gate trigger:13<br>20 animated foreground set:18<br>+6 more | 0 boulder:23<br>1 violet gem:33<br>2 red diamond:5<br>4 key for foreground raw 9:4<br>6 extra life:8<br>10 diggable tile:183<br>+41 more |
+| 11 | 46x31 | (3,27) | 2 special foreground barrier raw 2:5<br>4 checkpoint:4<br>7 stateful door:1<br>9 lock consuming player raw 4 key:4<br>17 enemy gate group marker:13<br>20 animated foreground set:18<br>+6 more | 0 boulder:23<br>1 violet gem:33<br>2 red diamond:5<br>4 key for foreground raw 9:4<br>6 extra life:8<br>10 diggable tile:183<br>+41 more |
 | 12 | 46x31 | (4,28) | 4 checkpoint:3<br>20 animated foreground set:15<br>21 animated foreground set:15<br>22 animated foreground set:16<br>23 animated foreground set:16<br>28 exit/goal marker candidate:1<br>+1 more | 0 boulder:93<br>1 violet gem:198<br>2 red diamond:5<br>6 extra life:8<br>10 diggable tile:251<br>12 bonus quota marker:1<br>+38 more |
-| 13 | 68x11 | (5,4) | 0 one-shot foreground event raw 0:8<br>4 checkpoint:2<br>7 stateful door:1<br>14 foreground gate overlay raw 14:2<br>17 enemy gate trigger:2<br>20 animated foreground set:10<br>+4 more | 0 boulder:13<br>1 violet gem:8<br>6 extra life:1<br>10 diggable tile:61<br>42 special pickup raw 42:1<br>79 stage entrance marker:1<br>+30 more |
+| 13 | 68x11 | (5,4) | 0 one-shot foreground event raw 0:8<br>4 checkpoint:2<br>7 stateful door:1<br>14 foreground gate overlay raw 14:2<br>17 enemy gate group marker:2<br>20 animated foreground set:10<br>+4 more | 0 boulder:13<br>1 violet gem:8<br>6 extra life:1<br>10 diggable tile:61<br>42 compass:1<br>79 stage entrance marker:1<br>+30 more |
 
 ## World 0 Raw ID Coverage
 
@@ -55,7 +55,7 @@ This is an implementation checklist for rebuilding Diamond Rush World 0. Raw IDs
 | 31 | 31 | 33 | keyed lock body (render-anchor) |
 | 33 | 33 | 5 | passable overlay raw 33 (source-anchor) |
 | 41 | 41 | 24 | bonus value pickup (source-anchor) |
-| 42 | 42 | 1 | special pickup raw 42 (source-anchor) |
+| 42 | 42 | 1 | compass (source-anchor) |
 | 43 | 43 | 10 | red snake (source-anchor) |
 | 53 | 53 | 1 | artifact pickup raw 53 (source-anchor) |
 | 79 | 79 | 14 | stage entrance marker (source-anchor) |
@@ -111,7 +111,7 @@ This is an implementation checklist for rebuilding Diamond Rush World 0. Raw IDs
 | 8 | 8 | 7 | lock consuming player raw 5 key (source-anchor) |
 | 9 | 9 | 10 | lock consuming player raw 4 key (source-anchor) |
 | 14 | 14 | 6 | foreground gate overlay raw 14 (source-anchor) |
-| 17 | 17 | 42 | enemy gate trigger (source-anchor) |
+| 17 | 17 | 42 | enemy gate group marker (source-anchor) |
 | 20 | 20 | 161 | animated foreground set (render-anchor) |
 | 21 | 21 | 161 | animated foreground set (render-anchor) |
 | 22 | 22 | 161 | animated foreground set (render-anchor) |
@@ -194,12 +194,12 @@ This is an implementation checklist for rebuilding Diamond Rush World 0. Raw IDs
 - Foreground raw `4` is checkpoint behavior; stepping on it activates/saves by background/state order, Action/5 restores, `*` on the checkpoint restores without cost, and `*` away from it recalls through the death-style life-cost path.
 - Player-layer raw `0` is a boulder; Java falling branches call `hurtHero(2, 48, 0)` when it crushes the player.
 - Player-layer raw `4` and `5` are key pickups; Java pickup branches increment `aUInt`/`aVInt`, and foreground raw `9`/`8` door branches consume them.
-- Foreground raw `2` is a special foreground barrier; Java movement uses it for special-item checks, state `0` recursively clears when it no longer has adjacent player-layer raw `30` breakable walls, and state `1` requires Action/5 with tool level `>=2`.
+- Foreground raw `2` is a passable current-cell special-item interaction; state `0` recursively clears when it no longer has adjacent player-layer raw `30` breakable walls, while state `1` shows the hook prompt and requires Action/5 with tool level `>=2`.
 - Foreground raw `6` is a pressure door switch; Java reads its background/state as a door index, calls `hVoid(doorI)` while pressed, and calls `doorHeadClose(doorI)` when released.
 - Foreground raw `7` is a stateful door; Java movement blocks it while the merged foreground high-state nibble is `< 2`, and decoded background/state `255` represents an already-open/passable door cell.
 - Foreground raw `8`/`9` are keyed locks; their cells use player-layer raw `31` as the lock body/animation carrier.
-- Foreground raw `17` is an enemy gate trigger; Java groups counters by background/state, removes raw `17` under grouped enemies, decrements the group when enemies clear, and opens same-group raw `7` doors when the counter reaches zero.
-- Foreground raw `14`/`33` are gate overlays in the same raw `17` mechanism; Java clears their high state when the matching enemy-gate group reaches zero.
+- Foreground raw `17` is an enemy-gate group marker, not the player trigger. Java removes markers beneath grouped enemies during initialization, retains markers beneath linked doors/containers, and opens or unlocks those targets when the active group counter reaches zero.
+- Foreground raw `14`/`33` directly above a raw `17` group marker are locked reward containers; their payload stays hidden and inert until the matching enemy-gate counter reaches zero, then the overlay unlocks without replacing its authored background payload.
 - Foreground raw `26` is an enemy-gate trigger switch; Java activates `cmInt` from its background/state group while the player stands on it, then clears the raw `26` cell.
 - Player-layer raw `2` is a red diamond; Java dispatches it to `lVoid(2)`, uses pickup texture slot `3`, increments `bbInt`, and original text names this currency `Red diamonds`.
 - Player-layer raw `6` is an extra life pickup; Java pickup code increments `azInt`, the death branch decrements it, and checkpoint restore does not roll it back.
@@ -211,9 +211,9 @@ This is an implementation checklist for rebuilding Diamond Rush World 0. Raw IDs
 - Player-layer raw `24`/`26`/`27` are source-special pickups handled through `mVoid()`, setting Java `iByteArr[9]` to `1`/`8`/`2` respectively; Action/5 hammer/local checks require level `>=1`, and hook scanning requires level `>=2`.
 - Player-layer raw `30` is a breakable wall; Java `dBoolean` excludes it, the tool branch starts/increments `bIntArrArr` damage state, propagates adjacent raw `30` at state `4`, and clears it at state `>=16`.
 - Player-layer raw `33` is a passable persistent marker; Java stage init preserves it and the movement helper groups it with passable IDs, but it has no player-object render branch. Foreground raw `33`, when present, owns the visible `aClassfArr[22]` overlay.
-- Player-layer raw `41` is a bonus-value pickup; Java `lVoid(41)` copies `bIntArrArr[x][y]` into `aHInt`, then the pickup animation adds it to `aZInt`.
-- Player-layer raw `42` is a source-special pickup; Java `lVoid(42)` enters pickup animation `29`, then sets `pBoolean` and `bmInt=11`.
+- Player-layer raw `41` is a value-bearing violet-diamond pickup; Java adds its background value to both the stage violet total `aYInt` during initialization and collected violet count `aZInt` after the pickup animation.
+- Player-layer raw `42` is the Compass; Java `lVoid(42)` selects `textures[29][0]` from `gen3.f` chunk `1`, then sets `pBoolean` and starts tutorial script `11` through `bmInt=11`.
 - Player-layer raw `53` is a source-special artifact pickup; Java `lVoid(53)` enters pickup animation `32`, sets `DInt=0`, and stores bit `0` in `iByteArr[2]`.
 - Java `eBoolean` treats foreground raw `5` and `28` goal markers as non-empty for falling object movement.
 - Player-layer raw `19`/`43` are snakes; Java object update dispatches to `eVoid((byte)19/43)`, low state bits carry direction, player contact calls `hurtHero(1, 48, ...)`, and falling-object branches clear snakes when hit.
-- Full first-world implementation still needs per-ID behavior classification from Java source/runtime observation.
+- All 14 packed Angkor stages are loaded by the runtime. This inventory is a data audit; behavioral fidelity is established by the per-stage source-cadence regressions and the source mappings in `AGENTS.md`.
