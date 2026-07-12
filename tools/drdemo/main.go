@@ -6,387 +6,295 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"path/filepath"
 )
 
-type demoScript struct {
-	ID        int           `json:"id"`
-	Sprites   []int         `json:"sprites,omitempty"`
-	Commands  []demoCommand `json:"commands"`
-	RawLength int           `json:"rawLength"`
+type scriptFile struct {
+	Source  string   `json:"source"`
+	Scripts []script `json:"scripts"`
 }
 
-type demoCommand struct {
-	Opcode   int           `json:"opcode"`
-	Name     string        `json:"name"`
-	X        *int          `json:"x,omitempty"`
-	Y        *int          `json:"y,omitempty"`
-	Duration *int          `json:"duration,omitempty"`
-	Value    *int          `json:"value,omitempty"`
-	Frame    *int          `json:"frame,omitempty"`
-	Sprite   *int          `json:"sprite,omitempty"`
-	Color    *int          `json:"color,omitempty"`
-	Side     *int          `json:"side,omitempty"`
-	Text     string        `json:"text,omitempty"`
-	Commands []demoCommand `json:"commands,omitempty"`
+type script struct {
+	ID       int       `json:"id"`
+	Sprites  []int     `json:"sprites,omitempty"`
+	Commands []command `json:"commands"`
 }
 
-type byteReader struct {
+type command struct {
+	Type     int       `json:"type"`
+	Args     []int     `json:"args,omitempty"`
+	Text     string    `json:"text,omitempty"`
+	Parallel []command `json:"parallel,omitempty"`
+}
+
+type reader struct {
 	data []byte
 	pos  int
 }
 
 func main() {
-	in := flag.String("in", "/Users/wanna/mine/github/wangle201210/DiamondRushSource/src/main/resources/demo.f", "original demo.f path")
-	out := flag.String("out", "", "optional JSON output path")
+	in := flag.String("in", "", "path to demo.f")
+	out := flag.String("out", "", "output JSON path; stdout when empty")
 	flag.Parse()
-
-	scripts, err := decodeDemoFile(*in)
+	if *in == "" {
+		fmt.Fprintln(os.Stderr, "usage: drdemo -in path/to/demo.f [-out decoded/demo.json]")
+		os.Exit(2)
+	}
+	data, err := os.ReadFile(*in)
 	if err != nil {
 		fatal(err)
 	}
-	data, err := json.MarshalIndent(scripts, "", "  ")
+	chunk, err := firstChunk(data)
 	if err != nil {
 		fatal(err)
 	}
-	data = append(data, '\n')
+	scripts, err := decodeScripts(chunk)
+	if err != nil {
+		fatal(err)
+	}
+	encoded, err := json.MarshalIndent(scriptFile{Source: *in, Scripts: scripts}, "", "  ")
+	if err != nil {
+		fatal(err)
+	}
+	encoded = append(encoded, '\n')
 	if *out == "" {
-		_, err = os.Stdout.Write(data)
+		_, err = os.Stdout.Write(encoded)
 	} else {
-		err = os.WriteFile(filepath.Clean(*out), data, 0o644)
+		err = os.WriteFile(*out, encoded, 0o644)
 	}
 	if err != nil {
 		fatal(err)
 	}
 }
 
-func decodeDemoFile(path string) ([]demoScript, error) {
-	data, err := os.ReadFile(filepath.Clean(path))
-	if err != nil {
-		return nil, err
+func firstChunk(data []byte) ([]byte, error) {
+	if len(data) < 9 || data[0] == 0 {
+		return nil, fmt.Errorf("invalid chunk container")
 	}
-	chunk, err := resourceChunk(data, 0)
-	if err != nil {
-		return nil, err
+	headerSize := 1 + int(data[0])*8
+	if len(data) < headerSize {
+		return nil, fmt.Errorf("truncated chunk header")
 	}
-	r := byteReader{data: chunk}
+	offset := int(binary.LittleEndian.Uint32(data[1:5]))
+	length := int(binary.LittleEndian.Uint32(data[5:9]))
+	start := headerSize + offset
+	if start < headerSize || length < 0 || start+length > len(data) {
+		return nil, fmt.Errorf("invalid first chunk offset/length %d/%d", offset, length)
+	}
+	return data[start : start+length], nil
+}
+
+func decodeScripts(data []byte) ([]script, error) {
+	r := &reader{data: data}
 	count, err := r.u16()
 	if err != nil {
-		return nil, fmt.Errorf("read script count: %w", err)
+		return nil, err
 	}
-	scripts := make([]demoScript, 0, count)
+	scripts := make([]script, 0, count)
 	for index := 0; index < count; index++ {
 		id, err := r.u16()
 		if err != nil {
-			return nil, fmt.Errorf("read script %d id: %w", index, err)
+			return nil, fmt.Errorf("script %d id: %w", index, err)
 		}
 		commandCount, err := r.u16()
 		if err != nil {
-			return nil, fmt.Errorf("read script %d command count: %w", id, err)
+			return nil, fmt.Errorf("script %d command count: %w", id, err)
 		}
 		length, err := r.u32()
 		if err != nil {
-			return nil, fmt.Errorf("read script %d length: %w", id, err)
+			return nil, fmt.Errorf("script %d length: %w", id, err)
 		}
 		payload, err := r.bytes(length)
 		if err != nil {
-			return nil, fmt.Errorf("read script %d payload: %w", id, err)
+			return nil, fmt.Errorf("script %d payload: %w", id, err)
 		}
-		script, err := decodeDemoScript(id, commandCount, payload)
+		decoded, err := decodeScript(id, commandCount, payload)
 		if err != nil {
 			return nil, err
 		}
-		scripts = append(scripts, script)
+		scripts = append(scripts, decoded)
 	}
 	return scripts, nil
 }
 
-func resourceChunk(data []byte, index int) ([]byte, error) {
-	if len(data) == 0 {
-		return nil, fmt.Errorf("empty resource")
-	}
-	count := int(data[0])
-	if index < 0 || index >= count {
-		return nil, fmt.Errorf("chunk %d outside 0..%d", index, count-1)
-	}
-	headerLength := 1 + count*8
-	if len(data) < headerLength {
-		return nil, fmt.Errorf("resource header exceeds file")
-	}
-	entry := 1 + index*8
-	offset := int(binary.LittleEndian.Uint32(data[entry : entry+4]))
-	length := int(binary.LittleEndian.Uint32(data[entry+4 : entry+8]))
-	start := headerLength + offset
-	end := start + length
-	if length < 0 || start < headerLength || end > len(data) {
-		return nil, fmt.Errorf("invalid chunk %d range %d..%d", index, start, end)
-	}
-	return data[start:end], nil
-}
-
-func decodeDemoScript(id, commandCount int, payload []byte) (demoScript, error) {
-	r := byteReader{data: payload}
+func decodeScript(id, commandCount int, data []byte) (script, error) {
+	r := &reader{data: data}
 	spriteCount, err := r.u16()
 	if err != nil {
-		return demoScript{}, fmt.Errorf("decode script %d sprites: %w", id, err)
+		return script{}, fmt.Errorf("script %d sprite count: %w", id, err)
 	}
-	sprites := make([]int, spriteCount)
-	for index := range sprites {
-		sprites[index], err = r.u16()
+	result := script{ID: id, Sprites: make([]int, 0, spriteCount), Commands: make([]command, 0, commandCount)}
+	for index := 0; index < spriteCount; index++ {
+		value, err := r.u16()
 		if err != nil {
-			return demoScript{}, fmt.Errorf("decode script %d sprite %d: %w", id, index, err)
+			return script{}, fmt.Errorf("script %d sprite %d: %w", id, index, err)
 		}
+		result.Sprites = append(result.Sprites, value)
 	}
-	commands, err := parseDemoCommands(&r, commandCount)
-	if err != nil {
-		return demoScript{}, fmt.Errorf("decode script %d command %d: %w", id, len(commands), err)
+	for index := 0; index < commandCount; index++ {
+		value, err := decodeCommand(r)
+		if err != nil {
+			return script{}, fmt.Errorf("script %d command %d: %w", id, index, err)
+		}
+		result.Commands = append(result.Commands, value)
 	}
-	if r.pos != len(payload) {
-		return demoScript{}, fmt.Errorf("decode script %d left %d unread bytes", id, len(payload)-r.pos)
+	if r.pos != len(r.data) {
+		return script{}, fmt.Errorf("script %d left %d undecoded bytes", id, len(r.data)-r.pos)
 	}
-	return demoScript{ID: id, Sprites: sprites, Commands: commands, RawLength: len(payload)}, nil
+	return result, nil
 }
 
-func parseDemoCommands(r *byteReader, count int) ([]demoCommand, error) {
-	commands := make([]demoCommand, 0, count)
-	for index := 0; index < count; index++ {
-		opcode, err := r.u8()
-		if err != nil {
-			return commands, err
-		}
-		command := demoCommand{Opcode: opcode, Name: demoOpcodeName(opcode)}
-		switch opcode {
-		case 0:
-			parallelCount, err := r.u8()
-			if err != nil {
-				return commands, err
-			}
-			command.Commands, err = parseDemoCommands(r, parallelCount)
-			if err != nil {
-				return commands, err
-			}
-		case 1:
-			x, y, duration, err := r.u16x3()
-			if err != nil {
-				return commands, err
-			}
-			command.X, command.Y, command.Duration = intPtr(x), intPtr(y), intPtr(duration)
-		case 2:
-			side, err := r.u8()
-			if err != nil {
-				return commands, err
-			}
-			y, err := r.u16()
-			if err != nil {
-				return commands, err
-			}
-			text, err := r.text()
-			if err != nil {
-				return commands, err
-			}
-			command.Side, command.Y, command.Text = intPtr(side), intPtr(y), text
-		case 4:
-			values := make([]int, 7)
-			for value := range values {
-				values[value], err = r.u16()
-				if err != nil {
-					return commands, err
-				}
-			}
-			command.X, command.Y = intPtr(values[0]), intPtr(values[1])
-			command.Value = intPtr(values[2])
-			command.Frame, command.Sprite, command.Duration = intPtr(values[4]), intPtr(values[5]), intPtr(values[6])
-		case 5:
-			x, y, err := r.u16x2()
-			if err != nil {
-				return commands, err
-			}
-			value, err := r.u8()
-			if err != nil {
-				return commands, err
-			}
-			command.X, command.Y, command.Value = intPtr(x), intPtr(y), intPtr(value)
-		case 6:
-			value, err := r.u32()
-			if err != nil {
-				return commands, err
-			}
-			command.Duration = intPtr(value)
-		case 7, 14, 15:
-		case 9:
-			x, y, value, err := r.u16x3()
-			if err != nil {
-				return commands, err
-			}
-			command.X, command.Y, command.Value = intPtr(x), intPtr(y), intPtr(value)
-		case 10:
-			value, err := r.u8()
-			if err != nil {
-				return commands, err
-			}
-			command.Value = intPtr(value)
-		case 11, 12:
-			first, second, err := r.u16x2()
-			if err != nil {
-				return commands, err
-			}
-			if opcode == 11 {
-				command.Frame, command.Sprite = intPtr(first), intPtr(second)
-			} else {
-				command.X, command.Y = intPtr(first), intPtr(second)
-			}
-		case 13:
-			x, y, duration, err := r.u16x3()
-			if err != nil {
-				return commands, err
-			}
-			command.X, command.Y, command.Duration = intPtr(x), intPtr(y), intPtr(duration)
-		case 16, 17:
-			frame, err := r.u16()
-			if err != nil {
-				return commands, err
-			}
-			duration, err := r.u8()
-			if err != nil {
-				return commands, err
-			}
-			command.Frame, command.Duration = intPtr(frame), intPtr(duration)
-		case 18:
-			duration, err := r.u8()
-			if err != nil {
-				return commands, err
-			}
-			colorValue, err := r.u24()
-			if err != nil {
-				return commands, err
-			}
-			command.Duration, command.Color = intPtr(duration), intPtr(colorValue)
-		case 25:
-			x, y, err := r.u16x2()
-			if err != nil {
-				return commands, err
-			}
+func decodeCommand(r *reader) (command, error) {
+	kind, err := r.u8()
+	if err != nil {
+		return command{}, err
+	}
+	result := command{Type: kind}
+	read16 := func(count int) error {
+		for index := 0; index < count; index++ {
 			value, err := r.u16()
 			if err != nil {
-				return commands, err
+				return err
 			}
-			command.X, command.Y, command.Value = intPtr(x), intPtr(y), intPtr(value)
-		case 26:
-			x, y, err := r.u16x2()
-			if err != nil {
-				return commands, err
-			}
-			value, err := r.u32()
-			if err != nil {
-				return commands, err
-			}
-			command.X, command.Y, command.Value = intPtr(x), intPtr(y), intPtr(value)
-		case 27:
-			text, err := r.text()
-			if err != nil {
-				return commands, err
-			}
-			command.Text = text
-		default:
-			return commands, fmt.Errorf("unsupported opcode %d at byte %d", opcode, r.pos-1)
+			result.Args = append(result.Args, value)
 		}
-		commands = append(commands, command)
+		return nil
 	}
-	return commands, nil
+	switch kind {
+	case 0:
+		count, err := r.u8()
+		if err != nil {
+			return command{}, err
+		}
+		result.Parallel = make([]command, 0, count)
+		for index := 0; index < count; index++ {
+			child, err := decodeCommand(r)
+			if err != nil {
+				return command{}, err
+			}
+			result.Parallel = append(result.Parallel, child)
+		}
+	case 1, 9, 13:
+		err = read16(3)
+	case 2:
+		speed, readErr := r.u8()
+		if readErr != nil {
+			return command{}, readErr
+		}
+		y, readErr := r.u16()
+		if readErr != nil {
+			return command{}, readErr
+		}
+		length, readErr := r.u16()
+		if readErr != nil {
+			return command{}, readErr
+		}
+		text, readErr := r.bytes(length)
+		if readErr != nil {
+			return command{}, readErr
+		}
+		result.Args = []int{speed, y}
+		result.Text = string(text)
+	case 4:
+		err = read16(7)
+	case 5:
+		if err = read16(2); err == nil {
+			var value int
+			value, err = r.u8()
+			result.Args = append(result.Args, value)
+		}
+	case 6:
+		var value int
+		value, err = r.u32()
+		result.Args = []int{value}
+	case 7, 14, 15:
+	case 10:
+		var value int
+		value, err = r.u8()
+		result.Args = []int{value}
+	case 11, 12:
+		err = read16(2)
+	case 16, 17:
+		if err = read16(1); err == nil {
+			var value int
+			value, err = r.u8()
+			result.Args = append(result.Args, value)
+		}
+	case 18:
+		var duration int
+		duration, err = r.u8()
+		if err == nil {
+			var color []byte
+			color, err = r.bytes(3)
+			if err == nil {
+				result.Args = []int{duration, int(color[0]) | int(color[1])<<8 | int(color[2])<<16}
+			}
+		}
+	case 25:
+		if err = read16(2); err == nil {
+			var first, second int
+			first, err = r.u8()
+			if err == nil {
+				second, err = r.u8()
+			}
+			result.Args = append(result.Args, first, second)
+		}
+	case 26:
+		if err = read16(2); err == nil {
+			var value int
+			value, err = r.u32()
+			result.Args = append(result.Args, value)
+		}
+	case 27:
+		var length int
+		length, err = r.u16()
+		if err == nil {
+			var text []byte
+			text, err = r.bytes(length)
+			result.Text = string(text)
+		}
+	default:
+		return command{}, fmt.Errorf("unknown command type %d at offset %d", kind, r.pos-1)
+	}
+	return result, err
 }
 
-func demoOpcodeName(opcode int) string {
-	names := map[int]string{
-		0: "parallel", 1: "camera", 2: "text_bubble", 4: "sprite_move",
-		5: "stage_effect", 6: "wait", 7: "wait_for_input", 9: "stage_animation",
-		10: "move_player", 11: "portrait_face", 12: "portrait_position",
-		13: "portrait_move", 14: "portrait_show", 15: "portrait_hide",
-		16: "portrait_mark", 17: "portrait_mark_temporary", 18: "flash",
-		25: "set_foreground", 26: "set_object_state", 27: "text_bottom",
-	}
-	if name := names[opcode]; name != "" {
-		return name
-	}
-	return "unknown"
-}
-
-func (r *byteReader) u8() (int, error) {
+func (r *reader) u8() (int, error) {
 	if r.pos >= len(r.data) {
-		return 0, fmt.Errorf("read byte at %d beyond %d", r.pos, len(r.data))
+		return 0, fmt.Errorf("unexpected EOF at %d", r.pos)
 	}
 	value := int(r.data[r.pos])
 	r.pos++
 	return value, nil
 }
 
-func (r *byteReader) u16() (int, error) {
-	data, err := r.bytes(2)
-	if err != nil {
-		return 0, err
+func (r *reader) u16() (int, error) {
+	if r.pos+2 > len(r.data) {
+		return 0, fmt.Errorf("unexpected EOF at %d", r.pos)
 	}
-	return int(binary.LittleEndian.Uint16(data)), nil
+	value := int(binary.LittleEndian.Uint16(r.data[r.pos : r.pos+2]))
+	r.pos += 2
+	return value, nil
 }
 
-func (r *byteReader) u24() (int, error) {
-	data, err := r.bytes(3)
-	if err != nil {
-		return 0, err
+func (r *reader) u32() (int, error) {
+	if r.pos+4 > len(r.data) {
+		return 0, fmt.Errorf("unexpected EOF at %d", r.pos)
 	}
-	return int(data[0]) | int(data[1])<<8 | int(data[2])<<16, nil
+	value := int(binary.LittleEndian.Uint32(r.data[r.pos : r.pos+4]))
+	r.pos += 4
+	return value, nil
 }
 
-func (r *byteReader) u32() (int, error) {
-	data, err := r.bytes(4)
-	if err != nil {
-		return 0, err
+func (r *reader) bytes(length int) ([]byte, error) {
+	if length < 0 || r.pos+length > len(r.data) {
+		return nil, fmt.Errorf("unexpected EOF at %d reading %d bytes", r.pos, length)
 	}
-	return int(binary.LittleEndian.Uint32(data)), nil
-}
-
-func (r *byteReader) u16x2() (int, int, error) {
-	first, err := r.u16()
-	if err != nil {
-		return 0, 0, err
-	}
-	second, err := r.u16()
-	return first, second, err
-}
-
-func (r *byteReader) u16x3() (int, int, int, error) {
-	first, second, err := r.u16x2()
-	if err != nil {
-		return 0, 0, 0, err
-	}
-	third, err := r.u16()
-	return first, second, third, err
-}
-
-func (r *byteReader) text() (string, error) {
-	length, err := r.u16()
-	if err != nil {
-		return "", err
-	}
-	data, err := r.bytes(length)
-	if err != nil {
-		return "", err
-	}
-	return string(data), nil
-}
-
-func (r *byteReader) bytes(count int) ([]byte, error) {
-	if count < 0 || r.pos+count > len(r.data) {
-		return nil, fmt.Errorf("read %d bytes at %d beyond %d", count, r.pos, len(r.data))
-	}
-	data := r.data[r.pos : r.pos+count]
-	r.pos += count
-	return data, nil
-}
-
-func intPtr(value int) *int {
-	return &value
+	value := r.data[r.pos : r.pos+length]
+	r.pos += length
+	return value, nil
 }
 
 func fatal(err error) {
-	fmt.Fprintln(os.Stderr, err)
+	fmt.Fprintln(os.Stderr, "drdemo:", err)
 	os.Exit(1)
 }

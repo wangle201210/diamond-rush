@@ -1,6 +1,8 @@
 package original
 
-import "fmt"
+import (
+	"fmt"
+)
 
 const (
 	hurtStateDuration           = 8
@@ -39,6 +41,14 @@ const (
 	gravityRollPreparing        = 0x200
 	gravityMoveRight            = 0x400
 	gravityMoveLeft             = 0x800
+	explosiveFallShift          = 17
+	explosiveFallMask           = 0x1f << explosiveFallShift
+	explosionImpactTick         = 6
+	explosionDuration           = 12
+	movingHazardCooldownShift   = 8
+	movingHazardCooldownMask    = 0xff << movingHazardCooldownShift
+	spearTimerShift             = 8
+	spearTimerMask              = 0xff << spearTimerShift
 	snakeStunMask               = 0xf8
 	snakeStunDuration           = 0x78
 	fallingTorchStageIndex      = 5
@@ -52,26 +62,30 @@ const (
 	foregroundDemoWaitTicks     = 20
 	greatAnacondaStageIndex     = 8
 	angkorSealCompletionTicks   = 140
+	teutonicKnightStageIndex    = 9
+	sealCompletionTicks         = 140
 )
 
 const (
-	SoundSwitch      = 0
-	SoundRiddle      = 1
-	SoundDeath       = 2
-	SoundChestOpen   = 3
-	SoundChestReward = 4
-	SoundHeroHurt    = 5
-	SoundHammerBlock = 6
-	SoundBossDeath   = 7
-	SoundCheckpoint  = 9
-	SoundEnemyHit    = 10
-	SoundBreak       = 11
-	SoundHook        = 12
-	SoundBoulder     = 14
-	SoundDoor        = 8
-	SoundStageClear  = 15
-	SoundAngkorMusic = 16
-	SoundTitleMusic  = 19
+	SoundSwitch       = 0
+	SoundRiddle       = 1
+	SoundDeath        = 2
+	SoundChestOpen    = 3
+	SoundChestReward  = 4
+	SoundHeroHurt     = 5
+	SoundHammerBlock  = 6
+	SoundBossDeath    = 7
+	SoundCheckpoint   = 9
+	SoundEnemyHit     = 10
+	SoundBreak        = 11
+	SoundHook         = 12
+	SoundWater        = 13
+	SoundBoulder      = 14
+	SoundDoor         = 8
+	SoundStageClear   = 15
+	SoundAngkorMusic  = 16
+	SoundBavariaMusic = 17
+	SoundTitleMusic   = 19
 )
 
 type ObjectMotion struct {
@@ -83,23 +97,26 @@ type ObjectMotion struct {
 }
 
 type SourceFrameResult struct {
-	GravityMoved          int
-	SnakesMoved           int
-	CrawlersMoved         int
-	HazardHits            int
-	RisingFireHits        int
-	RockHoldHits          int
-	DigCleared            int
-	AnacondaHits          int
-	AnacondaDefeated      bool
-	TutorialSealActivated bool
-	VioletPickups         []Point
+	GravityMoved           int
+	SnakesMoved            int
+	CrawlersMoved          int
+	HazardHits             int
+	RisingFireHits         int
+	RockHoldHits           int
+	DigCleared             int
+	AnacondaHits           int
+	AnacondaDefeated       bool
+	TeutonicKnightHits     int
+	TeutonicKnightDefeated bool
+	TutorialSealActivated  bool
+	VioletPickups          []Point
 }
 
 type Runtime struct {
 	Stage                       *Stage
 	Player                      Point
 	PlayerMotion                ObjectMotion
+	playerFacingDirection       int
 	playerTurnOffset            int
 	EntranceMarker              Point
 	EntranceScrollX             int
@@ -114,6 +131,11 @@ type Runtime struct {
 	FrozenOriginal              []RawID
 	ContainerLocked             []bool
 	ConsumedRewardCells         []bool
+	WaterDepth                  []uint8
+	WaterSources                []Point
+	WaterInitializing           bool
+	WaterTicks                  int
+	water                       waterRuntimeState
 	Pushing                     bool
 	PushDX                      int
 	PushTicks                   int
@@ -131,6 +153,7 @@ type Runtime struct {
 	EnemyGateMessageIndex       int
 	EnemyGateMessageTicks       int
 	Anaconda                    GreatAnaconda
+	TeutonicKnight              EvilTeutonicKnight
 	Checkpoints                 []Point
 	GoalMarkers                 []Point
 	Doors                       []Point
@@ -166,6 +189,9 @@ type Runtime struct {
 	SpecialPickups              int
 	RelicCelebrating            bool
 	RelicCelebrationTicks       int
+	SealCollected               bool
+	SealTicks                   int
+	SealStageComplete           bool
 	LastForegroundEvent         int
 	ForegroundEvents            int
 	ForegroundDemoActive        bool
@@ -213,6 +239,10 @@ type Runtime struct {
 	FallingTorchWarningTicks    int
 	FallingTorchAnimation       int
 	FallingTorchAnimationTicks  int
+	SpikeSlowExtent             int
+	SpikeFastExtent             int
+	FanPhase                    int
+	FanDirection                int
 	RisingFireHeight            int
 	RisingFireAnimation         int
 	RisingFireAnimationTicks    int
@@ -282,10 +312,15 @@ type Snapshot struct {
 	FrozenOriginal       []RawID
 	ContainerLocked      []bool
 	ConsumedRewardCells  []bool
+	WaterDepth           []uint8
+	WaterInitializing    bool
+	WaterTicks           int
+	Water                waterRuntimeState
 	EnemyGateGroup       []int
 	EnemyGateCounters    map[int]int
 	ActiveEnemyGateGroup int
 	Anaconda             GreatAnaconda
+	TeutonicKnight       EvilTeutonicKnight
 	VioletGems           int
 	RedDiamonds          int
 	KeyForForeground9    int
@@ -298,10 +333,15 @@ type Snapshot struct {
 	CompassEnabled       bool
 	RelicMask            int
 	SpecialPickups       int
+	SealCollected        bool
+	SealTicks            int
+	SealStageComplete    bool
 	LastForegroundEvent  int
 	ForegroundEvents     int
 	FallingTorchTriggers int
 	RisingFireHeight     int
+	FanPhase             int
+	FanDirection         int
 	BonusTarget          Point
 	BonusTargetSet       bool
 	BonusRemaining       int
@@ -339,6 +379,7 @@ func NewRuntime(stage *Stage) (*Runtime, error) {
 		FrozenOriginal:       make([]RawID, stage.Width*stage.Height),
 		ContainerLocked:      make([]bool, stage.Width*stage.Height),
 		ConsumedRewardCells:  make([]bool, stage.Width*stage.Height),
+		WaterDepth:           make([]uint8, stage.Width*stage.Height),
 		DoorGroup:            make([]int, stage.Width*stage.Height),
 		ActiveEnemyGateGroup: -1,
 		Checkpoints:          stage.Positions(ForegroundLayer, 4),
@@ -349,26 +390,32 @@ func NewRuntime(stage *Stage) (*Runtime, error) {
 		ExtraLives:           5,
 		MaxHealth:            4,
 		Health:               4,
-		CompassEnabled:       stage.Index != tutorialStageIndex,
+		CompassEnabled:       !(stage.World == WorldAngkor && stage.Index == tutorialStageIndex),
 		RockHoldTicks:        rockHoldDuration,
 		ChestRewardID:        EmptyRawID,
 	}
+	rt.playerFacingDirection = 2
 	for idx := range rt.FrozenOriginal {
 		rt.FrozenOriginal[idx] = EmptyRawID
 		rt.DoorGroup[idx] = -1
 	}
-	if stage.Index == fallingTorchStageIndex {
+	if stage.World == WorldAngkor && stage.Index == fallingTorchStageIndex {
 		rt.RisingFireHeight = fallingFireInitialHeight
 		rt.RisingFireAnimation = 2
 	}
-	if stage.Index == greatAnacondaStageIndex {
+	if stage.World == WorldAngkor && stage.Index == greatAnacondaStageIndex {
 		rt.Anaconda = newGreatAnaconda()
 	}
+	if stage.World == WorldBavaria && stage.Index == teutonicKnightStageIndex {
+		rt.TeutonicKnight = newEvilTeutonicKnight()
+	}
 	rt.initBonusTarget()
+	rt.initBavariaObjects()
 	rt.initObjectState()
+	rt.initWater()
 	rt.initDoorStates()
 	rt.initEnemyGates()
-	rt.initGreatAnacondaStage()
+	rt.initEnemyGateDoors()
 	rt.initTutorial()
 	rt.set(rt.PlayerLayer, entrance.X, entrance.Y, EmptyRawID)
 	rt.initEntranceDoor()
@@ -472,6 +519,30 @@ func (rt *Runtime) initBonusTarget() {
 	}
 }
 
+func (rt *Runtime) initBavariaObjects() {
+	if rt.Stage.World != WorldBavaria {
+		return
+	}
+	for idx, id := range rt.Stage.Player {
+		x, y := idx%rt.Width(), idx/rt.Width()
+		switch id {
+		case 16:
+			if y > 0 && y+1 < rt.Height() && rt.Stage.Player[rt.index(x, y+1)] != 16 {
+				above := rt.index(x, y-1)
+				rt.PlayerLayer[above] = 16
+				rt.Background[above] = rt.Background[idx]
+			}
+		case 34:
+			rt.PlayerLayer[idx] = EmptyRawID
+			rt.Foreground[idx] = 15
+		case 35:
+			rt.Foreground[idx] = EmptyRawID
+		case 38:
+			rt.Foreground[idx] = 27
+		}
+	}
+}
+
 func (rt *Runtime) initObjectState() {
 	for idx, id := range rt.PlayerLayer {
 		switch {
@@ -486,6 +557,26 @@ func (rt *Runtime) initObjectState() {
 		case id == 11:
 			if rt.Background[idx] == 1 {
 				rt.ObjectState[idx] = 16
+			}
+		case id == 28:
+			state := int(rt.Background[idx])
+			if state > 10 {
+				state = state/11 | 0x8
+			}
+			rt.ObjectState[idx] = state
+		case id == 14:
+			if rt.Background[idx] == 4 {
+				rt.ObjectState[idx] = 0x8
+			}
+		case id == 16:
+			direction := int(rt.Background[idx]) & objectDirectionMask
+			if direction != 4 {
+				direction = 2
+			}
+			rt.ObjectState[idx] = direction
+		case id == 36:
+			if rt.Background[idx] == 1 {
+				rt.ObjectState[idx] = 1
 			}
 		}
 	}
@@ -519,7 +610,7 @@ func (rt *Runtime) initEnemyGates() {
 				if rt.PlayerLayer[aboveIdx] == 36 {
 					message = 58
 				}
-				if rt.Stage.Index == greatAnacondaStageIndex {
+				if rt.Stage.World == WorldAngkor && rt.Stage.Index == greatAnacondaStageIndex {
 					message = 51
 				}
 				rt.EnemyGateMessages[group] = message
@@ -603,6 +694,7 @@ func (rt *Runtime) tryMove(dx, dy int, scripted bool) bool {
 		rt.ResetPushAttempt()
 		return false
 	}
+	rt.SetPlayerFacing(dx, dy)
 	x := rt.Player.X + dx
 	y := rt.Player.Y + dy
 	if x < 0 || y < 0 || x >= rt.Width() || y >= rt.Height() {
@@ -610,7 +702,7 @@ func (rt *Runtime) tryMove(dx, dy int, scripted bool) bool {
 		return false
 	}
 	if dy == 0 && dx != 0 {
-		if playerID, _ := rt.At(PlayerLayer, x, y); playerID == 0 || playerID == 9 {
+		if playerID, _ := rt.At(PlayerLayer, x, y); playerID == 0 || playerID == 8 || playerID == 9 {
 			if !rt.pushAttemptReady(x, y, dx) {
 				return false
 			}
@@ -749,7 +841,7 @@ func (rt *Runtime) finishMove(x, y, dx, dy int) bool {
 		rt.pendingForegroundEvent = Point{X: x, Y: y}
 		rt.pendingForegroundEventSet = true
 	case 1:
-		if rt.Stage.Index == fallingTorchStageIndex {
+		if rt.Stage.World == WorldAngkor && rt.Stage.Index == fallingTorchStageIndex {
 			rt.FallingTorchWarningTicks = fallingTorchWarningDuration
 			rt.FallingTorchTriggers++
 		}
@@ -787,6 +879,24 @@ func (rt *Runtime) SetPlayerTurnOffset(offset int) {
 		return
 	}
 	rt.playerTurnOffset = max(0, offset)
+}
+
+// SetPlayerFacing stores the source player direction bits:
+// up=1, right=2, down=3, left=4.
+func (rt *Runtime) SetPlayerFacing(dx, dy int) {
+	if rt == nil {
+		return
+	}
+	switch {
+	case dy < 0:
+		rt.playerFacingDirection = 1
+	case dx > 0:
+		rt.playerFacingDirection = 2
+	case dy > 0:
+		rt.playerFacingDirection = 3
+	case dx < 0:
+		rt.playerFacingDirection = 4
+	}
 }
 
 func (rt *Runtime) playerSourceOffset() int {
@@ -917,7 +1027,7 @@ func (rt *Runtime) TryPushBoulder(x, y, dx int) bool {
 		return false
 	}
 	id, ok := rt.At(PlayerLayer, x, y)
-	if !ok || id != 0 && id != 9 {
+	if !ok || id != 0 && id != 8 && id != 9 {
 		return false
 	}
 	targetX := x + dx
@@ -978,6 +1088,16 @@ func (rt *Runtime) tickGravityObjectAt(x, y int) bool {
 		return false
 	}
 	motion := &rt.ObjectMotion[idx]
+	if rt.gravityObjectBuoyantAt(x, y) {
+		motion.RollDX = 0
+		motion.RollOffset = 0
+		if y > 0 && rt.tryMoveGravityObject(x, y, x, y-1, id) {
+			return true
+		}
+		rt.ObjectState[idx] &^= objectDirectionMask | gravityRollPreparing | gravityMoveRight | gravityMoveLeft | explosiveFallMask
+		rt.ObjectMotion[idx] = ObjectMotion{}
+		return false
+	}
 	if motion.RollDX != 0 {
 		return rt.tickGravityRollAt(x, y, id)
 	}
@@ -1003,6 +1123,11 @@ func (rt *Runtime) tickGravityObjectAt(x, y int) bool {
 	return false
 }
 
+func (rt *Runtime) gravityObjectBuoyantAt(x, y int) bool {
+	cell := rt.waterCellAt(x, y)
+	return cell != 0 && cell != 3
+}
+
 func (rt *Runtime) finishGravityMotionAt(x, y int, id RawID) {
 	idx := rt.index(x, y)
 	if rt.ObjectState[idx]&objectDirectionMask != 3 || y+1 >= rt.Height() {
@@ -1011,9 +1136,368 @@ func (rt *Runtime) finishGravityMotionAt(x, y int, id RawID) {
 	if rt.cellEmptyForGravity(x, y+1) && !rt.isPlayerAt(x, y+1) {
 		return
 	}
+	fallDistance := (rt.ObjectState[idx] & explosiveFallMask) >> explosiveFallShift
+	if fallDistance >= 2 {
+		if id == 8 {
+			rt.startExplosionAt(x, y)
+			return
+		}
+		if belowID, ok := rt.At(PlayerLayer, x, y+1); ok && belowID == 8 {
+			rt.startExplosionAt(x, y+1)
+		}
+	}
 	rt.ObjectState[idx] &^= objectDirectionMask
+	rt.ObjectState[idx] &^= explosiveFallMask
 	if id == 0 || id == 9 {
 		rt.emitSound(SoundBoulder)
+	}
+}
+
+func (rt *Runtime) startExplosionAt(x, y int) bool {
+	if x < 0 || y < 0 || x >= rt.Width() || y >= rt.Height() {
+		return false
+	}
+	idx := rt.index(x, y)
+	if rt.PlayerLayer[idx] != 8 {
+		return false
+	}
+	rt.PlayerLayer[idx] = 54
+	rt.ObjectState[idx] = 0
+	rt.ObjectMotion[idx] = ObjectMotion{}
+	return true
+}
+
+func (rt *Runtime) tickExplosionAt(x, y int) {
+	idx := rt.index(x, y)
+	if rt.PlayerLayer[idx] != 54 {
+		return
+	}
+	rt.ObjectState[idx]++
+	tick := rt.ObjectState[idx]
+	if tick == 1 {
+		rt.emitSound(SoundBossDeath)
+	}
+	if tick == explosionImpactTick {
+		rt.applyExplosionImpact(x, y)
+	}
+	if tick >= explosionDuration && rt.PlayerLayer[idx] == 54 {
+		rt.PlayerLayer[idx] = EmptyRawID
+		rt.ObjectState[idx] = 0
+		rt.ObjectMotion[idx] = ObjectMotion{}
+	}
+}
+
+func (rt *Runtime) applyExplosionImpact(x, y int) {
+	for dy := -1; dy <= 1; dy++ {
+		for dx := -1; dx <= 1; dx++ {
+			nx, ny := x+dx, y+dy
+			if nx < 0 || ny < 0 || nx >= rt.Width() || ny >= rt.Height() {
+				continue
+			}
+			idx := rt.index(nx, ny)
+			switch rt.PlayerLayer[idx] {
+			case 10:
+				// JAR bN() only primes vegetation while the packed water
+				// state is stable (xByte == 3).
+				if rt.waterStable() && rt.ObjectState[idx] < 1 {
+					rt.ObjectState[idx] = 1
+				}
+			case 8:
+				rt.PlayerLayer[idx] = 54
+				rt.ObjectState[idx] = 0
+				rt.ObjectMotion[idx] = ObjectMotion{}
+			case 30, 37:
+				if rt.ObjectState[idx] < 1 {
+					rt.ObjectState[idx] = 1
+				}
+			case 16, 19, 43, 49:
+				rt.decrementEnemyGateForObjectAt(nx, ny)
+				rt.PlayerLayer[idx] = EmptyRawID
+				rt.ObjectState[idx] = 0
+				rt.ObjectMotion[idx] = ObjectMotion{}
+			}
+			if rt.isPlayerAt(nx, ny) {
+				rt.Hurt(1)
+			}
+		}
+	}
+}
+
+func sourceSpikeExtent(sourceTick, period, closedTicks, extendTicks, openTicks, retractTicks int) int {
+	phase := sourceTick % period
+	switch {
+	case phase < closedTicks:
+		return 0
+	case phase < closedTicks+extendTicks:
+		return 48 * (phase - closedTicks) / extendTicks
+	case phase < closedTicks+extendTicks+openTicks:
+		return 48
+	default:
+		return 48 - 48*(phase-closedTicks-extendTicks-openTicks)/retractTicks
+	}
+}
+
+func (rt *Runtime) spikeExtentAt(x, y int) int {
+	if x < 0 || y < 0 || x >= rt.Width() || y >= rt.Height() {
+		return 0
+	}
+	if rt.ObjectState[rt.index(x, y)]&0x8 != 0 {
+		return rt.SpikeFastExtent
+	}
+	return rt.SpikeSlowExtent
+}
+
+func (rt *Runtime) SpikeExtentAt(x, y int) int {
+	return rt.spikeExtentAt(x, y)
+}
+
+func (rt *Runtime) spikeTipAt(x, y int) (Point, bool) {
+	if x < 0 || y < 0 || x >= rt.Width() || y >= rt.Height() || rt.PlayerLayer[rt.index(x, y)] != 28 {
+		return Point{}, false
+	}
+	extent := rt.spikeExtentAt(x, y)
+	segments := 1
+	if extent > 0 {
+		segments = (extent-1)/TileSize + 2
+	}
+	direction := -1
+	if rt.ObjectState[rt.index(x, y)]&objectDirectionMask == 3 {
+		direction = 1
+	}
+	tip := Point{X: x, Y: y + (segments-1)*direction}
+	if tip.Y < 0 || tip.Y >= rt.Height() {
+		return Point{}, false
+	}
+	return tip, true
+}
+
+func (rt *Runtime) spikeOccupies(x, y int) bool {
+	for _, baseY := range []int{y - 1, y + 1} {
+		if baseY < 0 || baseY >= rt.Height() || rt.PlayerLayer[rt.index(x, baseY)] != 28 {
+			continue
+		}
+		state := rt.ObjectState[rt.index(x, baseY)]
+		if rt.SpikeFastExtent >= TileSize || state&0x8 == 0 && rt.SpikeSlowExtent >= TileSize {
+			return true
+		}
+	}
+	return false
+}
+
+func (rt *Runtime) tickSpikeColumnAt(x, y int) {
+	tip, ok := rt.spikeTipAt(x, y)
+	if !ok {
+		return
+	}
+	if rt.isPlayerAt(tip.X, tip.Y) {
+		rt.HurtFromDirection(2, rt.playerCollisionDirection())
+	}
+	idx := rt.index(tip.X, tip.Y)
+	id := rt.PlayerLayer[idx]
+	if id == EmptyRawID || id == 28 || id == 32 {
+		return
+	}
+	rt.decrementEnemyGateForObjectAt(tip.X, tip.Y)
+	rt.PlayerLayer[idx] = EmptyRawID
+	rt.ObjectState[idx] = 0
+	rt.ObjectMotion[idx] = ObjectMotion{}
+}
+
+func (rt *Runtime) tickFanPhase(sourceTick int) {
+	if rt.Stage.World != WorldBavaria || rt.FanDirection == 0 || (sourceTick>>1)&1 != 0 {
+		return
+	}
+	rt.FanPhase += rt.FanDirection
+	if rt.FanPhase == 5 {
+		rt.swapFanPods()
+	}
+	if rt.FanPhase <= 0 {
+		rt.FanPhase = 0
+		rt.FanDirection = 0
+	} else if rt.FanPhase >= 9 {
+		rt.FanPhase = 9
+		rt.FanDirection = 0
+	}
+}
+
+func (rt *Runtime) swapFanPods() {
+	for idx := range rt.PlayerLayer {
+		x, y := idx%rt.Width(), idx/rt.Width()
+		switch {
+		case rt.Foreground[idx] == 15:
+			rt.Foreground[idx] = EmptyRawID
+			rt.PlayerLayer[idx] = 34
+		case rt.Foreground[idx] == 16:
+			rt.Foreground[idx] = EmptyRawID
+			rt.PlayerLayer[idx] = 35
+		case rt.PlayerLayer[idx] == 34:
+			rt.PlayerLayer[idx] = EmptyRawID
+			rt.Foreground[idx] = 15
+			rt.triggerWaterReflow(x, y)
+		case rt.PlayerLayer[idx] == 35:
+			rt.PlayerLayer[idx] = EmptyRawID
+			rt.Foreground[idx] = 16
+			rt.triggerWaterReflow(x, y)
+		}
+	}
+}
+
+func (rt *Runtime) tickMovingHazardAt(x, y int) {
+	idx := rt.index(x, y)
+	if rt.PlayerLayer[idx] != 14 {
+		return
+	}
+	state := rt.ObjectState[idx]
+	direction := 2
+	if state&0x8 != 0 {
+		direction = 4
+	}
+	if rt.isPlayerAt(x, y) {
+		rt.HurtFromDirection(1, direction)
+	}
+	if rt.advanceObjectMotion(idx, 6, 0) {
+		return
+	}
+	cooldown := (state & movingHazardCooldownMask) >> movingHazardCooldownShift
+	dx := 1
+	if state&0x8 != 0 {
+		dx = -1
+	}
+	if cooldown >= 20 {
+		blockedID, _ := rt.At(PlayerLayer, x+dx, y)
+		pathReady := rt.hazardCellOpen(x, y+1) || rt.hazardCellOpen(x+dx, y) || blockedID == 16 || blockedID == 19 || blockedID == 43
+		if pathReady {
+			rt.ObjectState[idx] = (state &^ movingHazardCooldownMask) | 19<<movingHazardCooldownShift
+		}
+		return
+	}
+	if cooldown > 0 {
+		cooldown--
+		rt.ObjectState[idx] = (state &^ movingHazardCooldownMask) | cooldown<<movingHazardCooldownShift
+		return
+	}
+	if rt.hazardCellOpen(x, y+1) {
+		rt.moveStatefulObject(x, y, x, y+1, 14, (state&0x8)|3)
+		return
+	}
+	if rt.hazardCellOpen(x+dx, y) {
+		rt.moveStatefulObject(x, y, x+dx, y, 14, (state&0x8)|direction)
+		return
+	}
+	blockedID, _ := rt.At(PlayerLayer, x+dx, y)
+	if blockedID == 16 || blockedID == 19 || blockedID == 43 {
+		rt.ObjectState[idx] = state &^ objectDirectionMask
+		return
+	}
+	rt.ObjectState[idx] = (state &^ (movingHazardCooldownMask | objectDirectionMask)) | 20<<movingHazardCooldownShift
+}
+
+func (rt *Runtime) hazardCellOpen(x, y int) bool {
+	if x < 0 || y < 0 || x >= rt.Width() || y >= rt.Height() || rt.PlayerLayer[rt.index(x, y)] != EmptyRawID {
+		return false
+	}
+	foreground := rt.Foreground[rt.index(x, y)]
+	if foreground == 14 || foreground == 33 || foreground == 4 || foreground == 32 {
+		return false
+	}
+	return foreground != 7 || rt.foregroundDoorOpen(x, y)
+}
+
+func (rt *Runtime) moveStatefulObject(fromX, fromY, toX, toY int, id RawID, state int) {
+	fromIdx := rt.index(fromX, fromY)
+	toIdx := rt.index(toX, toY)
+	rt.PlayerLayer[toIdx] = id
+	rt.PlayerLayer[fromIdx] = EmptyRawID
+	rt.ObjectState[toIdx] = state
+	rt.ObjectState[fromIdx] = 0
+	rt.ObjectMotion[toIdx] = ObjectMotion{DX: toX - fromX, DY: toY - fromY, Remaining: 18}
+	rt.ObjectMotion[fromIdx] = ObjectMotion{}
+}
+
+func (rt *Runtime) gravityObjectStrikesAt(x, y int) bool {
+	if y <= 0 {
+		return false
+	}
+	above := rt.index(x, y-1)
+	id := rt.PlayerLayer[above]
+	return isGravityObject(id) && rt.ObjectState[above]&objectDirectionMask == 3 && rt.ObjectMotion[above].Remaining <= 6
+}
+
+func (rt *Runtime) tickSpearPairAt(x, y int) {
+	if y <= 0 || y+1 >= rt.Height() || rt.PlayerLayer[rt.index(x, y)] != 16 || rt.PlayerLayer[rt.index(x, y-1)] != 16 || rt.PlayerLayer[rt.index(x, y+1)] == 16 {
+		return
+	}
+	baseIdx := rt.index(x, y)
+	topIdx := rt.index(x, y-1)
+	if rt.gravityObjectStrikesAt(x, y-1) || rt.movingHazardStrikesAt(x, y-1) || rt.movingHazardStrikesAt(x, y) {
+		rt.emitSound(SoundBoulder)
+		rt.decrementEnemyGateForObjectAt(x, y)
+		rt.decrementEnemyGateForObjectAt(x, y-1)
+		rt.PlayerLayer[baseIdx] = EmptyRawID
+		rt.PlayerLayer[topIdx] = EmptyRawID
+		rt.ObjectState[baseIdx] = 0
+		rt.ObjectState[topIdx] = 0
+		return
+	}
+	state := rt.ObjectState[baseIdx]
+	direction := state & objectDirectionMask
+	attackX := x - 1
+	if direction == 4 {
+		attackX = x + 1
+	}
+	adjacent := rt.isPlayerAt(attackX, y) || rt.isPlayerAt(attackX, y-1)
+	timer := (state & spearTimerMask) >> spearTimerShift
+	if timer <= 0 && adjacent && rt.playerSourceOffset() <= 12 {
+		timer = 36
+	} else if timer > 0 {
+		timer--
+	}
+	if timer <= 11 && timer > 0 && adjacent {
+		rt.HurtFromDirection(1, direction)
+	}
+	state = (state &^ spearTimerMask) | timer<<spearTimerShift
+	rt.ObjectState[baseIdx] = state
+	rt.ObjectState[topIdx] = state
+}
+
+func (rt *Runtime) movingHazardStrikesAt(x, y int) bool {
+	if x <= 0 || x+1 >= rt.Width() || y < 0 || y >= rt.Height() {
+		return false
+	}
+	if y > 0 {
+		aboveIdx := rt.index(x, y-1)
+		if rt.PlayerLayer[aboveIdx] == 14 && rt.ObjectMotion[aboveIdx].Remaining <= 6 {
+			return true
+		}
+	}
+	leftIdx := rt.index(x-1, y)
+	if rt.PlayerLayer[leftIdx] == 14 && rt.ObjectMotion[leftIdx].Remaining <= 0 {
+		state := rt.ObjectState[leftIdx]
+		if state&0x8 == 0 && state&objectDirectionMask != 3 {
+			return true
+		}
+	}
+	rightIdx := rt.index(x+1, y)
+	if rt.PlayerLayer[rightIdx] == 14 && rt.ObjectMotion[rightIdx].Remaining <= 0 {
+		state := rt.ObjectState[rightIdx]
+		if state&0x8 != 0 && state&objectDirectionMask != 3 {
+			return true
+		}
+	}
+	return false
+}
+
+func (rt *Runtime) tickCrawlerTrapAt(x, y int) {
+	idx := rt.index(x, y)
+	if rt.PlayerLayer[idx] != 36 || y <= 0 {
+		return
+	}
+	if rt.ObjectState[idx] == 0 && rt.PlayerLayer[rt.index(x, y-1)] == 11 {
+		rt.ObjectState[idx] = 1
+		rt.decrementEnemyGateForObjectAt(x, y)
+	}
+	if rt.ObjectState[idx] == 1 && rt.isPlayerAt(x, y-1) {
+		rt.Hurt(1)
 	}
 }
 
@@ -1025,7 +1509,7 @@ func (rt *Runtime) GravityObjectRenderOffset(x, y, sourceTick int) (int, int) {
 	idx := rt.index(x, y)
 	motion := rt.ObjectMotion[idx]
 	dx := -motion.DX * motion.Remaining
-	dy := -motion.DY * motion.Remaining
+	dy := -motion.DY*motion.Remaining + rt.waterBobOffsetAt(x, y, sourceTick)
 	state := rt.ObjectState[idx]
 	if state&gravityRollPreparing != 0 && motion.RollDX != 0 {
 		offset := motion.RollOffset
@@ -1135,6 +1619,10 @@ func (rt *Runtime) TickDigAnimations() int {
 
 func (rt *Runtime) TickSourceFrame(radius, sourceTick, hazardReach int) SourceFrameResult {
 	rt.gravitySourceTick = sourceTick
+	rt.tickWaterSourceStart()
+	rt.SpikeSlowExtent = sourceSpikeExtent(sourceTick, 89, 15, 30, 15, 30)
+	rt.SpikeFastExtent = sourceSpikeExtent(sourceTick, 44, 7, 15, 8, 15)
+	rt.tickFanPhase(sourceTick)
 	rt.frameVioletPickups = rt.frameVioletPickups[:0]
 	chestOpeningFresh := rt.chestOpeningFresh
 	tutorialSealWasActivated := rt.TutorialSealActivated
@@ -1146,6 +1634,10 @@ func (rt *Runtime) TickSourceFrame(radius, sourceTick, hazardReach int) SourceFr
 	rt.tickForegroundDemo()
 	rt.tickEnemyGateDemo()
 	result.AnacondaHits, result.AnacondaDefeated = rt.tickGreatAnaconda(sourceTick)
+	result.TeutonicKnightHits, result.TeutonicKnightDefeated = rt.tickEvilTeutonicKnight(sourceTick)
+	if !rt.Anaconda.Enabled && !rt.TeutonicKnight.Enabled {
+		rt.tickSealTransition()
+	}
 	rt.tickDoorAnimations(sourceTick)
 	if rt.playerSourceOffset() <= 0 {
 		rt.CommitPendingCheckpoint()
@@ -1163,6 +1655,9 @@ func (rt *Runtime) TickSourceFrame(radius, sourceTick, hazardReach int) SourceFr
 			if isPickupContainer(rt.Foreground[idx]) {
 				rt.tickChestForegroundAt(x, y, sourceTick, chestOpeningFresh)
 			}
+			if rt.Foreground[idx] == 35 || rt.Foreground[idx] == 37 {
+				rt.tickWindForegroundAt(x, y)
+			}
 			if rt.Foreground[idx] == 32 && rt.tickDigAnimationAt(idx, sourceTick) {
 				result.DigCleared++
 			}
@@ -1170,6 +1665,11 @@ func (rt *Runtime) TickSourceFrame(radius, sourceTick, hazardReach int) SourceFr
 				continue
 			}
 			switch id := rt.PlayerLayer[idx]; {
+			case id == 47:
+				if rt.tickGravityObjectAt(x, y) {
+					result.GravityMoved++
+				}
+				rt.tickWindPodAt(x, y)
 			case isGravityObject(id):
 				if rt.tickGravityObjectAt(x, y) {
 					result.GravityMoved++
@@ -1183,6 +1683,7 @@ func (rt *Runtime) TickSourceFrame(radius, sourceTick, hazardReach int) SourceFr
 				rt.Foreground[idx] = 32
 				rt.ForegroundState[idx] = 0
 				rt.ObjectState[idx] = 0
+				rt.triggerWaterReflow(x, y)
 			case id == 11:
 				if rt.tickCrawlerObjectAt(x, y) {
 					result.CrawlersMoved++
@@ -1195,9 +1696,22 @@ func (rt *Runtime) TickSourceFrame(radius, sourceTick, hazardReach int) SourceFr
 				if rt.playerSourceOffset() < gravityRollMoveOffset && rt.isPlayerAt(x, y) && rt.HurtFromDirection(1, rt.playerCollisionDirection()) {
 					result.HazardHits++
 				}
+			case id == 54:
+				rt.tickExplosionAt(x, y)
+			case id == 28:
+				rt.tickSpikeColumnAt(x, y)
+			case id == 14:
+				rt.tickMovingHazardAt(x, y)
+			case id == 16:
+				rt.tickSpearPairAt(x, y)
+			case id == 36:
+				rt.tickCrawlerTrapAt(x, y)
 			}
 		}
 	}
+	// Java advances the packed water state in asVoid(), after ahVoid() has
+	// scanned gravity objects and hazards for the current source frame.
+	rt.tickWater()
 	rt.updatePressureDoors()
 	rt.startAdjacentLockOpening()
 	rt.tickPendingForegroundEvent()
@@ -1225,7 +1739,7 @@ func (rt *Runtime) tickPendingForegroundEvent() {
 		eventID := int(rt.Background[rt.index(point.X, point.Y)])
 		rt.collectForegroundEventAt(point.X, point.Y)
 		rt.startTutorialForegroundEvent(eventID)
-		if rt.Stage.Index == fallingTorchStageIndex && eventID == 3 {
+		if rt.Stage.World == WorldAngkor && rt.Stage.Index == fallingTorchStageIndex && eventID == 3 {
 			rt.ForegroundDemoActive = true
 			rt.ForegroundDemoID = eventID
 			rt.ForegroundDemoPhase = 0
@@ -1272,7 +1786,7 @@ func (rt *Runtime) tickForegroundDemo() {
 }
 
 func (rt *Runtime) tickFallingTorchStage(sourceTick int) bool {
-	if rt.Stage.Index != fallingTorchStageIndex {
+	if rt.Stage.World != WorldAngkor || rt.Stage.Index != fallingTorchStageIndex {
 		return false
 	}
 	if rt.FallingTorchWarningTicks > 0 {
@@ -1367,14 +1881,14 @@ func (rt *Runtime) ForegroundDemoCamera() (x, y, elapsed, duration int, ok bool)
 }
 
 func (rt *Runtime) RisingFireWorldY() (int, bool) {
-	if rt.Stage.Index != fallingTorchStageIndex || rt.FallingTorchAnimation != 2 {
+	if rt.Stage.World != WorldAngkor || rt.Stage.Index != fallingTorchStageIndex || rt.FallingTorchAnimation != 2 {
 		return 0, false
 	}
 	return rt.Height()*TileSize - rt.RisingFireHeight, true
 }
 
 func (rt *Runtime) IsFallingTorchStage() bool {
-	return rt.Stage.Index == fallingTorchStageIndex
+	return rt != nil && rt.Stage != nil && rt.Stage.World == WorldAngkor && rt.Stage.Index == fallingTorchStageIndex
 }
 
 func (rt *Runtime) RisingFireFillVisible() bool {
@@ -1382,7 +1896,7 @@ func (rt *Runtime) RisingFireFillVisible() bool {
 }
 
 func (rt *Runtime) FallingTorchShake(sourceTick int) int {
-	if rt.Stage.Index != fallingTorchStageIndex || rt.FallingTorchWarningTicks <= 0 {
+	if rt.Stage.World != WorldAngkor || rt.Stage.Index != fallingTorchStageIndex || rt.FallingTorchWarningTicks <= 0 {
 		return 0
 	}
 	warning := rt.FallingTorchWarningTicks
@@ -1394,7 +1908,10 @@ func (rt *Runtime) tickRockHold() bool {
 		return false
 	}
 	aboveIdx := rt.index(rt.Player.X, rt.Player.Y-1)
-	if rt.PlayerLayer[aboveIdx] != 0 || rt.ObjectMotion[aboveIdx].Remaining > 0 {
+	if !isRockHoldObject(rt.PlayerLayer[aboveIdx]) || rt.ObjectMotion[aboveIdx].Remaining > 0 {
+		return false
+	}
+	if waterCellGet(rt.waterCellAt(rt.Player.X, rt.Player.Y), 0, 0, 3) != 0 {
 		return false
 	}
 	if rt.RockHoldTicks <= 0 {
@@ -1413,7 +1930,11 @@ func (rt *Runtime) HoldingRock() bool {
 		return false
 	}
 	idx := rt.index(rt.Player.X, rt.Player.Y-1)
-	return rt.PlayerLayer[idx] == 0 && rt.ObjectMotion[idx].Remaining <= 0
+	return isRockHoldObject(rt.PlayerLayer[idx]) && rt.ObjectMotion[idx].Remaining <= 0
+}
+
+func isRockHoldObject(id RawID) bool {
+	return id == 0 || id == 8 || id == 9 || id == 48
 }
 
 func (rt *Runtime) NextCompassTarget() (Point, bool) {
@@ -1542,7 +2063,7 @@ func (rt *Runtime) UseHammer(dx, dy int) bool {
 	}
 	foregroundID, _ := rt.At(ForegroundLayer, x, y)
 	blockedTarget := id == 0 || id != EmptyRawID && id >= 80 || foregroundID == 7 && !rt.foregroundDoorOpen(x, y)
-	canHit := id == 10 || id == 30 || isSnake(id) || blockedTarget
+	canHit := id == 10 || id == 18 || id == 30 || isSnake(id) || blockedTarget
 	if rt.specialToolLevel() >= 8 {
 		canHit = canHit || id == 1 || id == 9 || rt.hasFreezeHammerTargetAt(x, y)
 	}
@@ -1618,8 +2139,23 @@ func (rt *Runtime) applyHammerImpact() bool {
 	}
 	handled := false
 	if id == 10 {
-		if rt.ObjectState[idx] <= 0 {
+		// Water state 3 is the source's stable state. During a fill or
+		// redistribution the hero can still move, but vegetation cannot be
+		// disturbed until the water solver settles.
+		if rt.waterStable() && rt.ObjectState[idx] <= 0 {
 			rt.ObjectState[idx] = 1
+		}
+		return true
+	}
+	if id == 18 {
+		playerForeground := rt.Foreground[rt.index(rt.Player.X, rt.Player.Y)]
+		if rt.Stage.World == WorldBavaria && rt.waterStable() && rt.FanDirection == 0 && playerForeground != 15 && playerForeground != 16 {
+			if rt.FanPhase <= 0 {
+				rt.FanDirection = 1
+			} else {
+				rt.FanDirection = -1
+			}
+			rt.emitSound(SoundSwitch)
 		}
 		return true
 	}
@@ -1969,6 +2505,8 @@ func sourceHookRestoreState(id RawID, state int) int {
 	switch id {
 	case 0, 8, 9, 47:
 		return state &^ (0x7000 | gravityRollPreparing)
+	case 14:
+		return state
 	default:
 		return -1
 	}
@@ -2120,7 +2658,20 @@ func (rt *Runtime) TickBreakables() int {
 	for y := rt.Height() - 1; y >= 0; y-- {
 		for x := 0; x < rt.Width(); x++ {
 			idx := rt.index(x, y)
-			if rt.PlayerLayer[idx] != 30 || rt.ObjectState[idx] <= 0 {
+			id := rt.PlayerLayer[idx]
+			if id != 30 && id != 37 || rt.ObjectState[idx] <= 0 {
+				continue
+			}
+			if id == 37 {
+				if rt.ObjectState[idx] >= 8 {
+					rt.triggerWaterReflow(x, y)
+					rt.PlayerLayer[idx] = EmptyRawID
+					rt.ObjectState[idx] = 0
+					rt.BreakableWalls++
+					broken++
+					continue
+				}
+				rt.ObjectState[idx]++
 				continue
 			}
 			if rt.ObjectState[idx] == 4 {
@@ -2315,7 +2866,7 @@ func (rt *Runtime) snakeDirectionToward(x, y, targetX, targetY int) int {
 		return 0
 	}
 	stepX, stepY := snakeStep(dir)
-	if rt.cellEmptyForSnake(x+stepX, y+stepY) {
+	if rt.cellEmptyForSnake(x+stepX, y+stepY) && rt.waterCellAt(x+stepX, y+stepY) == 0 {
 		return dir
 	}
 	if dx < 0 {
@@ -2340,11 +2891,20 @@ func (rt *Runtime) clearRedSnakeChase(idx int, id RawID) {
 }
 
 func (rt *Runtime) snakeCrushedAt(x, y int) bool {
-	if y <= 0 || rt.Foreground[rt.index(x, y)] == 35 {
+	if rt.Foreground[rt.index(x, y)] == 35 {
+		return false
+	}
+	if rt.movingHazardStrikesAt(x, y) {
+		return true
+	}
+	if y <= 0 {
 		return false
 	}
 	aboveIdx := rt.index(x, y-1)
 	aboveID := rt.PlayerLayer[aboveIdx]
+	if aboveID == 14 && rt.ObjectMotion[aboveIdx].Remaining <= 6 {
+		return true
+	}
 	if !isGravityObject(aboveID) || rt.ObjectMotion[aboveIdx].Remaining > 6 {
 		return false
 	}
@@ -2449,6 +3009,7 @@ func (rt *Runtime) tickCrawlerObjectAt(x, y int) bool {
 	}
 	state := rt.ObjectState[idx]
 	deathPhase := (state & 0xf00) >> 8
+	moved := false
 	if deathPhase != 0 {
 		if deathPhase >= 4 {
 			rt.PlayerLayer[idx] = EmptyRawID
@@ -2457,11 +3018,9 @@ func (rt *Runtime) tickCrawlerObjectAt(x, y int) bool {
 		} else if (rt.gravitySourceTick>>1)&1 == 0 {
 			rt.ObjectState[idx] += 0x100
 		}
-		return false
-	}
-
-	moved := false
-	if rt.ObjectMotion[idx].Remaining <= 4 {
+	} else if rt.waterCellAt(x, y) != 0 {
+		rt.ObjectState[idx] = (state &^ 0xf00) | 0x100
+	} else if rt.ObjectMotion[idx].Remaining <= 4 {
 		dir := state & objectDirectionMask
 		if dir == 0 {
 			dir = rt.initialCrawlerDirection(x, y, state&0x10 != 0)
@@ -2598,8 +3157,17 @@ func (rt *Runtime) updateExitOpen() {
 }
 
 func (rt *Runtime) IsPassable(x, y int) bool {
+	if rt.spikeOccupies(x, y) {
+		return false
+	}
+	if rt.WaterAt(x, y) > 0 && rt.SpecialItemMask&4 == 0 {
+		return false
+	}
 	playerID, ok := rt.At(PlayerLayer, x, y)
 	if !ok {
+		return false
+	}
+	if playerID == 10 && !rt.waterStable() {
 		return false
 	}
 	if !playerLayerPassable(playerID) {
@@ -2627,6 +3195,8 @@ func playerLayerPassable(playerID RawID) bool {
 		return true
 	case playerID == 10:
 		return true
+	case playerID == 14:
+		return true
 	case playerID == 24:
 		return true
 	case playerID == 26:
@@ -2638,6 +3208,12 @@ func playerLayerPassable(playerID RawID) bool {
 	case playerID == 41:
 		return true
 	case playerID == 42:
+		return true
+	case playerID == 40:
+		return true
+	case playerID == 51:
+		return true
+	case playerID == 52:
 		return true
 	case playerID == 53:
 		return true
@@ -2681,6 +3257,12 @@ func (rt *Runtime) decrementEnemyGateForObjectAt(x, y int) {
 	idx := rt.index(x, y)
 	if idx >= 0 && idx < len(rt.EnemyGateGroup) {
 		rt.EnemyGateGroup[idx] = -1
+	}
+	// Java alVoid() does not consume the arena counter while a special-stage
+	// boss still has health. The boss death sequence performs the one final
+	// decrement that opens the exit.
+	if rt.Anaconda.Enabled && rt.Anaconda.Health > 0 || rt.TeutonicKnight.Enabled && rt.TeutonicKnight.Health > 0 {
+		return
 	}
 	group := rt.ActiveEnemyGateGroup
 	if group < 0 {
@@ -3012,11 +3594,15 @@ func (rt *Runtime) moveObjectWithMotion(fromX, fromY, toX, toY int, id RawID, mo
 	if isGravityObject(id) {
 		switch {
 		case toY > fromY:
+			fallDistance := min(0x1f, ((state&explosiveFallMask)>>explosiveFallShift)+1)
+			state = (state &^ explosiveFallMask) | fallDistance<<explosiveFallShift
 			state = (state &^ objectDirectionMask) | 3
+		case toY < fromY:
+			state = (state &^ (objectDirectionMask | gravityRollPreparing | gravityMoveLeft | gravityMoveRight | explosiveFallMask)) | 1
 		case toX > fromX:
-			state = (state &^ (objectDirectionMask | gravityRollPreparing | gravityMoveLeft | gravityMoveRight)) | 2 | gravityMoveRight
+			state = (state &^ (objectDirectionMask | gravityRollPreparing | gravityMoveLeft | gravityMoveRight | explosiveFallMask)) | 2 | gravityMoveRight
 		case toX < fromX:
-			state = (state &^ (objectDirectionMask | gravityRollPreparing | gravityMoveLeft | gravityMoveRight)) | 4 | gravityMoveLeft
+			state = (state &^ (objectDirectionMask | gravityRollPreparing | gravityMoveLeft | gravityMoveRight | explosiveFallMask)) | 4 | gravityMoveLeft
 		}
 	} else if id != 48 {
 		state = 0
@@ -3085,8 +3671,8 @@ func (rt *Runtime) Hurt(amount int) bool {
 }
 
 // HurtFromDirection mirrors hurtHero(..., direction): after accepting damage,
-// the source searches clockwise from the incoming direction for the first
-// completely empty neighboring cell and applies a fresh jInt=18 knockback.
+// the source searches clockwise for the first neighboring cell whose player
+// and foreground bytes are both negative, then applies a fresh jInt=18 move.
 func (rt *Runtime) HurtFromDirection(amount, direction int) bool {
 	if !rt.Hurt(amount) {
 		return false
@@ -3100,9 +3686,10 @@ func (rt *Runtime) HurtFromDirection(amount, direction int) bool {
 		y := rt.Player.Y + dy
 		playerID, playerOK := rt.At(PlayerLayer, x, y)
 		foregroundID, foregroundOK := rt.At(ForegroundLayer, x, y)
-		if playerOK && foregroundOK && playerID == EmptyRawID && foregroundID == EmptyRawID {
+		if playerOK && foregroundOK && playerID.Signed() < 0 && foregroundID.Signed() < 0 {
 			rt.Player = Point{X: x, Y: y}
 			rt.PlayerMotion = ObjectMotion{DX: dx, DY: dy, Remaining: playerMoveStartOffset}
+			rt.playerFacingDirection = candidate
 			rt.ResetPushAttempt()
 			break
 		}
@@ -3329,6 +3916,9 @@ func (rt *Runtime) applyChestReward() {
 		rt.markPersistentRewardAt(rt.Player)
 		rt.RelicCelebrating = true
 		rt.RelicCelebrationTicks = 0
+		rt.SealCollected = true
+		rt.SealTicks = 0
+		rt.SealStageComplete = false
 		if rt.ChestRewardID == 53 && rt.Anaconda.Enabled {
 			rt.Anaconda.SealCollected = true
 			rt.Anaconda.SealTicks = 0
@@ -3493,7 +4083,7 @@ func (rt *Runtime) HealFull() {
 }
 
 func (rt *Runtime) CanAcceptInput() bool {
-	sealTransition := rt.Anaconda.Enabled && rt.Anaconda.SealCollected && !rt.Anaconda.StageComplete
+	sealTransition := rt.SealCollected && !rt.SealStageComplete
 	return !sealTransition && !rt.ForegroundDemoActive && !rt.EnemyGateDemoActive && !rt.TutorialScriptActive && rt.canStartPlayerMove()
 }
 
@@ -3510,7 +4100,7 @@ func isSnake(id RawID) bool {
 }
 
 func isGravityObject(id RawID) bool {
-	return id == 0 || id == 1 || id == 9
+	return id == 0 || id == 1 || id == 8 || id == 9 || id == 47
 }
 
 func isPickupContainer(id RawID) bool {
@@ -3613,10 +4203,15 @@ func (rt *Runtime) SaveSnapshot() {
 		FrozenOriginal:       append([]RawID(nil), rt.FrozenOriginal...),
 		ContainerLocked:      append([]bool(nil), rt.ContainerLocked...),
 		ConsumedRewardCells:  append([]bool(nil), rt.ConsumedRewardCells...),
+		WaterDepth:           append([]uint8(nil), rt.WaterDepth...),
+		WaterInitializing:    rt.WaterInitializing,
+		WaterTicks:           rt.WaterTicks,
+		Water:                rt.water.clone(),
 		EnemyGateGroup:       append([]int(nil), rt.EnemyGateGroup...),
 		EnemyGateCounters:    cloneIntMap(rt.EnemyGateCounters),
 		ActiveEnemyGateGroup: rt.ActiveEnemyGateGroup,
 		Anaconda:             rt.Anaconda,
+		TeutonicKnight:       rt.TeutonicKnight,
 		VioletGems:           rt.VioletGems,
 		RedDiamonds:          rt.RedDiamonds,
 		KeyForForeground9:    rt.KeyForForeground9,
@@ -3629,10 +4224,15 @@ func (rt *Runtime) SaveSnapshot() {
 		CompassEnabled:       rt.CompassEnabled,
 		RelicMask:            rt.RelicMask,
 		SpecialPickups:       rt.SpecialPickups,
+		SealCollected:        rt.SealCollected,
+		SealTicks:            rt.SealTicks,
+		SealStageComplete:    rt.SealStageComplete,
 		LastForegroundEvent:  rt.LastForegroundEvent,
 		ForegroundEvents:     rt.ForegroundEvents,
 		FallingTorchTriggers: rt.FallingTorchTriggers,
 		RisingFireHeight:     rt.RisingFireHeight,
+		FanPhase:             rt.FanPhase,
+		FanDirection:         rt.FanDirection,
 		BonusTarget:          rt.BonusTarget,
 		BonusTargetSet:       rt.BonusTargetSet,
 		BonusRemaining:       rt.BonusRemaining,
@@ -3682,6 +4282,7 @@ func (rt *Runtime) RestoreCheckpoint() bool {
 	}
 	rt.Player = rt.checkpoint.Player
 	rt.PlayerMotion = rt.checkpoint.PlayerMotion
+	rt.playerFacingDirection = 2
 	rt.playerTurnOffset = 0
 	rt.CheckpointPending = false
 	copy(rt.PlayerLayer, rt.checkpoint.PlayerLayer)
@@ -3693,10 +4294,15 @@ func (rt *Runtime) RestoreCheckpoint() bool {
 	copy(rt.FrozenOriginal, rt.checkpoint.FrozenOriginal)
 	copy(rt.ContainerLocked, rt.checkpoint.ContainerLocked)
 	copy(rt.ConsumedRewardCells, rt.checkpoint.ConsumedRewardCells)
+	copy(rt.WaterDepth, rt.checkpoint.WaterDepth)
+	rt.WaterInitializing = rt.checkpoint.WaterInitializing
+	rt.WaterTicks = rt.checkpoint.WaterTicks
+	rt.water = rt.checkpoint.Water.clone()
 	copy(rt.EnemyGateGroup, rt.checkpoint.EnemyGateGroup)
 	rt.EnemyGateCounters = cloneIntMap(rt.checkpoint.EnemyGateCounters)
 	rt.ActiveEnemyGateGroup = rt.checkpoint.ActiveEnemyGateGroup
 	rt.Anaconda = rt.checkpoint.Anaconda
+	rt.TeutonicKnight = rt.checkpoint.TeutonicKnight
 	rt.VioletGems = rt.checkpoint.VioletGems
 	rt.RedDiamonds = rt.checkpoint.RedDiamonds
 	rt.KeyForForeground9 = rt.checkpoint.KeyForForeground9
@@ -3709,10 +4315,15 @@ func (rt *Runtime) RestoreCheckpoint() bool {
 	rt.CompassEnabled = rt.checkpoint.CompassEnabled
 	rt.RelicMask = rt.checkpoint.RelicMask
 	rt.SpecialPickups = rt.checkpoint.SpecialPickups
+	rt.SealCollected = rt.checkpoint.SealCollected
+	rt.SealTicks = rt.checkpoint.SealTicks
+	rt.SealStageComplete = rt.checkpoint.SealStageComplete
 	rt.LastForegroundEvent = rt.checkpoint.LastForegroundEvent
 	rt.ForegroundEvents = rt.checkpoint.ForegroundEvents
 	rt.FallingTorchTriggers = rt.checkpoint.FallingTorchTriggers
 	rt.RisingFireHeight = rt.checkpoint.RisingFireHeight
+	rt.FanPhase = rt.checkpoint.FanPhase
+	rt.FanDirection = rt.checkpoint.FanDirection
 	rt.BonusTarget = rt.checkpoint.BonusTarget
 	rt.BonusTargetSet = rt.checkpoint.BonusTargetSet
 	rt.BonusRemaining = rt.checkpoint.BonusRemaining
@@ -3772,7 +4383,7 @@ func (rt *Runtime) RestoreCheckpoint() bool {
 	rt.GoalExitDirection = rt.checkpoint.GoalExitDirection
 	rt.GoalExitComplete = rt.checkpoint.GoalExitComplete
 	rt.CheckpointProgress = rt.checkpoint.CheckpointProgress
-	if rt.Stage.Index == fallingTorchStageIndex && 18 < rt.Width() && 63 < rt.Height() {
+	if rt.Stage.World == WorldAngkor && rt.Stage.Index == fallingTorchStageIndex && 18 < rt.Width() && 63 < rt.Height() {
 		idx := rt.index(18, 63)
 		rt.PlayerLayer[idx] = EmptyRawID
 		rt.ObjectState[idx] = 0
@@ -3832,6 +4443,10 @@ func stageVioletTotal(stage *Stage) int {
 		total += value
 	}
 	return total
+}
+
+func StageVioletTotal(stage *Stage) int {
+	return stageVioletTotal(stage)
 }
 
 func absInt(value int) int {

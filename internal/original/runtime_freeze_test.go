@@ -245,7 +245,10 @@ func TestRuntimeHookUsesSourceRestoreStateByObjectType(t *testing.T) {
 	if got := sourceHookRestoreState(9, 0x7000|gravityRollPreparing|3); got != 3 {
 		t.Fatalf("frozen-object hook restore state=%#x, want direction-only %#x", got, 3)
 	}
-	for _, id := range []RawID{11, 14, 19, 43, 48} {
+	if got := sourceHookRestoreState(14, 3); got != 3 {
+		t.Errorf("moving-hazard hook restore state=%#x, want original state 3", got)
+	}
+	for _, id := range []RawID{11, 19, 43, 48} {
 		if got := sourceHookRestoreState(id, 3); got != -1 {
 			t.Errorf("raw %d hook restore state=%#x, want source sentinel -1", id, got)
 		}

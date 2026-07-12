@@ -14,6 +14,9 @@ const (
 	TileSize            = 24
 	ScreenWidth         = 240
 	ScreenHeight        = 320
+	WorldAngkor         = 0
+	WorldBavaria        = 1
+	WorldTibet          = 2
 )
 
 type RawID uint8
@@ -32,6 +35,7 @@ type Point struct {
 }
 
 type Stage struct {
+	World      int
 	Index      int
 	Group      int
 	GroupIndex int
@@ -45,6 +49,7 @@ type Stage struct {
 }
 
 type WorldPack struct {
+	World       int
 	Source      string
 	InitialByte int
 	StageCount  int
@@ -86,6 +91,7 @@ func LoadWorldDir(dir string) (*WorldPack, error) {
 		return nil, fmt.Errorf("parse manifest: %w", err)
 	}
 	pack := &WorldPack{
+		World:       worldIndexFromSource(manifest.Source),
 		Source:      manifest.Source,
 		InitialByte: manifest.InitialByte,
 		StageCount:  manifest.StageCount,
@@ -99,12 +105,24 @@ func LoadWorldDir(dir string) (*WorldPack, error) {
 		if stage.Index != entry.Index || stage.Width != entry.Width || stage.Height != entry.Height {
 			return nil, fmt.Errorf("stage %s does not match manifest", entry.File)
 		}
+		stage.World = pack.World
 		pack.Stages = append(pack.Stages, stage)
 	}
 	if len(pack.Stages) != pack.StageCount {
 		return nil, fmt.Errorf("manifest stage count %d, loaded %d", pack.StageCount, len(pack.Stages))
 	}
 	return pack, nil
+}
+
+func worldIndexFromSource(source string) int {
+	switch filepath.Base(source) {
+	case "w1.bin":
+		return WorldBavaria
+	case "w2.bin":
+		return WorldTibet
+	default:
+		return WorldAngkor
+	}
 }
 
 func LoadStageFile(path string) (*Stage, error) {

@@ -71,21 +71,36 @@ func (g *Game) updateStartMenu(action bool, dy int) {
 
 func (g *Game) continueGame() {
 	if !g.progress.TutorialComplete {
+		_ = g.switchWorld(original.WorldAngkor)
 		g.loadStage(angkorTutorialStage)
 		g.mode = gameModeStage
 		return
 	}
-	g.stageIndex = g.highestUnlockedMapStage()
+	world := g.progress.LastWorld
+	if err := g.switchWorld(world); err != nil {
+		g.message = err.Error()
+		return
+	}
+	g.stageIndex = g.highestUnlockedMapStageForWorld(world)
 	g.enterWorldMap()
 	if g.sounds != nil {
-		g.sounds.Play(original.SoundAngkorMusic)
+		g.sounds.Play(worldMusic(world))
 	}
 }
 
 func (g *Game) highestUnlockedMapStage() int {
+	return g.highestUnlockedMapStageForWorld(original.WorldAngkor)
+}
+
+func (g *Game) highestUnlockedMapStageForWorld(world int) int {
 	progress := g.progress.normalized()
-	for stage := min(progress.HighestUnlocked, angkorStageCount-2); stage >= 0; stage-- {
-		if progress.stageUnlocked(stage) {
+	for stage := min(progress.highestUnlockedForWorld(world), worldStageCount(world)-1); stage >= 0; stage-- {
+		if progress.stageUnlockedForWorld(world, stage) {
+			if g.worldMap != nil {
+				if _, ok := g.worldMap.nodeForStage(stage); !ok {
+					continue
+				}
+			}
 			return stage
 		}
 	}
@@ -101,6 +116,10 @@ func (g *Game) startNewGame() {
 		}
 	}
 	g.progress = progress
+	if err := g.switchWorld(original.WorldAngkor); err != nil {
+		g.message = err.Error()
+		return
+	}
 	g.startMenuHasProgress = true
 	g.startMenuConfirmNew = false
 	g.loadStage(angkorTutorialStage)

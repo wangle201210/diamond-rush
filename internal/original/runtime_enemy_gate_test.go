@@ -10,13 +10,14 @@ func TestRuntimeAngkorEnemyArenaDoorsFollowRaw26AndRaw17Groups(t *testing.T) {
 		entrance   Point
 		target     Point
 		enemyCount int
+		boss       bool
 	}{
 		{stage: "stage02.json", trigger: Point{X: 14, Y: 21}, dx: 1, entrance: Point{X: 13, Y: 21}, target: Point{X: 21, Y: 21}, enemyCount: 2},
 		{stage: "stage03.json", trigger: Point{X: 19, Y: 14}, dx: -1, entrance: Point{X: 20, Y: 14}, target: Point{X: 13, Y: 14}, enemyCount: 2},
 		{stage: "stage04.json", trigger: Point{X: 28, Y: 7}, dx: -1, entrance: Point{X: 29, Y: 7}, target: Point{X: 22, Y: 7}, enemyCount: 1},
 		{stage: "stage06.json", trigger: Point{X: 12, Y: 28}, dx: 1, entrance: Point{X: 11, Y: 28}, target: Point{X: 18, Y: 32}, enemyCount: 1},
 		{stage: "stage07.json", trigger: Point{X: 32, Y: 9}, dx: 1, entrance: Point{X: 31, Y: 9}, target: Point{X: 38, Y: 9}, enemyCount: 2},
-		{stage: "stage08.json", trigger: Point{X: 9, Y: 5}, dx: 1, entrance: Point{X: 8, Y: 5}, target: Point{X: 18, Y: 5}, enemyCount: 1},
+		{stage: "stage08.json", trigger: Point{X: 9, Y: 5}, dx: 1, entrance: Point{X: 8, Y: 5}, target: Point{X: 18, Y: 5}, enemyCount: 1, boss: true},
 	}
 	for _, test := range tests {
 		t.Run(test.stage, func(t *testing.T) {
@@ -68,6 +69,13 @@ func TestRuntimeAngkorEnemyArenaDoorsFollowRaw26AndRaw17Groups(t *testing.T) {
 				if i < len(enemies)-1 && rt.foregroundDoorOpen(test.target.X, test.target.Y) {
 					t.Fatalf("target door opened after only %d/%d grouped enemies", i+1, len(enemies))
 				}
+			}
+			if test.boss {
+				if rt.EnemyGateCounters[0] != test.enemyCount || rt.foregroundDoorOpen(test.target.X, test.target.Y) {
+					t.Fatal("boss arena advanced its enemy counter before the boss was defeated")
+				}
+				rt.Anaconda.Health = 0
+				rt.completeActiveEnemyGateGroup()
 			}
 			if rt.EnemyGateCounters[0] != 0 {
 				t.Fatalf("group counter=%d after all enemies, want 0", rt.EnemyGateCounters[0])

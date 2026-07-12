@@ -13,53 +13,74 @@ import (
 )
 
 const (
-	originalProgressVersion = 6
+	originalProgressVersion = 7
 	angkorStageCount        = 14
 	angkorReplicaStageCount = 14
 	angkorFirstSecretStage  = 9
 	angkorSealStage         = 8
+	bavariaStageCount       = 13
+	bavariaFirstSecretStage = 10
+	bavariaSealStage        = 9
 )
 
 type originalProgress struct {
-	Version              int                                `json:"version"`
-	HighestUnlocked      int                                `json:"highest_unlocked"`
-	StageUnlocked        [angkorStageCount]bool             `json:"stage_unlocked"`
-	StageCleared         [angkorStageCount]bool             `json:"stage_cleared"`
-	StageAwards          [angkorStageCount]byte             `json:"stage_awards"`
-	StageVioletGems      [angkorStageCount]int              `json:"stage_violet_gems"`
-	StageRedDiamonds     [angkorStageCount]int              `json:"stage_red_diamonds"`
-	StageConsumedRewards [angkorStageCount][]original.Point `json:"stage_consumed_rewards"`
-	VioletGemBank        int                                `json:"violet_gem_bank"`
-	RedDiamondBank       int                                `json:"red_diamond_bank"`
-	ExtraLives           int                                `json:"extra_lives"`
-	MaxHealth            int                                `json:"max_health"`
-	ToolLevel            int                                `json:"tool_level"`
-	TutorialComplete     bool                               `json:"tutorial_complete"`
-	RelicMask            int                                `json:"relic_mask"`
-	WorldUnlocked        [3]bool                            `json:"world_unlocked"`
+	Version                 int                                 `json:"version"`
+	HighestUnlocked         int                                 `json:"highest_unlocked"`
+	StageUnlocked           [angkorStageCount]bool              `json:"stage_unlocked"`
+	StageCleared            [angkorStageCount]bool              `json:"stage_cleared"`
+	StageAwards             [angkorStageCount]byte              `json:"stage_awards"`
+	StageVioletGems         [angkorStageCount]int               `json:"stage_violet_gems"`
+	StageRedDiamonds        [angkorStageCount]int               `json:"stage_red_diamonds"`
+	StageConsumedRewards    [angkorStageCount][]original.Point  `json:"stage_consumed_rewards"`
+	BavariaHighestUnlocked  int                                 `json:"bavaria_highest_unlocked"`
+	BavariaStageUnlocked    [bavariaStageCount]bool             `json:"bavaria_stage_unlocked"`
+	BavariaStageCleared     [bavariaStageCount]bool             `json:"bavaria_stage_cleared"`
+	BavariaStageAwards      [bavariaStageCount]byte             `json:"bavaria_stage_awards"`
+	BavariaStageVioletGems  [bavariaStageCount]int              `json:"bavaria_stage_violet_gems"`
+	BavariaStageRedDiamonds [bavariaStageCount]int              `json:"bavaria_stage_red_diamonds"`
+	BavariaConsumedRewards  [bavariaStageCount][]original.Point `json:"bavaria_consumed_rewards"`
+	VioletGemBank           int                                 `json:"violet_gem_bank"`
+	RedDiamondBank          int                                 `json:"red_diamond_bank"`
+	ExtraLives              int                                 `json:"extra_lives"`
+	MaxHealth               int                                 `json:"max_health"`
+	ToolLevel               int                                 `json:"tool_level"`
+	WaterBreathingPotion    bool                                `json:"water_breathing_potion"`
+	TutorialComplete        bool                                `json:"tutorial_complete"`
+	RelicMask               int                                 `json:"relic_mask"`
+	WorldUnlocked           [3]bool                             `json:"world_unlocked"`
+	LastWorld               int                                 `json:"last_world"`
 }
 
 // originalProgressDisk keeps the two Stage-1-only fields readable so saves
 // created before the Angkor campaign flow was implemented migrate in place.
 type originalProgressDisk struct {
-	Version              int                                `json:"version"`
-	HighestUnlocked      int                                `json:"highest_unlocked"`
-	StageUnlocked        [angkorStageCount]bool             `json:"stage_unlocked"`
-	StageCleared         [angkorStageCount]bool             `json:"stage_cleared"`
-	StageAwards          [angkorStageCount]byte             `json:"stage_awards"`
-	StageVioletGems      [angkorStageCount]int              `json:"stage_violet_gems"`
-	StageRedDiamonds     [angkorStageCount]int              `json:"stage_red_diamonds"`
-	StageConsumedRewards [angkorStageCount][]original.Point `json:"stage_consumed_rewards"`
-	VioletGemBank        int                                `json:"violet_gem_bank"`
-	RedDiamondBank       int                                `json:"red_diamond_bank"`
-	ExtraLives           int                                `json:"extra_lives"`
-	MaxHealth            int                                `json:"max_health"`
-	ToolLevel            int                                `json:"tool_level"`
-	TutorialComplete     bool                               `json:"tutorial_complete"`
-	RelicMask            int                                `json:"relic_mask"`
-	WorldUnlocked        [3]bool                            `json:"world_unlocked"`
-	Stage1Cleared        bool                               `json:"stage1_cleared"`
-	Stage1Awards         byte                               `json:"stage1_awards"`
+	Version                 int                                 `json:"version"`
+	HighestUnlocked         int                                 `json:"highest_unlocked"`
+	StageUnlocked           [angkorStageCount]bool              `json:"stage_unlocked"`
+	StageCleared            [angkorStageCount]bool              `json:"stage_cleared"`
+	StageAwards             [angkorStageCount]byte              `json:"stage_awards"`
+	StageVioletGems         [angkorStageCount]int               `json:"stage_violet_gems"`
+	StageRedDiamonds        [angkorStageCount]int               `json:"stage_red_diamonds"`
+	StageConsumedRewards    [angkorStageCount][]original.Point  `json:"stage_consumed_rewards"`
+	BavariaHighestUnlocked  int                                 `json:"bavaria_highest_unlocked"`
+	BavariaStageUnlocked    [bavariaStageCount]bool             `json:"bavaria_stage_unlocked"`
+	BavariaStageCleared     [bavariaStageCount]bool             `json:"bavaria_stage_cleared"`
+	BavariaStageAwards      [bavariaStageCount]byte             `json:"bavaria_stage_awards"`
+	BavariaStageVioletGems  [bavariaStageCount]int              `json:"bavaria_stage_violet_gems"`
+	BavariaStageRedDiamonds [bavariaStageCount]int              `json:"bavaria_stage_red_diamonds"`
+	BavariaConsumedRewards  [bavariaStageCount][]original.Point `json:"bavaria_consumed_rewards"`
+	VioletGemBank           int                                 `json:"violet_gem_bank"`
+	RedDiamondBank          int                                 `json:"red_diamond_bank"`
+	ExtraLives              int                                 `json:"extra_lives"`
+	MaxHealth               int                                 `json:"max_health"`
+	ToolLevel               int                                 `json:"tool_level"`
+	WaterBreathingPotion    bool                                `json:"water_breathing_potion"`
+	TutorialComplete        bool                                `json:"tutorial_complete"`
+	RelicMask               int                                 `json:"relic_mask"`
+	WorldUnlocked           [3]bool                             `json:"world_unlocked"`
+	LastWorld               int                                 `json:"last_world"`
+	Stage1Cleared           bool                                `json:"stage1_cleared"`
+	Stage1Awards            byte                                `json:"stage1_awards"`
 }
 
 func newOriginalProgress() originalProgress {
@@ -79,6 +100,13 @@ func (p originalProgress) normalized() originalProgress {
 	p.HighestUnlocked = clamp(p.HighestUnlocked, 0, angkorStageCount-1)
 	p.StageUnlocked[0] = true
 	p.WorldUnlocked[0] = true
+	if p.LastWorld < original.WorldAngkor || p.LastWorld > original.WorldTibet || !p.WorldUnlocked[p.LastWorld] {
+		p.LastWorld = original.WorldAngkor
+	}
+	p.BavariaHighestUnlocked = clamp(p.BavariaHighestUnlocked, 0, bavariaStageCount-1)
+	if p.WorldUnlocked[original.WorldBavaria] {
+		p.BavariaStageUnlocked[0] = true
+	}
 	p.RelicMask &= 0x07
 	for stage, unlocked := range p.StageUnlocked {
 		if unlocked && stage > p.HighestUnlocked {
@@ -86,22 +114,13 @@ func (p originalProgress) normalized() originalProgress {
 		}
 	}
 	for stage := range p.StageConsumedRewards {
-		seen := make(map[original.Point]bool, len(p.StageConsumedRewards[stage]))
-		points := p.StageConsumedRewards[stage][:0]
-		for _, point := range p.StageConsumedRewards[stage] {
-			if point.X < 0 || point.X > 255 || point.Y < 0 || point.Y > 255 || seen[point] {
-				continue
-			}
-			seen[point] = true
-			points = append(points, point)
+		p.StageConsumedRewards[stage] = normalizeRewardCoordinates(p.StageConsumedRewards[stage])
+	}
+	for stage, unlocked := range p.BavariaStageUnlocked {
+		if unlocked && stage > p.BavariaHighestUnlocked {
+			p.BavariaHighestUnlocked = stage
 		}
-		sort.Slice(points, func(i, j int) bool {
-			if points[i].Y != points[j].Y {
-				return points[i].Y < points[j].Y
-			}
-			return points[i].X < points[j].X
-		})
-		p.StageConsumedRewards[stage] = points
+		p.BavariaConsumedRewards[stage] = normalizeRewardCoordinates(p.BavariaConsumedRewards[stage])
 	}
 	if p.MaxHealth < 4 {
 		p.MaxHealth = 4
@@ -117,8 +136,94 @@ func (p originalProgress) normalized() originalProgress {
 	return p
 }
 
+func normalizeRewardCoordinates(input []original.Point) []original.Point {
+	seen := make(map[original.Point]bool, len(input))
+	points := input[:0]
+	for _, point := range input {
+		if point.X < 0 || point.X > 255 || point.Y < 0 || point.Y > 255 || seen[point] {
+			continue
+		}
+		seen[point] = true
+		points = append(points, point)
+	}
+	sort.Slice(points, func(i, j int) bool {
+		if points[i].Y != points[j].Y {
+			return points[i].Y < points[j].Y
+		}
+		return points[i].X < points[j].X
+	})
+	return points
+}
+
 func (p originalProgress) stageUnlocked(stage int) bool {
 	return stage >= 0 && stage < angkorStageCount && p.StageUnlocked[stage]
+}
+
+func (p originalProgress) stageUnlockedForWorld(world, stage int) bool {
+	switch world {
+	case original.WorldBavaria:
+		return stage >= 0 && stage < bavariaStageCount && p.BavariaStageUnlocked[stage]
+	default:
+		return p.stageUnlocked(stage)
+	}
+}
+
+func (p originalProgress) stageClearedForWorld(world, stage int) bool {
+	switch world {
+	case original.WorldBavaria:
+		return stage >= 0 && stage < bavariaStageCount && p.BavariaStageCleared[stage]
+	default:
+		return stage >= 0 && stage < angkorStageCount && p.StageCleared[stage]
+	}
+}
+
+func (p originalProgress) stageVioletGemsForWorld(world, stage int) int {
+	switch world {
+	case original.WorldBavaria:
+		if stage >= 0 && stage < bavariaStageCount {
+			return p.BavariaStageVioletGems[stage]
+		}
+	default:
+		if stage >= 0 && stage < angkorStageCount {
+			return p.StageVioletGems[stage]
+		}
+	}
+	return 0
+}
+
+func (p originalProgress) stageRedDiamondsForWorld(world, stage int) int {
+	switch world {
+	case original.WorldBavaria:
+		if stage >= 0 && stage < bavariaStageCount {
+			return p.BavariaStageRedDiamonds[stage]
+		}
+	default:
+		if stage >= 0 && stage < angkorStageCount {
+			return p.StageRedDiamonds[stage]
+		}
+	}
+	return 0
+}
+
+func (p originalProgress) consumedRewardsForWorld(world, stage int) []original.Point {
+	switch world {
+	case original.WorldBavaria:
+		if stage >= 0 && stage < bavariaStageCount {
+			return p.BavariaConsumedRewards[stage]
+		}
+	default:
+		if stage >= 0 && stage < angkorStageCount {
+			return p.StageConsumedRewards[stage]
+		}
+	}
+	return nil
+}
+
+func (p originalProgress) highestUnlockedForWorld(world int) int {
+	if world == original.WorldBavaria {
+		return p.BavariaHighestUnlocked
+	}
+	return p.HighestUnlocked
 }
 
 func (p *originalProgress) unlockStage(stage int) {
@@ -129,8 +234,38 @@ func (p *originalProgress) unlockStage(stage int) {
 	p.HighestUnlocked = max(p.HighestUnlocked, stage)
 }
 
+func (p *originalProgress) unlockStageForWorld(world, stage int) {
+	if world != original.WorldBavaria {
+		p.unlockStage(stage)
+		return
+	}
+	if p == nil || stage < 0 || stage >= bavariaStageCount {
+		return
+	}
+	p.BavariaStageUnlocked[stage] = true
+	p.BavariaHighestUnlocked = max(p.BavariaHighestUnlocked, stage)
+}
+
 func (p *originalProgress) recordStageResult(stageIndex int, rt *original.Runtime) byte {
-	if p == nil || stageIndex < 0 || stageIndex >= angkorStageCount || rt == nil {
+	if p == nil || rt == nil || rt.Stage == nil {
+		return 0
+	}
+	if rt.Stage.World == original.WorldBavaria {
+		if stageIndex < 0 || stageIndex >= bavariaStageCount {
+			return 0
+		}
+		awards := stageResultAwards(rt)
+		newAwards := awards &^ p.BavariaStageAwards[stageIndex]
+		p.BavariaStageAwards[stageIndex] |= awards
+		p.BavariaStageCleared[stageIndex] = true
+		if stageIndex < bavariaSealStage {
+			p.unlockStageForWorld(original.WorldBavaria, stageIndex+1)
+		}
+		p.recordStageCollections(stageIndex, rt, newAwards)
+		*p = p.normalized()
+		return newAwards
+	}
+	if stageIndex < 0 || stageIndex >= angkorStageCount {
 		return 0
 	}
 	awards := stageResultAwards(rt)
@@ -148,7 +283,24 @@ func (p *originalProgress) recordStageResult(stageIndex int, rt *original.Runtim
 }
 
 func (p *originalProgress) recordSecretExit(stageIndex, targetStage int, rt *original.Runtime) {
-	if p == nil || stageIndex < 0 || stageIndex >= angkorStageCount || rt == nil {
+	if p == nil || rt == nil || rt.Stage == nil {
+		return
+	}
+	world := rt.Stage.World
+	if world == original.WorldBavaria {
+		if stageIndex < 0 || stageIndex >= bavariaStageCount {
+			return
+		}
+		if stageIndex >= bavariaFirstSecretStage {
+			p.BavariaStageCleared[stageIndex] = true
+		}
+		p.unlockStageForWorld(world, stageIndex)
+		p.unlockStageForWorld(world, targetStage)
+		p.recordStageCollections(stageIndex, rt, 0)
+		*p = p.normalized()
+		return
+	}
+	if stageIndex < 0 || stageIndex >= angkorStageCount {
 		return
 	}
 	if stageIndex >= angkorFirstSecretStage {
@@ -162,13 +314,29 @@ func (p *originalProgress) recordSecretExit(stageIndex, targetStage int, rt *ori
 
 func (p *originalProgress) recordSecretStageResult(stageIndex, targetStage int, rt *original.Runtime) byte {
 	newAwards := p.recordStageResult(stageIndex, rt)
-	p.unlockStage(targetStage)
+	if rt != nil && rt.Stage != nil {
+		p.unlockStageForWorld(rt.Stage.World, targetStage)
+	}
 	*p = p.normalized()
 	return newAwards
 }
 
 func (p *originalProgress) recordSealStageCompletion(stageIndex int, rt *original.Runtime) {
-	if p == nil || stageIndex < 0 || stageIndex >= angkorStageCount || rt == nil {
+	if p == nil || rt == nil || rt.Stage == nil {
+		return
+	}
+	if rt.Stage.World == original.WorldBavaria {
+		if stageIndex < 0 || stageIndex >= bavariaStageCount {
+			return
+		}
+		p.BavariaStageCleared[stageIndex] = true
+		p.unlockStageForWorld(original.WorldBavaria, stageIndex)
+		p.recordStageCollections(stageIndex, rt, 0)
+		p.RelicMask |= rt.RelicMask & 0x07
+		*p = p.normalized()
+		return
+	}
+	if stageIndex < 0 || stageIndex >= angkorStageCount {
 		return
 	}
 	p.StageCleared[stageIndex] = true
@@ -180,12 +348,27 @@ func (p *originalProgress) recordSealStageCompletion(stageIndex int, rt *origina
 
 func (p *originalProgress) recordStageCollections(stageIndex int, rt *original.Runtime, newAwards byte) {
 	p.VioletGemBank += max(0, rt.VioletGems)
-	p.StageVioletGems[stageIndex] = max(p.StageVioletGems[stageIndex], rt.VioletGems)
 	p.RedDiamondBank += max(0, rt.RedDiamonds)
-	p.StageRedDiamonds[stageIndex] = min(rt.TotalRedDiamonds, p.StageRedDiamonds[stageIndex]+max(0, rt.RedDiamonds))
 	p.ExtraLives = min(99, rt.ExtraLives+bits.OnesCount8(uint8(newAwards)))
 	p.MaxHealth = max(4, rt.MaxHealth)
 	p.ToolLevel = maxToolLevel(p.ToolLevel, specialItemMaskToolLevel(rt.SpecialItemMask))
+	p.WaterBreathingPotion = p.WaterBreathingPotion || rt.SpecialItemMask&4 != 0
+	world := original.WorldAngkor
+	if rt.Stage != nil {
+		world = rt.Stage.World
+	}
+	if world == original.WorldBavaria {
+		p.BavariaStageVioletGems[stageIndex] = max(p.BavariaStageVioletGems[stageIndex], rt.VioletGems)
+		p.BavariaStageRedDiamonds[stageIndex] = min(rt.TotalRedDiamonds, p.BavariaStageRedDiamonds[stageIndex]+max(0, rt.RedDiamonds))
+		for _, point := range rt.PersistentRewardCoordinates() {
+			if !containsPoint(p.BavariaConsumedRewards[stageIndex], point) {
+				p.BavariaConsumedRewards[stageIndex] = append(p.BavariaConsumedRewards[stageIndex], point)
+			}
+		}
+		return
+	}
+	p.StageVioletGems[stageIndex] = max(p.StageVioletGems[stageIndex], rt.VioletGems)
+	p.StageRedDiamonds[stageIndex] = min(rt.TotalRedDiamonds, p.StageRedDiamonds[stageIndex]+max(0, rt.RedDiamonds))
 	for _, point := range rt.PersistentRewardCoordinates() {
 		if !containsPoint(p.StageConsumedRewards[stageIndex], point) {
 			p.StageConsumedRewards[stageIndex] = append(p.StageConsumedRewards[stageIndex], point)
@@ -266,22 +449,31 @@ func loadOriginalProgress(path string) (originalProgress, error) {
 		return originalProgress{}, fmt.Errorf("decode original progress: %w", err)
 	}
 	progress := originalProgress{
-		Version:              disk.Version,
-		HighestUnlocked:      disk.HighestUnlocked,
-		StageUnlocked:        disk.StageUnlocked,
-		StageCleared:         disk.StageCleared,
-		StageAwards:          disk.StageAwards,
-		StageVioletGems:      disk.StageVioletGems,
-		StageRedDiamonds:     disk.StageRedDiamonds,
-		StageConsumedRewards: disk.StageConsumedRewards,
-		VioletGemBank:        disk.VioletGemBank,
-		RedDiamondBank:       disk.RedDiamondBank,
-		ExtraLives:           disk.ExtraLives,
-		MaxHealth:            disk.MaxHealth,
-		ToolLevel:            disk.ToolLevel,
-		TutorialComplete:     disk.TutorialComplete,
-		RelicMask:            disk.RelicMask,
-		WorldUnlocked:        disk.WorldUnlocked,
+		Version:                 disk.Version,
+		HighestUnlocked:         disk.HighestUnlocked,
+		StageUnlocked:           disk.StageUnlocked,
+		StageCleared:            disk.StageCleared,
+		StageAwards:             disk.StageAwards,
+		StageVioletGems:         disk.StageVioletGems,
+		StageRedDiamonds:        disk.StageRedDiamonds,
+		StageConsumedRewards:    disk.StageConsumedRewards,
+		BavariaHighestUnlocked:  disk.BavariaHighestUnlocked,
+		BavariaStageUnlocked:    disk.BavariaStageUnlocked,
+		BavariaStageCleared:     disk.BavariaStageCleared,
+		BavariaStageAwards:      disk.BavariaStageAwards,
+		BavariaStageVioletGems:  disk.BavariaStageVioletGems,
+		BavariaStageRedDiamonds: disk.BavariaStageRedDiamonds,
+		BavariaConsumedRewards:  disk.BavariaConsumedRewards,
+		VioletGemBank:           disk.VioletGemBank,
+		RedDiamondBank:          disk.RedDiamondBank,
+		ExtraLives:              disk.ExtraLives,
+		MaxHealth:               disk.MaxHealth,
+		ToolLevel:               disk.ToolLevel,
+		WaterBreathingPotion:    disk.WaterBreathingPotion,
+		TutorialComplete:        disk.TutorialComplete,
+		RelicMask:               disk.RelicMask,
+		WorldUnlocked:           disk.WorldUnlocked,
+		LastWorld:               disk.LastWorld,
 	}
 	if disk.Version < 2 {
 		progress = newOriginalProgress()

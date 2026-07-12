@@ -201,14 +201,34 @@ func (g *Game) updateWorldUnlockAnimation() {
 
 func (g *Game) activateWorldSelectPosition() {
 	switch g.worldSelectPosition {
-	case sealPositionAngkor:
+	case sealPositionAngkor, sealPositionBavaria:
+		world := g.worldSelectPosition
+		if !g.progress.WorldUnlocked[world] {
+			return
+		}
+		if err := g.switchWorld(world); err != nil {
+			g.message = err.Error()
+			return
+		}
+		g.progress.LastWorld = world
+		g.progress = g.progress.normalized()
+		if g.progressPath != "" {
+			if err := saveOriginalProgress(g.progressPath, g.progress); err != nil {
+				g.message = err.Error()
+				return
+			}
+		}
+		g.stageIndex = g.highestUnlockedMapStageForWorld(world)
 		g.enterWorldMap()
-	case sealPositionBavaria, sealPositionSiberia:
+		if g.sounds != nil && g.sounds.enabled {
+			g.sounds.Play(worldMusic(world))
+		}
+	case sealPositionSiberia:
 		if g.progress.WorldUnlocked[g.worldSelectPosition] {
-			g.message = fmt.Sprintf("%s world is outside the Angkor replica", sealWorldName(g.worldSelectPosition))
+			g.message = fmt.Sprintf("%s world is not replicated yet", sealWorldName(g.worldSelectPosition))
 		}
 	case sealPositionShop:
-		g.message = "Shop is outside the Angkor replica"
+		g.message = "Shop is not replicated yet"
 	}
 }
 

@@ -22,6 +22,9 @@ func TestAngkorTutorialTextMappingMatchesSource(t *testing.T) {
 		22: "Great! Now I can crush those weak walls.",
 		32: "The final chamber in Angkor Wat! The fire crystal is supposed to be hidden here...",
 		33: "But I have a bad feeling about this...",
+		34: "The silver diamond is here... I'm sure of it!",
+		35: "Hmm... I feel a dark force nearby...",
+		36: "Let's rock!",
 	}
 	for index, text := range want {
 		if got := tutorialText(index); got != text {

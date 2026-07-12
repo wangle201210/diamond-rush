@@ -373,7 +373,7 @@ Original source anchors:
 
 Acceptance:
 
-- Player can enter Angkor, see stage nodes, return to seal/shop, and preserve stage marks.
+- Player can enter Angkor and Bavaria, see each decoded stage graph, return to the seal, and preserve per-world stage marks. Siberia and Shop remain later milestones.
 
 ### Enemies, Hazards, Bosses
 
@@ -456,6 +456,7 @@ Current implementation:
 - The runtime collects and renders World 0's source-special pickups raw `24`/`26`/`27`, raw `42`, and raw `53`. Raw `53` includes its source seal bit, celebration, input lock, persistence, and transition; a later-world inventory/shop screen remains outside this Angkor slice.
 - Raw `41` is a value-bearing violet-diamond reward: it increments the bottom-right violet HUD count, stage result count, quota, and saved bank. Full-health raw `7` and max-life/full-health raw `6` convert to raw `41` before their reward animation.
 - Mystic Hook raw `27` is sourced from the foreground raw `14` chest at Bavaria Stage 3 `(24,25)`, not Angkor Stage 5. The Angkor-only Stage 5 entry models the post-Bavaria revisit prerequisite and must not invent a hook chest in World 0.
+- Bavaria Stage 1's raw `41` chest at `(25,14)` contributes its authored value `10` to the lower-right violet HUD, stage result, Bavaria per-stage best, and global violet bank. Bavaria Stage 3 persists Mystic Hook level `2`, and Bavaria Stage 5 inherits it without adding another raw `27` chest.
 - The runtime treats player-layer raw `33` as a passable persistent marker with no fallback object sprite; foreground raw `33` owns the visible overlay.
 - Foreground raw `7` uses merged high-nibble phases. Its low nibble is initialized to the number of same-group raw `6/8/9` activators still required; opening begins at `0x10` only when the count reaches zero, advances every third source tick to passable `0x20` and final `0x30`, and closing preserves the remaining count.
 - Foreground raw `6` is a pressure switch that opens linked raw `7` doors while pressed or occupied and closes them when released. Its `gen2.f` chunk `9` module follows source depression interpolation.
@@ -467,11 +468,12 @@ Current implementation:
 - Stage title, checkpoint, congratulations, loading, and result text use deterministic atlases exported from FreeJ2ME's logical `SansSerif Bold` 10px/12px fonts. Source panel fill/border colors and the original y-offset behavior are preserved.
 - `snd.f` is decoded into all 21 original standard-MIDI tracks. The Stage 1 runtime applies the JAR priority table and 50ms equal-priority guard, plays Angkor track `16`, and emits source IDs for door/boulder `14`, hurt `5`, checkpoint `9`, chest `3`/`4`, death `2`, and result `15`; macOS playback uses `AVMIDIPlayer`.
 - Result rendering follows original-JAR bytecode coordinates and phase threshold behavior, including flat animation-sequence indexing for the three different award effect shifts. Stage 1 clear state and the four award bits are persisted so already-earned effects do not replay as newly earned.
-- Stage 9's 11-step seal handoff enters the implemented four-position global seal selector. Angkor opens the decoded world map; Bavaria and Siberia use the source `10/25` red-diamond unlock thresholds and Shop participates in source navigation, while those three destinations explicitly remain outside the current Angkor content slice.
+- Stage 9's 11-step seal handoff enters the implemented four-position global seal selector. Angkor and Bavaria open their decoded world maps; Bavaria and Siberia use the source `10/25` red-diamond unlock thresholds and Shop participates in source navigation. Siberia and Shop remain unavailable content.
 
-Remaining work outside the complete Angkor stage-data slice:
+Remaining work outside the complete Angkor stage-data slice and the current Bavaria mechanics implementation:
 
-- Implement the shop, full RMS-equivalent economy/progression fields, Bavaria/Tibet maps, and the original cross-world trip that grants the hook before revisiting Stage 5.
+- Finish no-teleport 20 TPS route/differential replay coverage for all 13 Bavaria stages.
+- Implement the shop, remaining RMS-equivalent economy/progression fields, and Tibet/Siberia stages and map.
 - Wire the remaining sound IDs when their later-stage objects and global screens are implemented.
 
 ### Phase 2: Core Adventure Mechanics

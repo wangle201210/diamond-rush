@@ -7,7 +7,9 @@ import (
 	"image/png"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
+	"strings"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -20,9 +22,17 @@ const (
 	desktopSkipKeyLabel   = "S"
 
 	angkorWorldFrameSheet      = "decoded/sprites/0/chunk02-frames.png"
+	angkorWorldFrameModules    = "decoded/sprites/0/chunk02-modules.png"
+	angkorWorldFrameMetadata   = "decoded/sprites/0/chunk02-animations.json"
 	angkorBoulderFrameSheet    = "decoded/sprites/0/chunk00-frames.png"
 	angkorDiggableFrameSheet   = "decoded/sprites/0/chunk01-frames.png"
 	angkorFloorSheet           = "decoded/sprites/0/chunk03-modules.png"
+	bavariaWorldFrameSheet     = "decoded/sprites/1/chunk02-frames.png"
+	bavariaWorldFrameModules   = "decoded/sprites/1/chunk02-modules.png"
+	bavariaWorldFrameMetadata  = "decoded/sprites/1/chunk02-animations.json"
+	bavariaBoulderFrameSheet   = "decoded/sprites/1/chunk00-frames.png"
+	bavariaDiggableFrameSheet  = "decoded/sprites/1/chunk01-frames.png"
+	bavariaFloorSheet          = "decoded/sprites/1/chunk03-modules.png"
 	violetGemSheet             = "decoded/sprites/cm/chunk02-frames.png"
 	redDiamondSheet            = "decoded/sprites/cm/chunk02-palette01-frames.png"
 	checkpointSheet            = "decoded/sprites/cm/chunk06-frames.png"
@@ -85,6 +95,9 @@ const (
 	worldMapHeaderSheet        = "decoded/sprites/ms/chunk02-frames.png"
 	worldMapHeaderModules      = "decoded/sprites/ms/chunk02-modules.png"
 	worldMapHeaderMetadata     = "decoded/sprites/ms/chunk02-animations.json"
+	bavariaMapHeaderSheet      = "decoded/sprites/ms/chunk03-frames.png"
+	bavariaMapHeaderModules    = "decoded/sprites/ms/chunk03-modules.png"
+	bavariaMapHeaderMetadata   = "decoded/sprites/ms/chunk03-animations.json"
 	pickupEffectSheet          = "decoded/sprites/cm/chunk07-frames.png"
 	pickupEffectModules        = "decoded/sprites/cm/chunk07-modules.png"
 	pickupEffectMetadata       = "decoded/sprites/cm/chunk07-animations.json"
@@ -153,8 +166,8 @@ const (
 	resultRedDiamondTicks      = 40
 	resultHitTicks             = 10
 	resultRetryTicks           = 10
-	resultStageTitleY          = 15
-	resultCompleteY            = 32
+	resultStageTitleY          = 23
+	resultCompleteY            = 42
 	resultVioletLabelY         = 75
 	resultVioletCountY         = 91
 	resultRedLabelY            = 131
@@ -238,7 +251,7 @@ const (
 type Game struct {
 	pack                   *original.WorldPack
 	rt                     *original.Runtime
-	worldFrames            *ebiten.Image
+	worldFrames            *spriteSheet
 	boulder                *ebiten.Image
 	diggable               *ebiten.Image
 	floor                  *ebiten.Image
@@ -284,6 +297,7 @@ type Game struct {
 	tutorialSeal           *spriteSheet
 	siberiaSeal            *spriteSheet
 	bavariaSeal            *spriteSheet
+	bavaria                bavariaSpriteSet
 	sealArrow              *spriteSheet
 	softkeys               *spriteSheet
 	splashBackground       *ebiten.Image
@@ -300,6 +314,8 @@ type Game struct {
 	fontMedium             *bitmapFont
 	worldCanvas            *ebiten.Image
 	worldDir               string
+	worldRoot              string
+	worldIndex             int
 	worldMap               *worldMapData
 	mode                   gameMode
 	stageIndex             int
@@ -349,6 +365,7 @@ type Game struct {
 	entranceSteps          int
 	checkpointBannerUntil  int
 	compassDirection       int
+	waterSpecialFrame      int
 	cameraX                int
 	cameraY                int
 	demoCameraLocked       bool
@@ -359,10 +376,16 @@ type Game struct {
 	sounds                 *originalSounds
 	progressPath           string
 	progress               originalProgress
+	startupWorldOverridden bool
 }
 
 func Run() error {
-	g, err := New(defaultWorldDir)
+	startupWorld, worldOverridden, err := requestedStartupWorld()
+	if err != nil {
+		return err
+	}
+	worldDir := filepath.Join(filepath.Dir(defaultWorldDir), fmt.Sprintf("world%d", startupWorld))
+	g, err := New(worldDir)
 	if err != nil {
 		return err
 	}
@@ -374,13 +397,23 @@ func Run() error {
 	if err := g.enableProgress(progressPath); err != nil {
 		return err
 	}
+	if worldOverridden {
+		g.startupWorldOverridden = true
+		g.progress.WorldUnlocked[startupWorld] = true
+		g.progress.unlockStageForWorld(startupWorld, 0)
+		g.progress.LastWorld = startupWorld
+		g.progress = g.progress.normalized()
+	}
 	if stageText := os.Getenv("ORIGINALRUSH_STAGE"); stageText != "" {
 		stageNumber, err := strconv.Atoi(stageText)
-		if err != nil || stageNumber < 1 || stageNumber > len(g.pack.Stages) || !angkorStageImplemented(stageNumber-1) {
+		if err != nil || stageNumber < 1 || stageNumber > len(g.pack.Stages) || !worldStageImplemented(g.worldIndex, stageNumber-1) {
 			return fmt.Errorf("invalid ORIGINALRUSH_STAGE %q", stageText)
 		}
-		g.progress.unlockStage(stageNumber - 1)
+		g.progress.unlockStageForWorld(g.worldIndex, stageNumber-1)
 		g.loadStage(stageNumber - 1)
+	} else if worldOverridden {
+		g.stageIndex = g.highestUnlockedMapStageForWorld(startupWorld)
+		g.enterWorldMap()
 	} else {
 		g.enterStartMenu(hasProgress)
 	}
@@ -388,13 +421,34 @@ func Run() error {
 	if g.mode == gameModeStartMenu {
 		g.sounds.Play(original.SoundTitleMusic)
 	} else {
-		g.sounds.Play(original.SoundAngkorMusic)
+		g.sounds.Play(worldMusic(g.worldIndex))
 	}
 	defer g.sounds.Stop()
 	ebiten.SetTPS(sourceTPS)
-	ebiten.SetWindowTitle("Diamond Rush Original Runtime - Angkor World 0")
+	ebiten.SetWindowTitle(fmt.Sprintf("Diamond Rush Original Runtime - %s World %d", worldName(g.worldIndex), g.worldIndex))
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
-	return ebiten.RunGame(g)
+	options := &ebiten.RunGameOptions{}
+	if runtime.GOOS == "darwin" {
+		// Metal can occasionally fail to acquire a CAMetalLayer drawable after
+		// a window transition, leaving the native game window permanently black.
+		options.GraphicsLibrary = ebiten.GraphicsLibraryOpenGL
+	}
+	return ebiten.RunGameWithOptions(g, options)
+}
+
+func requestedStartupWorld() (world int, overridden bool, err error) {
+	value := strings.TrimSpace(strings.ToLower(os.Getenv("ORIGINALRUSH_WORLD")))
+	if value == "" {
+		return original.WorldAngkor, false, nil
+	}
+	switch value {
+	case "0", "angkor", "angkor-wat":
+		return original.WorldAngkor, true, nil
+	case "1", "bavaria":
+		return original.WorldBavaria, true, nil
+	default:
+		return 0, false, fmt.Errorf("invalid ORIGINALRUSH_WORLD %q", value)
+	}
 }
 
 func New(worldDir string) (*Game, error) {
@@ -403,19 +457,20 @@ func New(worldDir string) (*Game, error) {
 	if err != nil {
 		return nil, err
 	}
-	frames, err := loadTransparentSheet(angkorWorldFrameSheet)
+	visuals := worldVisualDefinitionFor(pack.World)
+	frames, err := loadSpriteSheetWithModules(visuals.frames, visuals.frameModules, visuals.frameMetadata)
 	if err != nil {
 		return nil, fmt.Errorf("load world frame sheet: %w", err)
 	}
-	boulder, err := loadTransparentSheet(angkorBoulderFrameSheet)
+	boulder, err := loadTransparentSheet(visuals.boulder)
 	if err != nil {
 		return nil, fmt.Errorf("load boulder frame sheet: %w", err)
 	}
-	diggable, err := loadTransparentSheet(angkorDiggableFrameSheet)
+	diggable, err := loadTransparentSheet(visuals.diggable)
 	if err != nil {
 		return nil, fmt.Errorf("load diggable frame sheet: %w", err)
 	}
-	floor, err := loadTransparentSheet(angkorFloorSheet)
+	floor, err := loadTransparentSheet(visuals.floor)
 	if err != nil {
 		return nil, fmt.Errorf("load floor sheet: %w", err)
 	}
@@ -527,7 +582,7 @@ func New(worldDir string) (*Game, error) {
 	if err != nil {
 		return nil, fmt.Errorf("load world-map ground: %w", err)
 	}
-	worldMapHeader, err := loadSpriteSheetWithModules(worldMapHeaderSheet, worldMapHeaderModules, worldMapHeaderMetadata)
+	worldMapHeader, err := loadSpriteSheetWithModules(visuals.mapHeaderSheet, visuals.mapHeaderModules, visuals.mapHeaderMetadata)
 	if err != nil {
 		return nil, fmt.Errorf("load world-map header: %w", err)
 	}
@@ -586,6 +641,10 @@ func New(worldDir string) (*Game, error) {
 	bavariaSeal, err := loadModuleSpriteSheet(bavariaSealModules, bavariaSealMetadata)
 	if err != nil {
 		return nil, fmt.Errorf("load Bavaria seal: %w", err)
+	}
+	bavaria, err := loadBavariaSpriteSet()
+	if err != nil {
+		return nil, err
 	}
 	sealArrow, err := loadModuleSpriteSheet(sealArrowModules, sealArrowMetadata)
 	if err != nil {
@@ -704,6 +763,7 @@ func New(worldDir string) (*Game, error) {
 		tutorialSeal:        tutorialSeal,
 		siberiaSeal:         siberiaSeal,
 		bavariaSeal:         bavariaSeal,
+		bavaria:             bavaria,
 		sealArrow:           sealArrow,
 		softkeys:            softkeys,
 		splashBackground:    splashBackground,
@@ -721,10 +781,12 @@ func New(worldDir string) (*Game, error) {
 		sounds:              sounds,
 		worldCanvas:         ebiten.NewImage(original.ScreenWidth, playfieldHeight),
 		worldDir:            resolvedWorldDir,
+		worldRoot:           filepath.Dir(resolvedWorldDir),
+		worldIndex:          pack.World,
 		worldMap:            worldMap,
 		pendingMapTarget:    -1,
 		worldSelectIncoming: -1,
-		message:             "Original Angkor World 0 runtime",
+		message:             fmt.Sprintf("Original %s World %d runtime", worldName(pack.World), pack.World),
 		lastDX:              1,
 		entranceSteps:       rt.EntranceScrollX,
 		progress:            newOriginalProgress(),
@@ -757,7 +819,7 @@ func (g *Game) Update() error {
 		g.sealExitTicks++
 		if g.sealExitTicks >= sealLoadingSteps {
 			g.sealExitActive = false
-			g.enterWorldSelect(sealPositionAngkor)
+			g.enterWorldSelect(g.worldIndex)
 		}
 		return nil
 	}
@@ -791,8 +853,8 @@ func (g *Game) Update() error {
 		g.finishTutorial()
 		return nil
 	}
-	if g.rt.Anaconda.StageComplete {
-		g.beginAngkorSealExit()
+	if g.rt.SealStageComplete {
+		g.beginSealExit()
 		g.updateCamera()
 		return nil
 	}
@@ -848,6 +910,9 @@ func (g *Game) Update() error {
 				g.resetHeroFacing()
 				g.message = "checkpoint reset"
 			}
+		} else if g.rt.UsesSwimmingAnimationAt(g.rt.Player.X, g.rt.Player.Y) {
+			// The JAR ignores tool input while layer-zero water uses its
+			// surface/swimming shapes (7 or 8).
 		} else if g.rt.UseSpecialBarrier(g.lastDX, g.lastDY) {
 			g.message = "special barrier opened"
 		} else if g.rt.UseHammer(g.lastDX, g.lastDY) {
@@ -983,6 +1048,7 @@ func (g *Game) handlePlayerDirection(dx, dy int) bool {
 	if dx != g.lastDX || dy != g.lastDY {
 		g.lastDX = dx
 		g.lastDY = dy
+		g.rt.SetPlayerFacing(dx, dy)
 		g.setHeroTurnOffset(sourceHeroTurnStartOffset)
 		g.rt.ResetPushAttempt()
 		return false
@@ -1014,6 +1080,9 @@ func (g *Game) resetHeroFacing() {
 	}
 	g.lastDX = 1
 	g.lastDY = 0
+	if g.rt != nil {
+		g.rt.SetPlayerFacing(1, 0)
+	}
 	g.setHeroTurnOffset(0)
 }
 
@@ -1045,7 +1114,7 @@ func (g *Game) advanceHeroMotion() {
 
 func (g *Game) advanceAfterGoal() {
 	if g.worldDone || g.secretExitActive {
-		g.message = fmt.Sprintf("Angkor stage %02d complete", g.stageIndex+1)
+		g.message = fmt.Sprintf("%s stage %02d complete", worldName(g.worldIndex), g.stageIndex+1)
 		return
 	}
 	if g.rt == nil || !g.rt.ReachedGoal {
@@ -1061,10 +1130,10 @@ func (g *Game) advanceAfterGoal() {
 		g.advanceHeroMotion()
 	}
 	if !complete {
-		g.message = fmt.Sprintf("Angkor stage %02d exit", g.stageIndex+1)
+		g.message = fmt.Sprintf("%s stage %02d exit", worldName(g.worldIndex), g.stageIndex+1)
 		return
 	}
-	if g.rt.GoalExitSecret && g.stageIndex < angkorFirstSecretStage {
+	if g.rt.GoalExitSecret && g.stageIndex < worldFirstSecretStage(g.worldIndex) {
 		target := g.stageIndex
 		if next, ok := g.worldMap.exitTarget(g.stageIndex, true); ok {
 			target = next
@@ -1083,7 +1152,7 @@ func (g *Game) advanceAfterGoal() {
 	}
 	g.worldDone = true
 	g.beginStageResults()
-	g.message = fmt.Sprintf("Angkor stage %02d complete", g.stageIndex+1)
+	g.message = fmt.Sprintf("%s stage %02d complete", worldName(g.worldIndex), g.stageIndex+1)
 }
 
 func (g *Game) syncHeroMotion() {
@@ -1096,6 +1165,7 @@ func (g *Game) syncHeroMotion() {
 	if motion.Remaining > 0 && (motion.DX != 0 || motion.DY != 0) {
 		g.lastDX = motion.DX
 		g.lastDY = motion.DY
+		g.rt.SetPlayerFacing(motion.DX, motion.DY)
 	}
 }
 
@@ -1105,18 +1175,18 @@ func (g *Game) beginStageResults() {
 	g.resultLoadingStep = 0
 	g.resultAwards = stageResultAwards(g.rt)
 	g.pendingMapTarget = -1
-	if g.stageIndex >= angkorFirstSecretStage && g.rt.GoalExitSecret {
+	if g.stageIndex >= worldFirstSecretStage(g.worldIndex) && g.rt.GoalExitSecret {
 		target := g.stageIndex
 		if next, ok := g.worldMap.exitTarget(g.stageIndex, true); ok {
 			target = next
 		}
 		g.resultNewAwards = g.progress.recordSecretStageResult(g.stageIndex, target, g.rt)
-		if g.progress.stageUnlocked(target) {
+		if g.progress.stageUnlockedForWorld(g.worldIndex, target) {
 			g.pendingMapTarget = target
 		}
 	} else {
 		g.resultNewAwards = g.progress.recordStageResult(g.stageIndex, g.rt)
-		if target, ok := g.worldMap.exitTarget(g.stageIndex, false); ok && g.progress.stageUnlocked(target) {
+		if target, ok := g.worldMap.exitTarget(g.stageIndex, false); ok && g.progress.stageUnlockedForWorld(g.worldIndex, target) {
 			g.pendingMapTarget = target
 		}
 	}
@@ -1127,8 +1197,8 @@ func (g *Game) beginStageResults() {
 	}
 }
 
-func (g *Game) beginAngkorSealExit() {
-	if g.sealExitActive || g.rt == nil || !g.rt.Anaconda.StageComplete {
+func (g *Game) beginSealExit() {
+	if g.sealExitActive || g.rt == nil || !g.rt.SealStageComplete {
 		return
 	}
 	g.progress.recordSealStageCompletion(g.stageIndex, g.rt)
@@ -1140,7 +1210,7 @@ func (g *Game) beginAngkorSealExit() {
 	g.pendingMapTarget = -1
 	g.sealExitActive = true
 	g.sealExitTicks = 0
-	g.message = "Angkor seal recovered"
+	g.message = fmt.Sprintf("%s seal recovered", worldName(g.worldIndex))
 }
 
 func (g *Game) enableProgress(path string) error {
@@ -1186,8 +1256,8 @@ func (g *Game) updateStageResults(skip bool) {
 }
 
 func (g *Game) loadStage(index int) {
-	if index < 0 || index >= len(g.pack.Stages) || !angkorStageImplemented(index) {
-		g.message = fmt.Sprintf("invalid Angkor stage %d", index+1)
+	if index < 0 || index >= len(g.pack.Stages) || !worldStageImplemented(g.worldIndex, index) {
+		g.message = fmt.Sprintf("invalid %s stage %d", worldName(g.worldIndex), index+1)
 		return
 	}
 	rt, err := original.NewRuntime(g.pack.Stages[index])
@@ -1223,9 +1293,9 @@ func (g *Game) loadStage(index int) {
 	g.resetCamera()
 	g.updateCompass()
 	if g.sounds != nil && g.sounds.enabled {
-		g.sounds.Play(original.SoundAngkorMusic)
+		g.sounds.Play(worldMusic(g.worldIndex))
 	}
-	g.message = fmt.Sprintf("loaded Angkor stage %02d", index+1)
+	g.message = fmt.Sprintf("loaded %s stage %02d", worldName(g.worldIndex), index+1)
 }
 
 func (g *Game) applyCampaignProgress(rt *original.Runtime, stageIndex int) {
@@ -1237,18 +1307,29 @@ func (g *Game) applyCampaignProgress(rt *original.Runtime, stageIndex int) {
 	rt.MaxHealth = progress.MaxHealth
 	rt.Health = rt.MaxHealth
 	toolLevel := progress.ToolLevel
-	if stageIndex == 4 {
+	waterBreathingPotion := progress.WaterBreathingPotion
+	if g.startupWorldOverridden && rt.Stage.World == original.WorldBavaria {
+		// A forced Bavaria start skips the preceding Angkor journey. Preserve
+		// the minimum source campaign state at each directly reachable stage.
+		toolLevel = maxToolLevel(toolLevel, 1)
+		if stageIndex >= 3 {
+			toolLevel = maxToolLevel(toolLevel, 2)
+		}
+		if stageIndex >= 8 && stageIndex <= bavariaSealStage {
+			waterBreathingPotion = true
+		}
+	}
+	if rt.Stage.World == original.WorldAngkor && stageIndex == 4 {
 		// Angkor Stage 5 is revisited after the Mystic Hook is obtained in
-		// Bavaria. This Angkor-only slice has no Bavaria node, so load the stage
-		// with the same prerequisite state the original route expects.
+		// Bavaria. Keep direct-stage and legacy saves in that source-valid state.
 		toolLevel = maxToolLevel(toolLevel, 2)
 	}
-	if stageIndex == 7 {
+	if rt.Stage.World == original.WorldAngkor && stageIndex == 7 {
 		// Angkor Stage 8's secret route is revisited with the Freeze Hammer.
 		// The intervening world is outside this Angkor-only campaign slice.
 		toolLevel = maxToolLevel(toolLevel, 8)
 	}
-	if stageIndex >= angkorFirstSecretStage && stageIndex < angkorTutorialStage {
+	if rt.Stage.World == original.WorldAngkor && stageIndex >= angkorFirstSecretStage && stageIndex < angkorTutorialStage {
 		// The four Angkor secret stages are revisited after the intervening
 		// worlds and shop upgrades. Supply that source-valid campaign state in
 		// this Angkor-only slice.
@@ -1257,17 +1338,21 @@ func (g *Game) applyCampaignProgress(rt *original.Runtime, stageIndex int) {
 		rt.Health = rt.MaxHealth
 	}
 	rt.SpecialItemMask = toolLevelSpecialItemMask(toolLevel)
+	if waterBreathingPotion {
+		rt.SpecialItemMask |= 4
+	}
 	rt.ApplyPersistentRewardCoordinates(persistentRewardsForStage(rt, stageIndex, progress))
 	rt.SaveSnapshot()
 }
 
 func persistentRewardsForStage(rt *original.Runtime, stageIndex int, progress originalProgress) []original.Point {
-	if rt == nil || rt.Stage == nil || stageIndex < 0 || stageIndex >= angkorStageCount {
+	if rt == nil || rt.Stage == nil || stageIndex < 0 || stageIndex >= worldStageCount(rt.Stage.World) {
 		return nil
 	}
-	points := append([]original.Point(nil), progress.StageConsumedRewards[stageIndex]...)
-	redComplete := rt.TotalRedDiamonds > 0 && progress.StageRedDiamonds[stageIndex] >= rt.TotalRedDiamonds
-	relicComplete := stageIndex == angkorSealStage && progress.RelicMask&1 != 0
+	points := append([]original.Point(nil), progress.consumedRewardsForWorld(rt.Stage.World, stageIndex)...)
+	redComplete := rt.TotalRedDiamonds > 0 && progress.stageRedDiamondsForWorld(rt.Stage.World, stageIndex) >= rt.TotalRedDiamonds
+	relicBit := 1 << rt.Stage.World
+	relicComplete := stageIndex == worldSealStage(rt.Stage.World) && progress.RelicMask&relicBit != 0
 	if !redComplete && !relicComplete {
 		return points
 	}
@@ -1318,7 +1403,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		return
 	}
 	if g.sealExitActive {
-		g.drawAngkorSealLoading(screen)
+		g.drawSealLoading(screen)
 		return
 	}
 	if g.secretExitActive {
@@ -1338,6 +1423,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	camX, camY := g.cameraPixels()
 	g.drawStageCells(world, camX, camY)
 	g.drawGreatAnaconda(world, camX, camY)
+	g.drawEvilTeutonicKnight(world, camX, camY)
 	g.drawFallingTorchStage(world, camX, camY)
 	g.drawTutorialSealOverlay(world, camX, camY)
 	g.drawTutorialRecallHint(world, camX, camY)
@@ -1347,6 +1433,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	if !g.rt.TutorialSealActivated {
 		g.drawPlayer(world, renderedPlayerX, renderedPlayerY)
 	}
+	g.drawBavariaWater(world, camX, camY)
 	g.drawStageForegroundOverlays(world, camX, camY)
 	g.drawWorldEffects(world, camX, camY)
 	if !g.rt.TutorialSealActivated {
@@ -1358,6 +1445,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	screen.DrawImage(world, op)
 	g.drawHUD(screen)
 	g.drawGreatAnacondaHealth(screen)
+	g.drawEvilTeutonicKnightHealth(screen)
 	g.drawTutorialFlash(screen)
 	if index, _, ok := g.rt.EnemyGateMessage(); ok {
 		drawSourcePanelLabel(screen, g.fontSmall, enemyGateMessageText(index), original.ScreenWidth/2, 223)
@@ -1451,7 +1539,7 @@ func (g *Game) drawStageForegroundOverlays(dst *ebiten.Image, camX, camY int) {
 	}
 }
 
-func (g *Game) drawAngkorSealLoading(screen *ebiten.Image) {
+func (g *Game) drawSealLoading(screen *ebiten.Image) {
 	screen.Fill(color.Black)
 	progress := min(230, (g.sealExitTicks+1)*230/sealLoadingSteps)
 	drawRect(screen, 5, 310, progress, 6, color.RGBA{0xce, 0x9b, 0x00, 0xff})
@@ -1644,6 +1732,10 @@ func (g *Game) cameraPixels() (int, int) {
 		rumble := g.rt.Anaconda.RumbleTicks
 		shake = max(shake, rumble*g.tick%((rumble>>1)+1)%12)
 	}
+	if g.rt.TeutonicKnight.Enabled && g.rt.TeutonicKnight.RumbleTicks > 0 {
+		rumble := g.rt.TeutonicKnight.RumbleTicks
+		shake = max(shake, rumble*g.tick%((rumble>>1)+1)%12)
+	}
 	return g.cameraX, max(0, g.cameraY-shake)
 }
 
@@ -1726,7 +1818,29 @@ func (g *Game) renderedPlayerPixels() (int, int) {
 		g.rt.Player.Y*original.TileSize - g.lastDY*g.heroMoveOffset
 }
 
+type hudCounterValues struct {
+	Violet     int
+	Red        int
+	GoldKeys   int
+	SilverKeys int
+	Lives      int
+}
+
+func (g *Game) currentHUDCounterValues() hudCounterValues {
+	if g == nil || g.rt == nil {
+		return hudCounterValues{}
+	}
+	return hudCounterValues{
+		Violet:     g.rt.VioletGems,
+		Red:        g.rt.RedDiamonds,
+		GoldKeys:   g.rt.KeyForForeground9,
+		SilverKeys: g.rt.KeyForForeground8,
+		Lives:      g.rt.ExtraLives,
+	}
+}
+
 func (g *Game) drawHUD(screen *ebiten.Image) {
+	counters := g.currentHUDCounterValues()
 	g.hud.drawFrame(screen, 20, original.ScreenWidth/2, 0, 0)
 	g.hud.drawFrame(screen, 0, original.ScreenWidth/2, original.ScreenHeight, 0)
 	g.hud.drawFrame(screen, 1, original.ScreenWidth/2, original.ScreenHeight, 0)
@@ -1735,16 +1849,16 @@ func (g *Game) drawHUD(screen *ebiten.Image) {
 		g.hud.drawFrame(screen, 3+g.compassDirection, original.ScreenWidth/2+2, original.ScreenHeight, 0)
 	}
 	g.drawHealth(screen)
-	g.hud.drawNumber(screen, g.rt.VioletGems, 190, 308)
-	g.hud.drawNumber(screen, g.rt.RedDiamonds, 227, 308)
-	g.hud.drawNumber(screen, g.rt.KeyForForeground9, 167, 18)
-	g.hud.drawNumber(screen, g.rt.KeyForForeground8, 207, 18)
-	g.hud.drawNumber(screen, g.rt.ExtraLives, 91, 18)
+	g.hud.drawNumber(screen, counters.Violet, 190, 308)
+	g.hud.drawNumber(screen, counters.Red, 227, 308)
+	g.hud.drawNumber(screen, counters.GoldKeys, 167, 18)
+	g.hud.drawNumber(screen, counters.SilverKeys, 207, 18)
+	g.hud.drawNumber(screen, counters.Lives, 91, 18)
 }
 
 func (g *Game) drawStageIntro(screen *ebiten.Image) {
 	worldX, stageX := stageTitlePositions(g.introTicks)
-	drawSourcePanelLabel(screen, g.fontMedium, "ANGKOR WAT", worldX, playfieldTop+15)
+	drawSourcePanelLabel(screen, g.fontMedium, strings.ToUpper(worldName(g.worldIndex)), worldX, playfieldTop+15)
 	drawSourcePanelLabel(screen, g.fontMedium, fmt.Sprintf("STAGE %d", g.stageIndex+1), stageX, playfieldTop+50)
 }
 
@@ -1889,7 +2003,7 @@ func (g *Game) drawCellObjects(dst *ebiten.Image, x, y, px, py int) {
 			}
 			drawSpriteFrame(dst, g.checkpoint, frame, px, py)
 		case id == 5 || id == 28:
-			drawSpriteFrame(dst, g.goal, sourceGoalFrame(g.stageIndex), px, py)
+			drawSpriteFrame(dst, g.goal, sourceGoalFrameForWorld(g.worldIndex, g.stageIndex), px, py)
 		case id == 6:
 			g.drawPressureSwitch(dst, x, y, px, py, playerID)
 		case id == 7:
@@ -1901,6 +2015,8 @@ func (g *Game) drawCellObjects(dst *ebiten.Image, x, y, px, py int) {
 			g.silverLock.drawFrame(dst, clamp(g.objectStateAt(x, y), 0, 6), px, py, 0)
 		case id == 9:
 			g.goldLock.drawFrame(dst, clamp(g.objectStateAt(x, y), 0, 6), px, py, 0)
+		case id == 15 || id == 16 || id == 27 || id == 34 || id == 35 || id == 37:
+			g.drawBavariaForeground(dst, id, px, py)
 		case id == 14:
 			state := clamp(g.objectStateAt(x, y), 0, 2)
 			g.specialContainer.drawAnimationSequenceFrame(dst, 0, state, px, py, 0)
@@ -1913,7 +2029,7 @@ func (g *Game) drawCellObjects(dst *ebiten.Image, x, y, px, py int) {
 		motion := original.ObjectMotion{}
 		if idx >= 0 && idx < len(g.rt.ObjectMotion) {
 			motion = g.rt.ObjectMotion[idx]
-			if playerID == 0 || playerID == 1 || playerID == 9 {
+			if playerID == 0 || playerID == 1 || playerID == 8 || playerID == 9 || playerID == 47 {
 				offsetX, offsetY := g.rt.GravityObjectRenderOffset(x, y, g.tick)
 				px += offsetX
 				py += offsetY
@@ -1980,6 +2096,9 @@ func (g *Game) drawCellObjects(dst *ebiten.Image, x, y, px, py int) {
 				drawRect(dst, px+7, py+3, 10, 4, color.RGBA{178, 184, 190, 245})
 				drawRect(dst, px+6, py+10, 12, 2, color.RGBA{70, 74, 82, 245})
 			default:
+				if g.drawBavariaObject(dst, playerID, x, y, px, py) {
+					break
+				}
 				drawRect(dst, px+7, py+7, 10, 10, color.RGBA{80, 140, 230, 180})
 			}
 		}
@@ -1993,7 +2112,7 @@ func (g *Game) drawCellForegroundOverlay(dst *ebiten.Image, x, y, px, py int) {
 	case foregroundID == 32:
 		g.drawDiggableFrame(dst, clamp(g.rt.ForegroundStateAt(x, y), 0, len(diggableFrameBounds)-1), px, py)
 	case foregroundID >= 20 && foregroundID < 26:
-		g.foregroundEffects.drawAnimationSequenceFrame(dst, int(foregroundID-20), sourceForegroundEffectSequence(g.tick), px, py, 0)
+		g.foregroundEffects.drawAnimationSequenceFrame(dst, sourceForegroundEffectAnimation(foregroundID), sourceForegroundEffectSequence(g.tick), px, py, 0)
 	default:
 		if frame, ok := sourceWorldOverlayFrame(foregroundID); ok {
 			g.drawWorldFrame(dst, frame, px, py)
@@ -2003,6 +2122,14 @@ func (g *Game) drawCellForegroundOverlay(dst *ebiten.Image, x, y, px, py int) {
 
 func sourceForegroundEffectSequence(sourceTick int) int {
 	return sourceTick >> 2
+}
+
+func sourceForegroundEffectAnimation(id original.RawID) int {
+	animation := int(id - 20)
+	if animation >= 0 && animation < 4 {
+		animation ^= 2
+	}
+	return animation
 }
 
 func sourceWorldOverlayFrame(id original.RawID) (int, bool) {
@@ -2193,7 +2320,11 @@ func sourceGemFrame(sourceTick int) int {
 }
 
 func sourceGoalFrame(stageIndex int) int {
-	if stageIndex == 4 || stageIndex == 7 {
+	return sourceGoalFrameForWorld(original.WorldAngkor, stageIndex)
+}
+
+func sourceGoalFrameForWorld(world, stageIndex int) int {
+	if world == original.WorldAngkor && (stageIndex == 4 || stageIndex == 7) || world == original.WorldBavaria && stageIndex == 8 {
 		return 1
 	}
 	return 0
@@ -2219,7 +2350,7 @@ func (g *Game) objectStateOrBackgroundAt(x, y int) int {
 }
 
 func (g *Game) drawWorldFrame(dst *ebiten.Image, frame, px, py int) {
-	drawSpriteFrame(dst, g.worldFrames, frame, px, py)
+	g.worldFrames.drawFrame(dst, frame, px, py, 0)
 }
 
 func (g *Game) drawBoulderFrame(dst *ebiten.Image, frame, px, py int) {
@@ -2257,6 +2388,17 @@ func drawSpriteFrame(dst, sheet *ebiten.Image, frame, px, py int) {
 func (g *Game) drawPlayer(dst *ebiten.Image, px, py int) {
 	if g.rt.InvulnerabilityTicks > 0 && (g.tick>>1)&1 != 0 {
 		return
+	}
+	if g.worldIndex == original.WorldBavaria && g.lastDY == 0 && g.rt.Player.Y+1 < g.rt.Height() && g.rt.WaterAt(g.rt.Player.X, g.rt.Player.Y+1) > 0 {
+		below, _ := g.rt.At(original.PlayerLayer, g.rt.Player.X, g.rt.Player.Y+1)
+		if below == 0 || below == 1 || below == 8 || below == 9 {
+			phase := (g.tick >> 1) + g.rt.Player.X
+			bob := phase % 4
+			if phase/4&1 != 0 {
+				bob = 4 - bob
+			}
+			py += bob
+		}
 	}
 	animation, animationTick := g.heroAnimationState()
 	g.hero.drawAnimation(dst, animation, animationTick, px, py, 0)
@@ -2298,6 +2440,8 @@ func (g *Game) heroAnimationState() (int, int) {
 		if duration, ok := g.hero.animationDuration(animation); ok {
 			animationTick = min(animationTick, duration-1)
 		}
+	} else if g.worldIndex == original.WorldBavaria && g.rt.UsesSwimmingAnimationAt(g.rt.Player.X, g.rt.Player.Y) {
+		animation = 36 + direction
 	} else if g.rt.Pushing && g.heroMoveOffset == 0 {
 		if g.rt.PushDX > 0 {
 			animation = 8
@@ -2351,6 +2495,12 @@ func (g *Game) drawChestRewardIcon(dst *ebiten.Image, px, py int) bool {
 		g.hud.drawNumber(dst, g.rt.ChestRewardValue, px+original.TileSize, py+14)
 	case 42:
 		g.compassPickup.drawModule(dst, 0, px, py)
+	case 40:
+		g.drawCenteredModule(dst, g.bavaria.waterPotion, 0, px, py)
+	case 51:
+		g.drawCenteredModule(dst, g.bavariaSeal, 0, px, py)
+	case 52:
+		g.drawCenteredModule(dst, g.siberiaSeal, 0, px, py)
 	case 53:
 		g.drawCenteredModule(dst, g.angkorSeal, 0, px, py)
 	default:

@@ -2,6 +2,7 @@ package original
 
 import (
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -15,6 +16,9 @@ func TestLoadAngkorWorldPack(t *testing.T) {
 	}
 	if len(pack.Stages) != 14 {
 		t.Fatalf("loaded stages = %d, want 14", len(pack.Stages))
+	}
+	if pack.World != WorldAngkor {
+		t.Fatalf("world index = %d, want Angkor", pack.World)
 	}
 	wantSizes := []Point{
 		{26, 21},
@@ -39,6 +43,45 @@ func TestLoadAngkorWorldPack(t *testing.T) {
 		}
 		if err := stage.Validate(); err != nil {
 			t.Fatalf("stage %02d invalid: %v", i, err)
+		}
+	}
+}
+
+func TestLoadBavariaWorldPack(t *testing.T) {
+	pack, err := LoadWorldDir(filepath.Join("..", "..", "decoded", "world1"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if pack.World != WorldBavaria || pack.StageCount != 13 || len(pack.Stages) != 13 {
+		t.Fatalf("Bavaria pack = world %d, count %d/%d", pack.World, len(pack.Stages), pack.StageCount)
+	}
+	if !strings.HasSuffix(pack.Source, "jars/diamondrush.jar!/w1.bin") {
+		t.Fatalf("Bavaria source = %q, want original JAR entry", pack.Source)
+	}
+	for _, stage := range pack.Stages {
+		if stage.World != WorldBavaria {
+			t.Fatalf("stage %02d world = %d, want Bavaria", stage.Index, stage.World)
+		}
+		if len(stage.EntranceMarkers()) != 1 {
+			t.Fatalf("stage %02d entrance markers = %d, want 1", stage.Index, len(stage.EntranceMarkers()))
+		}
+	}
+}
+
+func TestBavariaStageEightUsesOriginalJARObjectCells(t *testing.T) {
+	stage, err := LoadStageFile(filepath.Join("..", "..", "decoded", "world1", "stage07.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[Point]RawID{
+		{X: 20, Y: 10}: EmptyRawID,
+		{X: 7, Y: 17}:  10,
+		{X: 29, Y: 19}: EmptyRawID,
+		{X: 25, Y: 20}: EmptyRawID,
+	}
+	for point, wantID := range want {
+		if got, _ := stage.At(PlayerLayer, point.X, point.Y); got != wantID {
+			t.Errorf("Bavaria Stage 8 player raw at %+v=%d, want original-JAR %d", point, got, wantID)
 		}
 	}
 }

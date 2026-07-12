@@ -256,3 +256,79 @@ func TestStageCollectionsAccumulatePartialRedDiamondsAcrossRuns(t *testing.T) {
 		t.Fatalf("red progress bank=%d stage=%d, want 3/3", progress.RedDiamondBank, progress.StageRedDiamonds[3])
 	}
 }
+
+func TestBavariaPurpleChestAndMysticHookPersistAcrossStages(t *testing.T) {
+	pack, err := original.LoadWorldDir(filepath.Join("..", "..", "decoded", "world1"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	progress := newOriginalProgress()
+	progress.WorldUnlocked[original.WorldBavaria] = true
+
+	purpleStage, err := original.NewRuntime(pack.Stages[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	openCampaignChestForTest(t, purpleStage, original.Point{X: 25, Y: 14})
+	if purpleStage.VioletGems != 10 {
+		t.Fatalf("purple chest stage counter=%d, want authored value 10", purpleStage.VioletGems)
+	}
+	progress.recordStageCollections(0, purpleStage, 0)
+
+	hookStage, err := original.NewRuntime(pack.Stages[2])
+	if err != nil {
+		t.Fatal(err)
+	}
+	openCampaignChestForTest(t, hookStage, original.Point{X: 24, Y: 25})
+	if hookStage.SpecialItemMask&2 == 0 {
+		t.Fatal("displayed Stage 3 source chest did not award the Mystic Hook")
+	}
+	progress.recordStageCollections(2, hookStage, 0)
+
+	path := filepath.Join(t.TempDir(), "original-progress.json")
+	if err := saveOriginalProgress(path, progress); err != nil {
+		t.Fatal(err)
+	}
+	reloaded, err := loadOriginalProgress(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if reloaded.VioletGemBank != 10 || reloaded.BavariaStageVioletGems[0] != 10 {
+		t.Fatalf("saved purple chest bank/stage=%d/%d, want 10/10", reloaded.VioletGemBank, reloaded.BavariaStageVioletGems[0])
+	}
+	if reloaded.ToolLevel != 2 {
+		t.Fatalf("saved tool level=%d, want Mystic Hook level 2", reloaded.ToolLevel)
+	}
+
+	stageFive, err := original.NewRuntime(pack.Stages[4])
+	if err != nil {
+		t.Fatal(err)
+	}
+	game := &Game{progress: reloaded}
+	game.applyCampaignProgress(stageFive, 4)
+	if stageFive.SpecialItemMask&2 == 0 {
+		t.Fatal("displayed Stage 5 did not inherit the Mystic Hook acquired in displayed Stage 3")
+	}
+	for _, id := range stageFive.Stage.Player {
+		if id == 27 {
+			t.Fatal("displayed Stage 5 contains a second Mystic Hook, absent from original w1.bin")
+		}
+	}
+}
+
+func openCampaignChestForTest(t *testing.T, rt *original.Runtime, point original.Point) {
+	t.Helper()
+	rt.Player = original.Point{X: point.X - 1, Y: point.Y}
+	if !rt.TryMove(1, 0) {
+		t.Fatalf("failed to enter source chest at %+v", point)
+	}
+	for rt.PlayerMotion.Remaining > 0 {
+		rt.AdvancePlayerMotion()
+	}
+	if !rt.SettlePlayerMove() {
+		t.Fatalf("source chest at %+v did not begin opening", point)
+	}
+	for rt.ChestOpening {
+		rt.TickStatus()
+	}
+}

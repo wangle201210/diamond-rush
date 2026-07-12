@@ -238,6 +238,41 @@ var angkorTutorialScripts = map[int][]tutorialCommand{
 	},
 }
 
+// Bavaria's foreground raw-0 events reference the same demo.f command
+// stream as the Angkor tutorial. These four scripts are the only demo IDs
+// authored in w1.bin.
+var bavariaDemoScripts = map[int][]tutorialCommand{
+	4: {
+		tutorialCamera(13, 16, 30),
+		tutorialWait(20),
+		tutorialCamera(19, 16, 30),
+	},
+	6: {
+		tutorialCamera(28, 18, 40),
+		tutorialWait(20),
+		tutorialCamera(26, 11, 40),
+		tutorialWait(20),
+	},
+	19: {
+		tutorialCamera(7, 42, 20),
+		tutorialWait(20),
+		tutorialCamera(13, 56, 45),
+		tutorialWait(20),
+	},
+	34: {
+		tutorialPortraitFace(1),
+		tutorialPortraitPosition(17, 50),
+		tutorialPrompt(34, TutorialTextBubble, 90, 2),
+		tutorialPortraitFace(3),
+		tutorialFlash(1),
+		tutorialPortraitMark(0, 3, true),
+		tutorialPrompt(35, TutorialTextBubble, 90, 2),
+		tutorialPortraitFace(0),
+		tutorialPortraitMark(4, 3, true),
+		tutorialPrompt(36, TutorialTextBubble, 90, 2),
+	},
+}
+
 func (rt *Runtime) initTutorial() {
 	rt.TutorialScriptID = -1
 	rt.TutorialTextIndex = -1
@@ -246,7 +281,7 @@ func (rt *Runtime) initTutorial() {
 }
 
 func (rt *Runtime) IsTutorialStage() bool {
-	return rt != nil && rt.Stage != nil && rt.Stage.Index == tutorialStageIndex
+	return rt != nil && rt.Stage != nil && rt.Stage.World == WorldAngkor && rt.Stage.Index == tutorialStageIndex
 }
 
 func (rt *Runtime) TutorialPrompt() (TutorialPrompt, bool) {
@@ -325,7 +360,7 @@ func (rt *Runtime) queueTutorialScript(scriptID int) {
 }
 
 func (rt *Runtime) startTutorialScript(scriptID int) bool {
-	commands, ok := angkorTutorialScripts[scriptID]
+	commands, ok := rt.demoScriptCommands(scriptID)
 	if !ok || len(commands) == 0 || !rt.demoScriptAllowed(scriptID) || rt.IsTutorialStage() && rt.TutorialComplete {
 		return false
 	}
@@ -373,7 +408,11 @@ func (rt *Runtime) tickTutorial() {
 		return
 	}
 
-	commands := angkorTutorialScripts[rt.TutorialScriptID]
+	commands, ok := rt.demoScriptCommands(rt.TutorialScriptID)
+	if !ok {
+		rt.finishTutorialScript()
+		return
+	}
 	for immediate := 0; immediate < 16 && rt.TutorialScriptActive; immediate++ {
 		if rt.tutorialCommandIndex >= len(commands) {
 			rt.finishTutorialScript()
@@ -530,16 +569,35 @@ func (rt *Runtime) demoScriptAllowed(scriptID int) bool {
 	if rt == nil || rt.Stage == nil {
 		return false
 	}
-	switch scriptID {
-	case 22:
-		return rt.Stage.Index == 3
-	case 30:
-		return rt.Stage.Index == 2
-	case 33:
-		return rt.Stage.Index == 8
+	switch rt.Stage.World {
+	case WorldAngkor:
+		switch scriptID {
+		case 22:
+			return rt.Stage.Index == 3
+		case 30:
+			return rt.Stage.Index == 2
+		case 33:
+			return rt.Stage.Index == 8
+		default:
+			return rt.IsTutorialStage()
+		}
+	case WorldBavaria:
+		return scriptID == 4 && rt.Stage.Index == 3 ||
+			scriptID == 6 && rt.Stage.Index == 8 ||
+			scriptID == 34 && rt.Stage.Index == 9 ||
+			scriptID == 19 && rt.Stage.Index == 12
 	default:
-		return rt.IsTutorialStage()
+		return false
 	}
+}
+
+func (rt *Runtime) demoScriptCommands(scriptID int) ([]tutorialCommand, bool) {
+	if rt != nil && rt.Stage != nil && rt.Stage.World == WorldBavaria {
+		commands, ok := bavariaDemoScripts[scriptID]
+		return commands, ok
+	}
+	commands, ok := angkorTutorialScripts[scriptID]
+	return commands, ok
 }
 
 func (rt *Runtime) tickTutorialCamera() {

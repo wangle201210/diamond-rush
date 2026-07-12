@@ -65,10 +65,7 @@ func (boss GreatAnaconda) X() int {
 	return 10 + boss.Column*(2+boolInt(boss.Column > 0))
 }
 
-func (rt *Runtime) initGreatAnacondaStage() {
-	if !rt.Anaconda.Enabled {
-		return
-	}
+func (rt *Runtime) initEnemyGateDoors() {
 	// Doors with a raw-17 marker above or below are initialized in source
 	// phase 3 (fully open). A marker above a door is consumed at load time.
 	for y := 0; y < rt.Height(); y++ {
@@ -101,12 +98,17 @@ func (rt *Runtime) tickGreatAnaconda(sourceTick int) (hits int, defeated bool) {
 	// UVoid advances the shared gen1 animator once even while the tail is
 	// hidden. The active boss branch advances it a second time below.
 	boss.TailAnimationTicks++
-	if boss.SealCollected && !boss.StageComplete {
-		boss.SealTicks++
-		if boss.SealTicks > angkorSealCompletionTicks {
-			boss.StageComplete = true
-		}
+	if boss.SealCollected && !rt.SealCollected {
+		rt.SealCollected = true
+		rt.SealTicks = boss.SealTicks
 	}
+	if boss.StageComplete {
+		rt.SealStageComplete = true
+	}
+	rt.tickSealTransition()
+	boss.SealCollected = rt.SealCollected
+	boss.SealTicks = rt.SealTicks
+	boss.StageComplete = rt.SealStageComplete
 
 	boss.PhaseTicks++
 	rt.restoreAnacondaCeiling()
@@ -399,6 +401,10 @@ func (rt *Runtime) hurtFromAnacondaBody() bool {
 }
 
 func (rt *Runtime) completeAnacondaGateGroup() {
+	rt.completeActiveEnemyGateGroup()
+}
+
+func (rt *Runtime) completeActiveEnemyGateGroup() {
 	group := rt.ActiveEnemyGateGroup
 	if group < 0 {
 		return
@@ -568,15 +574,29 @@ func (rt *Runtime) closeDoorAt(x, y int) bool {
 }
 
 func (rt *Runtime) playerCollisionDirection() int {
-	switch {
-	case rt.PlayerMotion.DX > 0:
-		return 4
-	case rt.PlayerMotion.DX < 0:
-		return 2
-	case rt.PlayerMotion.DY > 0:
-		return 1
-	case rt.PlayerMotion.DY < 0:
+	if rt.PlayerMotion.Remaining > 0 {
+		switch {
+		case rt.PlayerMotion.DX > 0:
+			return 4
+		case rt.PlayerMotion.DX < 0:
+			return 2
+		case rt.PlayerMotion.DY > 0:
+			return 1
+		case rt.PlayerMotion.DY < 0:
+			return 3
+		}
+	}
+	// hByteArr[kInt & 7] maps the saved facing to the opposite direction
+	// used by hurtHero's knockback search.
+	switch rt.playerFacingDirection {
+	case 1:
 		return 3
+	case 2:
+		return 4
+	case 3:
+		return 1
+	case 4:
+		return 2
 	default:
 		return 0
 	}

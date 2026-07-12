@@ -49,10 +49,10 @@ cd /Users/wanna/mine/github/wangle201210/DiamondRushSource
 | `src/main/java/c.java` | Demo/cutscene interpreter-like class. | Reference opening/tutorial sequences if recreating presentation. |
 | `src/main/java/org/recompile/freej2me/FreeJ2ME.java` | Desktop emulator wrapper. Locally patched for Mac input/repaint. | Runtime oracle only, not game logic. |
 | `src/main/resources/w0.bin` | Angkor Wat stage pack. | Decode into the preserved three-layer Go/JSON format. |
-| `src/main/resources/w1.bin` | Bavaria/Scotland stage pack. | Decode later after Angkor slice. |
+| JAR `w1.bin` | Bavaria/Scotland stage pack. | Decoded into `decoded/world1`; all 13 source stages load through the Go runtime. The readable-source copy differs at four Stage 8 object cells, so the JAR entry is canonical. |
 | `src/main/resources/w2.bin` | Tibet/Siberia stage pack. | Decode later after Angkor/Bavaria. |
 | `src/main/resources/map_angkor.out` | Angkor world map metadata. | Reference stage-node layout and unlock flow. |
-| `src/main/resources/map_scotland.out` | Bavaria/Scotland world map metadata. | Later-world map reference. |
+| `src/main/resources/map_scotland.out` | Bavaria/Scotland world map metadata. | Decoded into `decoded/world1/map.json` and used by the Bavaria world map. |
 | `src/main/resources/map_tibet.out` | Tibet/Siberia world map metadata. | Later-world map reference. |
 | `src/main/resources/*.f` | Gameloft packed sprite/text/sound resources. | Decode or replace with generated assets, but preserve visual roles and proportions. |
 | `rms/Diamond Rush/*` | FreeJ2ME local RMS save files from testing. | Useful for observing persisted bytes; not a design source by itself. |
@@ -263,7 +263,7 @@ Go implication:
   - no restart/checkpoint recall
   - secret/alternate route state
 - Shop upgrades must use violet gems; world unlocks must use red gems.
-- The implemented global seal selector follows the four source positions Angkor/Bavaria/Siberia/Shop, the directional graph from `a_Config`, and red-diamond thresholds `10/25`. It preserves the Angkor relic fly-in/flash/effect and world-unlock flash before accepting input. Angkor enters `map_angkor.out`; the other three destinations remain explicit unavailable-content states rather than fake maps.
+- The implemented global seal selector follows the four source positions Angkor/Bavaria/Siberia/Shop, the directional graph from `a_Config`, and red-diamond thresholds `10/25`. It preserves the relic fly-in/flash/effect and world-unlock flash before accepting input. Angkor enters `map_angkor.out`, Bavaria enters `map_scotland.out`, and Siberia/Shop remain explicit unavailable-content states rather than fake screens.
 - Save version 5 introduced `RelicMask` and `WorldUnlocked[3]`; current version 6 retains them and adds per-stage consumed reward coordinates. A pre-v5 save with Stage 9 already cleared migrates the Angkor relic bit.
 
 ## Secret Exit Raw 28 And Map Branches
@@ -464,6 +464,7 @@ The source falling-object state machine is in `aqVoid()` and is shared by player
 - Roll preparation sets state bit `0x200` and starts its byte offset at `1`. While the offset is below `6`, it increments only when `(aSInt & 3) == 0`; from `6` onward it increments every source frame. At `12`, Java transfers the object into the diagonal cell with a vertical reverse offset of `12`.
 - With the Stage 1 initial offset of `1`, the global-frame phase makes the first diagonal transfer occur after 24 to 27 source frames (1.20 to 1.35 seconds at 20 TPS). Raw `0` and raw `1` use the same delay.
 - The renderer's `OVoid()` branch uses the preparation offset for horizontal rocking, `offset * offset / 24` vertical displacement, and `-1 + aSInt % 3` jitter before the transfer. The same arc is applied to horizontal movement over a stationary rounded support when the source-side neighbor condition passes.
+- Bavaria water uses three packed 9-bit sub-layers per cell (owner `0..2`, shape `3..6`, offset `7..8`) plus 15 flow and 15 source records. Gravity reverses upward when the packed cell is nonzero except for literal cell value `3`; `OVoid()` adds the source eight-frame water bob to raw `0/1/8/9/47` rendering.
 - On the timer-zero landing frame, Java updates the `0x38` rotation, clears the low direction, and emits sound `14` for a vertically landing boulder. The `0x400/0x800` side marker survives that frame but is cleared on the next stationary update over a non-rounded support.
 
 Go implication:
@@ -480,6 +481,7 @@ Source anchors:
 - Stage init handles player-layer raw `11` by setting object state to `16` when the background/state byte is `1`, then clearing that background/state byte to empty.
 - The object update switch around line 14009 dispatches raw `11` to `amVoid()`.
 - `amVoid()` uses low state bits as movement direction and bit `0x10` to choose the alternate initial wall side. It probes the forward and side cells to follow a wall around convex and concave corners, rather than merely reversing on a blocked target, and clears the object after its high death/phase bits reach `4`.
+- In Bavaria, any nonzero packed water cell starts the crawler's `0x100 -> 0x400` death sequence before another wall-follow step can start.
 - When the crawler overlaps or reaches the player, it calls `hurtHero(1,64,0)`.
 - The render branch around line 7428 draws raw `11` from `aClassfArr[6]`, loaded from `gen1.f` chunk `4`, with frame/offset choices derived from state and direction.
 
@@ -540,6 +542,7 @@ Source anchors:
 Go implication:
 
 - Decode raw `41` as a value-bearing violet-diamond pickup using the same cell's background/state value. It must increase the right-hand HUD violet count, the stage result numerator, and the saved violet bank.
+- Bavaria Stage 1 supplies a concrete cross-world regression: the raw `41` chest at `(25,14)` has authored background value `10`; opening it must change the lower-right violet HUD to include those 10 gems and persist the same value in the Bavaria stage best and global bank.
 - Decode raw `12` as a visible blocking quota gate. Keep it in the player layer until the remaining value reaches zero, then clear it.
 - Decrement the quota for raw `1` and raw `41` collection.
 - Keep foreground raw `5` exit logic independent: the exit does not query `aaInt`, although authored routes may place raw `12` in front of it.
@@ -572,7 +575,7 @@ Go implication:
 
 ## Special Source Pickups
 
-Several rare World 0 player-layer pickups carry the cross-world tool progression used by the authored Angkor revisit routes.
+Several rare player-layer pickups carry the cross-world tool progression used by authored revisit routes.
 
 Source anchors:
 
@@ -589,7 +592,7 @@ Go implication:
 - Treat raw `24`, `26`, `27`, `42`, and `53` as passable source-special pickups. Raw `42` is the Compass and triggers tutorial script `11`; raw `53` preserves the special animation `47`, 141-tick input lock, seal bit `0`, and 11-step non-result transition.
 - Preserve the Java state effects as runtime flags/masks and derive action tool level from raw `24` Mystic Mallet, raw `27` Mystic Hook, and raw `26` Freeze Hammer in source progression order `1/2/8`.
 - Clear the source cell and include the flags in checkpoint snapshots.
-- Draw all three tools from their source modules in overhead rewards. The Angkor-only Stage 5 runtime is loaded as the authored post-Bavaria revisit state, so it supplies tool level `2` without inventing a false hook chest inside Angkor; reproducing the acquisition itself requires Bavaria Stage 3.
+- Draw all three tools from their source modules in overhead rewards. Bavaria Stage 3 now performs the real raw `27` acquisition and persists tool level `2`; Bavaria Stage 5 inherits it and contains no duplicate raw `27`. The Angkor Stage 5 direct-stage fallback supplies the same authored revisit prerequisite without inventing a false hook chest.
 
 ## Angkor Tutorial Stage 13 And Compass
 

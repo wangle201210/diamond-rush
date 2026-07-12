@@ -6,6 +6,7 @@ import (
 	"image/color"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -111,7 +112,9 @@ func (m *worldMapData) linkedStage(stage, dx, dy int, unlocked func(int) bool) (
 			continue
 		}
 		candidate := m.Nodes[index]
-		if unlocked == nil || !unlocked(candidate.Stage) {
+		// Java checks the node's runtime lock state here, not its authored map
+		// type. An unlocked secret node is therefore navigable in both directions.
+		if unlocked != nil && !unlocked(candidate.Stage) {
 			continue
 		}
 		deltaX := candidate.X - node.X
@@ -182,15 +185,15 @@ func (m *worldMapData) stagesLinked(fromStage, toStage int) bool {
 func (g *Game) enterWorldMap() {
 	g.mode = gameModeWorldMap
 	g.worldMapLoadingStep = 0
-	g.worldMapSelectedStage = clamp(g.stageIndex, 0, angkorStageCount-1)
+	g.worldMapSelectedStage = clamp(g.stageIndex, 0, worldStageCount(g.worldIndex)-1)
 	g.worldMapTravelFrom = g.worldMapSelectedStage
 	g.worldMapTravelTo = g.worldMapSelectedStage
 	g.worldMapTravelTick = 0
-	if g.pendingMapTarget >= 0 && g.progress.stageUnlocked(g.pendingMapTarget) && g.worldMap.stagesLinked(g.stageIndex, g.pendingMapTarget) {
+	if g.pendingMapTarget >= 0 && g.progress.stageUnlockedForWorld(g.worldIndex, g.pendingMapTarget) && g.worldMap.stagesLinked(g.stageIndex, g.pendingMapTarget) {
 		g.worldMapTravelTo = g.pendingMapTarget
 	}
 	g.pendingMapTarget = -1
-	g.message = "Angkor world map"
+	g.message = worldName(g.worldIndex) + " world map"
 }
 
 func (g *Game) updateWorldMap(action bool) {
@@ -208,11 +211,13 @@ func (g *Game) updateWorldMap(action bool) {
 	}
 	if action {
 		stage := g.worldMapSelectedStage
-		if g.progress.stageUnlocked(stage) && angkorStageImplemented(stage) {
+		if !g.progress.stageUnlockedForWorld(g.worldIndex, stage) {
+			g.message = fmt.Sprintf("%s stage %d is locked", worldName(g.worldIndex), stage+1)
+		} else if worldStageImplemented(g.worldIndex, stage) {
 			g.loadStage(stage)
 			g.mode = gameModeStage
-		} else if g.progress.stageUnlocked(stage) {
-			g.message = fmt.Sprintf("Angkor stage %d is not replicated yet", stage+1)
+		} else {
+			g.message = fmt.Sprintf("%s stage %d is not replicated yet", worldName(g.worldIndex), stage+1)
 		}
 		return
 	}
@@ -220,7 +225,10 @@ func (g *Game) updateWorldMap(action bool) {
 	if dx == 0 && dy == 0 {
 		return
 	}
-	if stage, ok := g.worldMap.linkedStage(g.worldMapSelectedStage, dx, dy, g.progress.stageUnlocked); ok {
+	unlocked := func(stage int) bool {
+		return g.progress.stageUnlockedForWorld(g.worldIndex, stage)
+	}
+	if stage, ok := g.worldMap.linkedStage(g.worldMapSelectedStage, dx, dy, unlocked); ok {
 		g.worldMapTravelFrom = g.worldMapSelectedStage
 		g.worldMapTravelTo = stage
 		g.worldMapTravelTick = 0
@@ -240,20 +248,59 @@ func (g *Game) drawWorldMap(screen *ebiten.Image) {
 	if g.worldMapHeader != nil {
 		g.worldMapHeader.drawFrame(screen, 0, original.ScreenWidth/2, 0, 0)
 	}
-	g.fontMedium.drawText(screen, "ANGKOR WAT", original.ScreenWidth/2, 12, true, color.White)
+	g.fontMedium.drawText(screen, strings.ToUpper(worldName(g.worldIndex)), original.ScreenWidth/2, 12, true, color.White)
+	g.fontMedium.drawText(screen, g.worldMapStageTitle(g.worldMapDisplayStage()), 8, 61, false, color.White)
 	if g.worldMapGround != nil {
 		g.worldMapGround.drawFrame(screen, 0, 120, 171, 0)
 	}
 	g.drawWorldMapPaths(screen)
 	g.drawWorldMapNodes(screen)
 	g.drawWorldMapHero(screen)
+	g.drawWorldMapStageProgress(screen)
 
-	drawRect(screen, 2, 275, 236, 39, color.RGBA{0x2f, 0x7b, 0x46, 0xff})
-	g.fontSmall.drawText(screen, g.worldMapStageTitle(g.worldMapDisplayStage()), 8, 284, false, color.White)
-	g.fontSmall.drawText(screen, fmt.Sprintf("%d/%d", g.progress.StageVioletGems[g.worldMapDisplayStage()], g.stageTotalViolet(g.worldMapDisplayStage())), 92, 284, true, color.White)
-	g.fontSmall.drawText(screen, fmt.Sprintf("%d", g.progress.ExtraLives), 155, 284, true, color.White)
+	drawRoundedRect(screen, 2, 275, 236, 16, 4, color.RGBA{0x2f, 0x7b, 0x46, 0xff})
+	if g.worldMapIcons != nil {
+		g.worldMapIcons.drawFrame(screen, 12, 10, 278, 0)
+		g.worldMapIcons.drawFrame(screen, 11, 80, 280, 0)
+		g.worldMapIcons.drawFrame(screen, 10, 155, 280, 0)
+	}
+	g.fontSmall.drawText(screen, fmt.Sprintf("%d", g.progress.ExtraLives), 41, 290, true, color.White)
+	g.fontSmall.drawText(screen, fmt.Sprintf("%d", g.progress.VioletGemBank), 99, 290, true, color.White)
+	g.fontSmall.drawText(screen, fmt.Sprintf("%d", g.progress.RedDiamondBank), 174, 290, true, color.White)
 	selectPrompt := desktopActionKeyLabel + ": SELECT"
 	g.fontSmall.drawText(screen, selectPrompt, 236-g.fontSmall.stringWidth(selectPrompt), 314, false, color.White)
+}
+
+func (g *Game) drawWorldMapStageProgress(screen *ebiten.Image) {
+	if g.worldMap == nil || g.fontSmall == nil || g.worldMapTravelTick < worldMapTravelTicks {
+		return
+	}
+	stage := g.worldMapSelectedStage
+	node, ok := g.worldMap.nodeForStage(stage)
+	if !ok {
+		return
+	}
+	total := g.stageTotalRed(stage)
+	collected := min(total, g.progress.stageRedDiamondsForWorld(g.worldIndex, stage))
+	label := fmt.Sprintf("%d/%d", collected, total)
+	width := g.fontSmall.stringWidth(label) + 20
+	centerX, centerY := worldMapScreenPoint(node)
+	x := centerX - width/2
+	y := centerY - 43
+	if y <= 63 {
+		y = 63
+		x = centerX + 20
+		if x+width >= 220 {
+			x = centerX - width - 20
+		}
+	}
+	x = clamp(x, 25, 220-width)
+	drawRoundedRect(screen, x, y, width, 17, 4, color.RGBA{0xce, 0x9b, 0x00, 0xff})
+	drawRoundedRect(screen, x+1, y+1, width-2, 15, 3, color.RGBA{0x00, 0x90, 0xb2, 0xff})
+	g.fontSmall.drawText(screen, label, x+2, y+10, false, color.White)
+	if g.worldMapIcons != nil {
+		g.worldMapIcons.drawFrame(screen, 10, x+width-16, y+1, 0)
+	}
 }
 
 func (g *Game) drawWorldMapLoading(screen *ebiten.Image) {
@@ -279,7 +326,7 @@ func (g *Game) drawWorldMapPaths(screen *ebiten.Image) {
 				continue
 			}
 			drawn[key] = true
-			unlocked := g.progress.stageUnlocked(node.Stage) && g.progress.stageUnlocked(linked.Stage)
+			unlocked := g.progress.stageUnlockedForWorld(g.worldIndex, node.Stage) && g.progress.stageUnlockedForWorld(g.worldIndex, linked.Stage)
 			frame := 2
 			if !unlocked {
 				frame = 3
@@ -310,12 +357,12 @@ func (g *Game) drawWorldMapNodes(screen *ebiten.Image) {
 	}
 	for _, node := range g.worldMap.Nodes {
 		frame := 1
-		if g.progress.stageUnlocked(node.Stage) {
+		if g.progress.stageUnlockedForWorld(g.worldIndex, node.Stage) {
 			frame = 0
 		}
 		x, y := worldMapScreenPoint(node)
 		g.worldMapIcons.drawFrame(screen, frame, x, y, 0)
-		if g.progress.StageCleared[node.Stage] {
+		if g.progress.stageClearedForWorld(g.worldIndex, node.Stage) {
 			g.worldMapIcons.drawFrame(screen, 17, x, y, 0)
 		}
 	}
@@ -344,14 +391,14 @@ func (g *Game) drawWorldMapHero(screen *ebiten.Image) {
 
 func (g *Game) worldMapDisplayStage() int {
 	if g.worldMapTravelTick < worldMapTravelTicks {
-		return clamp(g.worldMapTravelTo, 0, angkorStageCount-1)
+		return clamp(g.worldMapTravelTo, 0, worldStageCount(g.worldIndex)-1)
 	}
-	return clamp(g.worldMapSelectedStage, 0, angkorStageCount-1)
+	return clamp(g.worldMapSelectedStage, 0, worldStageCount(g.worldIndex)-1)
 }
 
 func (g *Game) worldMapStageTitle(stage int) string {
 	if node, ok := g.worldMap.nodeForStage(stage); ok && node.Type == 1 {
-		return fmt.Sprintf("SECRET STAGE %d", stage-angkorFirstSecretStage+1)
+		return fmt.Sprintf("SECRET STAGE %d", stage-worldFirstSecretStage(g.worldIndex)+1)
 	}
 	return fmt.Sprintf("STAGE %d", stage+1)
 }
@@ -364,7 +411,20 @@ func (g *Game) stageTotalViolet(stage int) int {
 	if g.pack == nil || stage < 0 || stage >= len(g.pack.Stages) {
 		return 0
 	}
-	return g.pack.Stages[stage].Histograms[original.PlayerLayer][1]
+	return original.StageVioletTotal(g.pack.Stages[stage])
+}
+
+func (g *Game) stageTotalRed(stage int) int {
+	if g.pack == nil || stage < 0 || stage >= len(g.pack.Stages) || g.pack.Stages[stage] == nil {
+		return 0
+	}
+	total := 0
+	for _, id := range g.pack.Stages[stage].Player {
+		if id == 2 {
+			total++
+		}
+	}
+	return total
 }
 
 func worldMapScreenPoint(node worldMapNode) (int, int) {

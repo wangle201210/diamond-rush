@@ -1,6 +1,6 @@
 # Diamond Rush Original Runtime
 
-这是一个使用 Go + Ebitengine、依据本机 Java ME 原版源码与资源实现的 Diamond Rush 原作数据运行时。当前可玩范围覆盖 Angkor World 0 打包的全部 14 个 stage：`stage00` 到 `stage08` 是普通路线与 Great Anaconda Boss，`stage09` 到 `stage12` 是四个秘密关，`stage13` 是新存档进入 Stage 1 前的原版教程。Stage 9 徽记结算后的全局封印世界选择也已接通；Angkor 可进入世界地图，Bavaria、Siberia 与 Shop 仅保留原作位置、解锁和演出，内容尚未复刻。
+这是一个使用 Go + Ebitengine、依据本机 Java ME 原版源码与资源实现的 Diamond Rush 原作数据运行时。当前可玩范围覆盖 Angkor World 0 打包的全部 14 个 stage，以及 Bavaria World 1 打包的全部 13 个 stage。Angkor 的 `stage00` 到 `stage08` 是普通路线与 Great Anaconda Boss，`stage09` 到 `stage12` 是四个秘密关，`stage13` 是新存档进入 Stage 1 前的原版教程；Bavaria 的 `stage00` 到 `stage09` 是普通路线与 Evil Teutonic Knight，`stage10` 到 `stage12` 是秘密关。两个世界均已接入原版世界地图、素材、进度和各自特殊机制；Bavaria 的逐关完整路线差分审计仍在进行。Siberia 与 Shop 尚未复刻。
 
 ## 运行
 
@@ -44,7 +44,7 @@ macOS 进度默认保存到：
 ~/Library/Application Support/zskc-diamondrush/original-progress.json
 ```
 
-当前存档格式为 v6，持久化 Angkor 节点、收集/勋章、教程、三枚徽记、世界解锁状态，以及原作会永久消费的红钻/额外生命/徽记宝箱坐标。raw `41` 宝箱奖励计入右下角紫钻、关卡结算和可重玩累加的紫钻资产。
+当前存档格式为 v6，持久化 Angkor/Bavaria 节点、收集/勋章、教程、三枚徽记、世界解锁状态、工具等级，以及原作会永久消费的红钻/额外生命/徽记宝箱坐标。raw `41` 宝箱奖励计入右下角紫钻、关卡结算和可重玩累加的紫钻资产；Bavaria Stage 3 的 raw `27` 宝箱取得 Mystic Hook，之后由存档带入 Stage 5。
 
 ## 权威参考
 
@@ -63,6 +63,6 @@ go test ./...
 go build -o /tmp/originalrush-smoke ./cmd/originalrush
 ```
 
-开发时可用 `ORIGINALRUSH_STAGE=1..14 go run ./cmd/originalrush` 直达对应数据关；`14` 是教程。该覆盖不改变正常启动选择，但完成关卡仍会写入当前 `HOME` 下的进度文件。
+开发时可用 `ORIGINALRUSH_STAGE=1..14 go run ./cmd/originalrush` 直达 Angkor 数据关，`14` 是教程；使用 `ORIGINALRUSH_WORLD=bavaria ORIGINALRUSH_STAGE=1..13 go run ./cmd/originalrush` 可直达 Bavaria。该覆盖不改变正常启动选择，但完成关卡仍会写入当前 `HOME` 下的进度文件。
 
 常用资源工具命令记录在 `AGENTS.md` 和 `decoded/README.md`。

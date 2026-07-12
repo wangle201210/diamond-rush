@@ -13,19 +13,17 @@ import "C"
 
 import "unsafe"
 
-type avMIDIBackend struct{}
-
 func newMIDIBackend() midiBackend {
-	return &avMIDIBackend{}
+	return newAsyncMIDIBackend(playAVMIDI, stopAVMIDI)
 }
 
-func (b *avMIDIBackend) Play(data []byte) bool {
+func playAVMIDI(data []byte) bool {
 	if len(data) == 0 {
 		return false
 	}
 	return C.dr_play_midi((*C.uint8_t)(unsafe.Pointer(&data[0])), C.int(len(data))) != 0
 }
 
-func (b *avMIDIBackend) Stop() {
+func stopAVMIDI() {
 	C.dr_stop_midi()
 }

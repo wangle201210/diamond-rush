@@ -34,7 +34,7 @@ func (route *stage07Route) tick() {
 		route.rt.AdvancePlayerMotion()
 	}
 	if route.rt.PlayerDead {
-		route.t.Fatalf("hero died during %s: tick=%d player=%+v health=%d hits=%d boulders=%v", route.action, route.sourceTick, route.rt.Player, route.rt.Health, route.rt.HitCount, runtimePointsWithRaw(route.rt, 0))
+		route.t.Fatalf("hero died during %s: tick=%d player=%+v health=%d hits=%d boulders=%v greenSnakes=%v redSnakes=%v", route.action, route.sourceTick, route.rt.Player, route.rt.Health, route.rt.HitCount, runtimePointsWithRaw(route.rt, 0), runtimePointsWithRaw(route.rt, 19), runtimePointsWithRaw(route.rt, 43))
 	}
 }
 
@@ -52,7 +52,7 @@ func (route *stage07Route) waitUntil(label string, maxTicks int, condition func(
 		}
 		route.tick()
 	}
-	route.t.Fatalf("%s not reached after %d ticks: tick=%d player=%+v health=%d gems=%d bonus=%d keys=%d/%d locks=%d groups=%v boulders=%v snakes=%v ice=%v", label, maxTicks, route.sourceTick, route.rt.Player, route.rt.Health, route.rt.VioletGems, route.rt.BonusValue, route.rt.KeyForForeground8, route.rt.KeyForForeground9, route.rt.LocksOpened, route.rt.EnemyGateCounters, runtimePointsWithRaw(route.rt, 0), runtimePointsWithRaw(route.rt, 19), runtimePointsWithRaw(route.rt, 9))
+	route.t.Fatalf("%s not reached after %d ticks: tick=%d player=%+v health=%d gems=%d bonus=%d keys=%d/%d locks=%d groups=%v boulders=%v moving=%v snakes=%v redSnakes=%v ice=%v", label, maxTicks, route.sourceTick, route.rt.Player, route.rt.Health, route.rt.VioletGems, route.rt.BonusValue, route.rt.KeyForForeground8, route.rt.KeyForForeground9, route.rt.LocksOpened, route.rt.EnemyGateCounters, runtimePointsWithRaw(route.rt, 0), runtimePointsWithRaw(route.rt, 14), runtimePointsWithRaw(route.rt, 19), runtimePointsWithRaw(route.rt, 43), runtimePointsWithRaw(route.rt, 9))
 }
 
 func (route *stage07Route) walkTo(label string, target Point) {

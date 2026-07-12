@@ -79,3 +79,61 @@ func TestOriginalSoundPriorityTable(t *testing.T) {
 		}
 	}
 }
+
+func TestAsyncMIDIBackendNeverBlocksGameThread(t *testing.T) {
+	playStarted := make(chan struct{})
+	releasePlay := make(chan struct{})
+	stopCalled := make(chan struct{})
+	backend := newAsyncMIDIBackend(func([]byte) bool {
+		close(playStarted)
+		<-releasePlay
+		return true
+	}, func() {
+		close(stopCalled)
+	})
+
+	if !backend.Play([]byte("first")) {
+		t.Fatal("first MIDI request was not queued")
+	}
+	select {
+	case <-playStarted:
+	case <-time.After(time.Second):
+		t.Fatal("native MIDI worker did not start")
+	}
+
+	playReturned := make(chan bool, 1)
+	go func() {
+		playReturned <- backend.Play([]byte("replacement"))
+	}()
+	select {
+	case queued := <-playReturned:
+		if !queued {
+			t.Fatal("replacement MIDI request was not queued")
+		}
+	case <-time.After(time.Second):
+		t.Fatal("MIDI Play blocked behind native playback")
+	}
+
+	stopReturned := make(chan struct{})
+	go func() {
+		backend.Stop()
+		close(stopReturned)
+	}()
+	select {
+	case <-stopReturned:
+	case <-time.After(time.Second):
+		t.Fatal("MIDI Stop blocked behind native playback")
+	}
+
+	close(releasePlay)
+	select {
+	case <-backend.done:
+	case <-time.After(time.Second):
+		t.Fatal("native MIDI worker did not stop")
+	}
+	select {
+	case <-stopCalled:
+	default:
+		t.Fatal("native MIDI stop was not called")
+	}
+}

@@ -121,7 +121,7 @@ func TestRuntimeIndexesSourceAnchoredObjects(t *testing.T) {
 	}
 }
 
-func TestRuntimeInitializesBonusQuotaMarker(t *testing.T) {
+func TestRuntimeInitializesBonusQuotaHUDTarget(t *testing.T) {
 	stage := mustLoadOriginalStage(t, "stage00.json")
 	rt, err := NewRuntime(stage)
 	if err != nil {
@@ -138,11 +138,11 @@ func TestRuntimeInitializesBonusQuotaMarker(t *testing.T) {
 	}
 	id, _ := rt.At(PlayerLayer, 20, 9)
 	if id != 12 {
-		t.Fatalf("bonus marker runtime cell = %d, want raw12 until quota is met", id)
+		t.Fatalf("bonus marker runtime cell = %d, want source raw12", id)
 	}
 }
 
-func TestRuntimeStage00Raw12QuotaBlocksItsCellUntilMet(t *testing.T) {
+func TestRuntimeStage00Raw12QuotaBlocksUntilSatisfied(t *testing.T) {
 	stage := mustLoadOriginalStage(t, "stage00.json")
 	rt, err := NewRuntime(stage)
 	if err != nil {
@@ -155,28 +155,27 @@ func TestRuntimeStage00Raw12QuotaBlocksItsCellUntilMet(t *testing.T) {
 		t.Fatalf("total red diamonds = %d, want 1", rt.TotalRedDiamonds)
 	}
 	if !rt.ExitOpen || !rt.CanExit() {
-		t.Fatal("raw12 quota incorrectly closed the source raw5 exit")
+		t.Fatal("raw12 HUD target incorrectly closed the source raw5 exit")
 	}
 	rt.Player = Point{X: rt.BonusTarget.X - 1, Y: rt.BonusTarget.Y}
 	if rt.TryMove(1, 0) {
-		t.Fatal("moved through raw12 before satisfying its quota")
+		t.Fatal("raw12 quota gate was passable before satisfying its quota")
 	}
 	for i := 0; i < 9; i++ {
 		rt.consumeBonusQuota(1)
 	}
 	marker, _ := rt.At(PlayerLayer, rt.BonusTarget.X, rt.BonusTarget.Y)
-	if marker != 12 || rt.BonusGateOpen {
-		t.Fatalf("marker=%d open=%v with one remaining, want raw12/false", marker, rt.BonusGateOpen)
+	if marker != 12 || rt.BonusRemaining != 1 || rt.BonusGateOpen {
+		t.Fatalf("marker/remaining/open=%d/%d/%v with one remaining, want raw12/1/false", marker, rt.BonusRemaining, rt.BonusGateOpen)
 	}
 	rt.consumeBonusQuota(1)
 	if !rt.BonusGateOpen || !rt.ExitOpen || !rt.CanExit() {
-		t.Fatalf("gate=%v exit=%v canExit=%v after ten gems, want all true", rt.BonusGateOpen, rt.ExitOpen, rt.CanExit())
+		t.Fatalf("quota=%v exit=%v canExit=%v after ten gems, want all true", rt.BonusGateOpen, rt.ExitOpen, rt.CanExit())
 	}
 	marker, _ = rt.At(PlayerLayer, rt.BonusTarget.X, rt.BonusTarget.Y)
-	if marker != EmptyRawID || !rt.TryMove(1, 0) {
-		t.Fatalf("opened raw12 marker=%d move=%v, want empty/passable", marker, rt.Player == rt.BonusTarget)
+	if marker != EmptyRawID {
+		t.Fatalf("completed raw12 HUD target marker=%d, want empty", marker)
 	}
-	settleRuntimePlayerMotion(rt)
 	goal := rt.GoalMarkers[0]
 	rt.Player = Point{X: goal.X - 1, Y: goal.Y}
 	rt.PlayerMotion = ObjectMotion{}
@@ -954,9 +953,9 @@ func TestRuntimeFallingBoulderKeepsSeparateDigForegroundState(t *testing.T) {
 	if id, _ := rt.At(PlayerLayer, x, y+1); id != 0 {
 		t.Fatalf("fallen object raw=%d, want boulder raw0", id)
 	}
-	wantObjectState := 0x18 | 3
+	wantObjectState := 0x18 | 3 | 1<<explosiveFallShift
 	if got := rt.ObjectState[targetIdx]; got != wantObjectState {
-		t.Fatalf("fallen boulder state=%#x, want rotation plus down direction %#x", got, wantObjectState)
+		t.Fatalf("fallen boulder state=%#x, want rotation, down direction, and source fall count %#x", got, wantObjectState)
 	}
 	if got := rt.ForegroundStateAt(x, y+1); got != 3 {
 		t.Fatalf("dig foreground state=%d after fall, want 3", got)

@@ -55,6 +55,48 @@ func TestNewLoadsAngkorWorldPack(t *testing.T) {
 	}
 }
 
+func TestNewLoadsBavariaWorldPackAndArt(t *testing.T) {
+	g, err := New("decoded/world1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if g.worldIndex != original.WorldBavaria || g.pack.World != original.WorldBavaria || len(g.pack.Stages) != bavariaStageCount {
+		t.Fatalf("Bavaria load = world %d/%d stages %d", g.worldIndex, g.pack.World, len(g.pack.Stages))
+	}
+	if g.worldMap.Source != "map_scotland.out" || len(g.worldMap.Nodes) != bavariaStageCount {
+		t.Fatalf("Bavaria map = %q nodes %d", g.worldMap.Source, len(g.worldMap.Nodes))
+	}
+	if g.rt.Stage.World != original.WorldBavaria || g.rt.IsFallingTorchStage() || g.rt.Anaconda.Enabled {
+		t.Fatalf("Bavaria Stage 1 inherited Angkor special state: world=%d fire=%v anaconda=%v", g.rt.Stage.World, g.rt.IsFallingTorchStage(), g.rt.Anaconda.Enabled)
+	}
+	if g.worldFrames == nil || g.boulder == nil || g.diggable == nil || g.floor == nil || g.worldMapHeader == nil {
+		t.Fatal("Bavaria world art was not loaded")
+	}
+	if g.worldFrames.moduleImage == nil || g.worldFrames.cellH != 26 {
+		t.Fatalf("Bavaria world frames module/cell-height=%v/%d, want metadata composition with 26px atlas height", g.worldFrames.moduleImage != nil, g.worldFrames.cellH)
+	}
+	for frame := 44; frame <= 49; frame++ {
+		if g.worldFrames.meta.FrameCounts[frame] != 1 {
+			t.Fatalf("Bavaria banner frame %d module count=%d, want one source module", frame, g.worldFrames.meta.FrameCounts[frame])
+		}
+	}
+	if got := g.stageTotalViolet(0); got != g.rt.TotalVioletGems || got <= g.pack.Stages[0].Histograms[original.PlayerLayer][1] {
+		t.Fatalf("Bavaria Stage 1 map violet total=%d, runtime=%d loose=%d; chest value was not included", got, g.rt.TotalVioletGems, g.pack.Stages[0].Histograms[original.PlayerLayer][1])
+	}
+}
+
+func TestRequestedStartupWorldAcceptsBavariaOverride(t *testing.T) {
+	t.Setenv("ORIGINALRUSH_WORLD", "bavaria")
+	world, overridden, err := requestedStartupWorld()
+	if err != nil || !overridden || world != original.WorldBavaria {
+		t.Fatalf("startup world=%d overridden=%v err=%v, want Bavaria override", world, overridden, err)
+	}
+	t.Setenv("ORIGINALRUSH_WORLD", "tibet")
+	if _, _, err := requestedStartupWorld(); err == nil {
+		t.Fatal("unimplemented Tibet startup override was accepted")
+	}
+}
+
 func TestLoadStageSwitchesRuntime(t *testing.T) {
 	g, err := New(defaultWorldDir)
 	if err != nil {
@@ -165,6 +207,29 @@ func TestStage08LoadsAndDrawsOriginalGreatAnacondaAssets(t *testing.T) {
 	}
 }
 
+func TestBavariaStageTenLoadsAndDrawsOriginalKnightAsset(t *testing.T) {
+	g, err := New("decoded/world1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if g.bavaria.knight == nil || g.bavaria.knight.moduleImage == nil || len(g.bavaria.knight.meta.AnimationCounts) != 14 {
+		t.Fatal("b1.f Evil Teutonic Knight source sprite is not drawable")
+	}
+	for animation, want := range map[int]int{0: 24, 2: 33, 4: 3, 8: 31, 12: 110, 13: 90} {
+		if duration, ok := g.bavaria.knight.animationDuration(animation); !ok || duration != want {
+			t.Errorf("knight animation %d duration=%d,%v, want %d,true", animation, duration, ok, want)
+		}
+	}
+	g.loadStage(bavariaSealStage)
+	if !g.rt.TeutonicKnight.Enabled {
+		t.Fatal("Bavaria Stage 10 did not enable the source boss")
+	}
+	g.rt.TeutonicKnight.State = original.TeutonicKnightStateWalkLeft
+	g.rt.TeutonicKnight.Animation = original.TeutonicKnightStateWalkLeft
+	dst := ebiten.NewImage(original.ScreenWidth, playfieldHeight)
+	g.drawEvilTeutonicKnight(dst, 300, 360)
+}
+
 func TestStage08SealUsesDedicatedLoadingTransition(t *testing.T) {
 	g, err := New(defaultWorldDir)
 	if err != nil {
@@ -204,6 +269,34 @@ func TestStage08SealUsesDedicatedLoadingTransition(t *testing.T) {
 	}
 	if g.progress.RelicMask != 1 {
 		t.Fatalf("persisted relic mask=%#x, want Angkor bit", g.progress.RelicMask)
+	}
+}
+
+func TestBavariaSealUsesDedicatedLoadingTransition(t *testing.T) {
+	g, err := New("decoded/world1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	g.loadStage(bavariaSealStage)
+	g.rt.RelicMask = 2
+	g.rt.SealCollected = true
+	g.rt.SealStageComplete = true
+	if err := g.Update(); err != nil {
+		t.Fatal(err)
+	}
+	if !g.sealExitActive || g.worldDone || !g.progress.BavariaStageCleared[bavariaSealStage] {
+		t.Fatalf("Bavaria seal transition active=%v worldDone=%v stageCleared=%v", g.sealExitActive, g.worldDone, g.progress.BavariaStageCleared[bavariaSealStage])
+	}
+	for step := 0; step < sealLoadingSteps; step++ {
+		if err := g.Update(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if g.mode != gameModeWorldSelect || g.sealExitActive || g.worldSelectIncoming != sealPositionBavaria {
+		t.Fatalf("Bavaria seal completion mode=%d active=%v incoming=%d, want world selector/false/Bavaria", g.mode, g.sealExitActive, g.worldSelectIncoming)
+	}
+	if g.progress.RelicMask&2 == 0 {
+		t.Fatalf("persisted relic mask=%#x, want Bavaria bit", g.progress.RelicMask)
 	}
 }
 
@@ -285,6 +378,19 @@ func TestLateForegroundOverlayKeepsEmptyRawIDTransparent(t *testing.T) {
 	for tick, want := range map[int]int{0: 0, 3: 0, 4: 1, 7: 1, 8: 2} {
 		if got := sourceForegroundEffectSequence(tick); got != want {
 			t.Errorf("foreground sequence at tick %d=%d, want %d", tick, got, want)
+		}
+	}
+	for id, want := range map[original.RawID]int{20: 2, 21: 3, 22: 0, 23: 1} {
+		if got := sourceForegroundEffectAnimation(id); got != want {
+			t.Errorf("foreground raw %d animation=%d, want upright composite animation %d", id, got, want)
+		}
+	}
+}
+
+func TestBavariaSpikeCoverUsesCellBehindExtension(t *testing.T) {
+	for direction, want := range map[int]int{-1: 1, 1: -1} {
+		if got := sourceBavariaSpikeCoverOffset(direction); got != want {
+			t.Errorf("spike direction %d cover offset=%d, want %d", direction, got, want)
 		}
 	}
 }
@@ -819,6 +925,21 @@ func TestHUDUsesExtractedDigitAndHealthModules(t *testing.T) {
 	}
 }
 
+func TestBavariaPurpleChestUpdatesBottomRightHUD(t *testing.T) {
+	g, err := New("decoded/world1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	openCampaignChestForTest(t, g.rt, original.Point{X: 25, Y: 14})
+	if g.rt.VioletGems != 10 {
+		t.Fatalf("purple chest HUD source value=%d, want 10", g.rt.VioletGems)
+	}
+	if got := g.currentHUDCounterValues().Violet; got != 10 {
+		t.Fatalf("bottom-right violet HUD binding=%d, want opened chest value 10", got)
+	}
+	g.drawHUD(ebiten.NewImage(original.ScreenWidth, original.ScreenHeight))
+}
+
 func TestStageResultUsesSourceLoadingAndPhaseTiming(t *testing.T) {
 	g, err := New(defaultWorldDir)
 	if err != nil {
@@ -867,8 +988,11 @@ func TestStageResultSourceSlideAndCountFrames(t *testing.T) {
 		resultRedLabelY, resultRedCountY,
 		resultHitsIconY, resultHitsLabelY, resultHitsCountY,
 		resultRetriesIconY, resultRetriesLabelY, resultRetriesCountY,
-	}; !slices.Equal(got, []int{15, 32, 75, 91, 131, 147, 191, 187, 203, 243, 243, 259}) {
-		t.Fatalf("result layout coordinates = %v, want Java case 17 coordinates", got)
+	}; !slices.Equal(got, []int{23, 42, 75, 91, 131, 147, 191, 187, 203, 243, 243, 259}) {
+		t.Fatalf("result layout coordinates = %v, want desktop-safe result coordinates", got)
+	}
+	if resultStageTitleY-sourceFontYOffset < 8 {
+		t.Fatalf("result title top inset=%d, want at least 8", resultStageTitleY-sourceFontYOffset)
 	}
 	tests := []struct {
 		tick                 int
