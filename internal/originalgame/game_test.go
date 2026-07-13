@@ -497,6 +497,8 @@ func TestLateForegroundOverlayKeepsEmptyRawIDTransparent(t *testing.T) {
 		{id: 79},
 		{id: 80, frame: 0, ok: true},
 		{id: 119, frame: 39, ok: true},
+		{id: 207, frame: 127, ok: true},
+		{id: 208},
 	} {
 		frame, ok := sourceWorldOverlayFrame(tt.id)
 		if frame != tt.frame || ok != tt.ok {
@@ -511,6 +513,26 @@ func TestLateForegroundOverlayKeepsEmptyRawIDTransparent(t *testing.T) {
 	for id, want := range map[original.RawID]int{20: 2, 21: 3, 22: 0, 23: 1} {
 		if got := sourceForegroundEffectAnimation(id); got != want {
 			t.Errorf("foreground raw %d animation=%d, want upright composite animation %d", id, got, want)
+		}
+	}
+}
+
+func TestPlayerCellFloorUsesJavaSignedByteSemantics(t *testing.T) {
+	for _, tt := range []struct {
+		id   original.RawID
+		want bool
+	}{
+		{id: 0, want: true},
+		{id: 79, want: true},
+		{id: 80, want: false},
+		{id: 127, want: false},
+		{id: 128, want: true},
+		{id: 207, want: true},
+		{id: 208, want: true},
+		{id: original.EmptyRawID, want: true},
+	} {
+		if got := sourcePlayerCellUsesFloor(tt.id); got != tt.want {
+			t.Errorf("player raw %d uses floor=%v, want %v", tt.id, got, tt.want)
 		}
 	}
 }

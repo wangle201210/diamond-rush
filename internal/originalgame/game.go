@@ -1591,7 +1591,6 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	world.Fill(color.RGBA{6, 8, 10, 255})
 	camX, camY := g.cameraPixels()
 	g.drawStageCells(world, camX, camY)
-	g.drawGreatAnaconda(world, camX, camY)
 	g.drawEvilTeutonicKnight(world, camX, camY)
 	g.drawFallingTorchStage(world, camX, camY)
 	g.drawTutorialSealOverlay(world, camX, camY)
@@ -1603,17 +1602,18 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		g.drawPlayer(world, renderedPlayerX, renderedPlayerY)
 	}
 	g.drawBavariaWater(world, camX, camY)
+	g.drawGreatAnaconda(world, camX, camY)
 	g.drawStageForegroundOverlays(world, camX, camY)
 	g.drawWorldEffects(world, camX, camY)
 	if !g.rt.TutorialSealActivated {
 		g.drawChestRewardEffect(world, renderedPlayerX, renderedPlayerY)
 		g.drawSpecialBarrierPrompt(world, renderedPlayerX, renderedPlayerY)
 	}
+	g.drawGreatAnacondaHealth(world)
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(0, playfieldTop)
 	screen.DrawImage(world, op)
 	g.drawHUD(screen)
-	g.drawGreatAnacondaHealth(screen)
 	g.drawEvilTeutonicKnightHealth(screen)
 	g.drawTutorialFlash(screen)
 	if index, _, ok := g.rt.EnemyGateMessage(); ok {
@@ -1750,7 +1750,7 @@ func (g *Game) drawStageResults(screen *ebiten.Image) {
 	screen.Fill(color.RGBA{0x26, 0x17, 0x07, 0xff})
 	textColor := color.White
 	titleOffset, completeOffset := stageResultTitleOffsetsAtRenderPhase(g.resultPhase, g.resultPhaseTicks, g.renderPhase)
-	g.fontSmall.drawText(screen, tr(textStage, g.stageIndex+1), original.ScreenWidth/2+titleOffset, resultStageTitleY, true, textColor)
+	g.fontSmall.drawText(screen, g.worldMapStageTitle(g.stageIndex), original.ScreenWidth/2+titleOffset, resultStageTitleY, true, textColor)
 	g.fontSmall.drawText(screen, tr(textComplete), original.ScreenWidth/2+completeOffset, resultCompleteY, true, textColor)
 
 	if g.resultPhase >= resultPhaseVioletGems {
@@ -2085,7 +2085,7 @@ func (g *Game) drawHUD(screen *ebiten.Image) {
 func (g *Game) drawStageIntro(screen *ebiten.Image) {
 	worldX, stageX := stageTitlePositionsAtRenderPhase(g.introTicks, g.renderPhase)
 	drawSourcePanelLabel(screen, g.fontMedium, worldDisplayName(g.worldIndex), worldX, playfieldTop+15)
-	drawSourcePanelLabel(screen, g.fontMedium, tr(textStage, g.stageIndex+1), stageX, playfieldTop+50)
+	drawSourcePanelLabel(screen, g.fontMedium, g.worldMapStageTitle(g.stageIndex), stageX, playfieldTop+50)
 }
 
 func stageTitlePositions(tick int) (int, int) {
@@ -2211,11 +2211,16 @@ func (g *Game) drawGreatAnacondaHealth(screen *ebiten.Image) {
 func (g *Game) drawCellBackground(dst *ebiten.Image, x, y, px, py int) {
 	drawRect(dst, px, py, original.TileSize, original.TileSize, color.RGBA{18, 20, 24, 255})
 	playerID, _ := g.rt.At(original.PlayerLayer, x, y)
-	if playerID == original.EmptyRawID || playerID < 80 {
+	if sourcePlayerCellUsesFloor(playerID) {
 		g.floor.drawModule(dst, 0, px, py)
-	} else {
-		g.drawWorldFrame(dst, int(playerID-80), px, py)
 	}
+	if frame, ok := sourceWorldOverlayFrame(playerID); ok {
+		g.drawWorldFrame(dst, frame, px, py)
+	}
+}
+
+func sourcePlayerCellUsesFloor(id original.RawID) bool {
+	return int8(id) < 80
 }
 
 func (g *Game) drawCellObjects(dst *ebiten.Image, x, y, px, py int) {
@@ -2364,7 +2369,8 @@ func sourceForegroundEffectAnimation(id original.RawID) int {
 }
 
 func sourceWorldOverlayFrame(id original.RawID) (int, bool) {
-	if id == original.EmptyRawID || id < 80 {
+	// Java casts (id - 80) back to a signed byte before this check.
+	if id < 80 || id > 207 {
 		return 0, false
 	}
 	return int(id - 80), true
