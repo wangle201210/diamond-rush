@@ -3,10 +3,13 @@ package original
 import "testing"
 
 type stage07Route struct {
-	t          *testing.T
-	rt         *Runtime
-	sourceTick int
-	action     string
+	t             *testing.T
+	rt            *Runtime
+	sourceTick    int
+	action        string
+	lastHitTick   int
+	lastHitPlayer Point
+	lastHitResult SourceFrameResult
 }
 
 func newStage07Route(t *testing.T, toolLevel int) *stage07Route {
@@ -22,7 +25,13 @@ func newStage07Route(t *testing.T, toolLevel int) *stage07Route {
 
 func (route *stage07Route) tick() {
 	route.sourceTick++
-	route.rt.TickSourceFrame(8, route.sourceTick, 0)
+	hits := route.rt.HitCount
+	result := route.rt.TickSourceFrame(8, route.sourceTick, 0)
+	if route.rt.HitCount > hits {
+		route.lastHitTick = route.sourceTick
+		route.lastHitPlayer = route.rt.Player
+		route.lastHitResult = result
+	}
 	if !route.rt.IsTutorialStage() {
 		if _, ok := route.rt.TutorialPrompt(); ok {
 			route.rt.AdvanceTutorialPrompt()
@@ -34,7 +43,7 @@ func (route *stage07Route) tick() {
 		route.rt.AdvancePlayerMotion()
 	}
 	if route.rt.PlayerDead {
-		route.t.Fatalf("hero died during %s: tick=%d player=%+v health=%d hits=%d boulders=%v greenSnakes=%v redSnakes=%v", route.action, route.sourceTick, route.rt.Player, route.rt.Health, route.rt.HitCount, runtimePointsWithRaw(route.rt, 0), runtimePointsWithRaw(route.rt, 19), runtimePointsWithRaw(route.rt, 43))
+		route.t.Fatalf("hero died during %s: tick=%d result=%+v player=%+v health=%d hits=%d boulders=%v greenSnakes=%v redSnakes=%v", route.action, route.sourceTick, result, route.rt.Player, route.rt.Health, route.rt.HitCount, runtimePointsWithRaw(route.rt, 0), runtimePointsWithRaw(route.rt, 19), runtimePointsWithRaw(route.rt, 43))
 	}
 }
 
@@ -106,7 +115,11 @@ func stage07RouteStep(rt *Runtime, target Point) (int, int, bool) {
 		for _, direction := range directions {
 			next := Point{X: point.X + direction.X, Y: point.Y + direction.Y}
 			playerID, _ := rt.At(PlayerLayer, next.X, next.Y)
-			if seen[next] || isContactEnemy(playerID) || !rt.IsPassable(next.X, next.Y) {
+			dangerousEnemy := isContactEnemy(playerID)
+			if isSnake(playerID) && rt.ObjectState[rt.index(next.X, next.Y)]&snakeStunMask != 0 {
+				dangerousEnemy = false
+			}
+			if seen[next] || dangerousEnemy || !rt.IsPassable(next.X, next.Y) {
 				continue
 			}
 			seen[next] = true

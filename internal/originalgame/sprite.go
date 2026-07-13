@@ -126,7 +126,23 @@ func (s *spriteSheet) drawAnimation(dst *ebiten.Image, animation, tick, px, py, 
 	if !ok {
 		return
 	}
-	s.drawFrame(dst, frame.Frame, px+frame.X, py+frame.Y, flags^frame.Flags)
+	s.drawFrame(dst, frame.Frame, px, py, flags^frame.Flags)
+}
+
+func (s *spriteSheet) drawAnimationWithFrameOffset(dst *ebiten.Image, animation, tick, px, py, flags int) {
+	frame, ok := s.animationFrame(animation, tick)
+	if !ok {
+		return
+	}
+	offsetX := frame.X
+	offsetY := frame.Y
+	if flags&1 != 0 {
+		offsetX = -offsetX
+	}
+	if flags&2 != 0 {
+		offsetY = -offsetY
+	}
+	s.drawFrame(dst, frame.Frame, px+offsetX, py+offsetY, flags^frame.Flags)
 }
 
 func (s *spriteSheet) drawAnimationSequenceFrame(dst *ebiten.Image, animation, sequence, px, py, flags int) {
@@ -134,7 +150,7 @@ func (s *spriteSheet) drawAnimationSequenceFrame(dst *ebiten.Image, animation, s
 	if !ok {
 		return
 	}
-	s.drawFrame(dst, frame.Frame, px+frame.X, py+frame.Y, flags^frame.Flags)
+	s.drawFrame(dst, frame.Frame, px, py, flags^frame.Flags)
 }
 
 func (s *spriteSheet) drawAnimationRawSequenceFrame(dst *ebiten.Image, animation, sequence, px, py, flags int) {
@@ -142,7 +158,7 @@ func (s *spriteSheet) drawAnimationRawSequenceFrame(dst *ebiten.Image, animation
 	if !ok {
 		return
 	}
-	s.drawFrame(dst, frame.Frame, px+frame.X, py+frame.Y, flags^frame.Flags)
+	s.drawFrame(dst, frame.Frame, px, py, flags^frame.Flags)
 }
 
 func (s *spriteSheet) animationFrameAtSequence(animation, sequence int) (spriteAnimationFrame, bool) {
@@ -344,4 +360,11 @@ func (s *spriteSheet) moduleWidth(moduleIndex int) int {
 		return 0
 	}
 	return s.meta.Modules[moduleIndex].W
+}
+
+func (s *spriteSheet) moduleHeight(moduleIndex int) int {
+	if s == nil || moduleIndex < 0 || moduleIndex >= len(s.meta.Modules) {
+		return 0
+	}
+	return s.meta.Modules[moduleIndex].H
 }

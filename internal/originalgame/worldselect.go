@@ -235,7 +235,7 @@ func (g *Game) activateWorldSelectPosition() {
 func (g *Game) drawWorldSelect(screen *ebiten.Image) {
 	for y := 0; y < original.ScreenHeight; y += original.TileSize {
 		for x := 0; x < original.ScreenWidth; x += original.TileSize {
-			drawSpriteFrame(screen, g.floor, 0, x, y)
+			g.floor.drawModule(screen, 0, x, y)
 		}
 	}
 	if g.tutorialSeal != nil {

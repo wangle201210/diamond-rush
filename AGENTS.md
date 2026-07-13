@@ -44,6 +44,8 @@ cd /Users/wanna/mine/github/wangle201210/DiamondRushSource
 4. `w0.bin`、`.f`、语言和音频资源解码结果。
 
 `src/main/resources/w1.bin` 与实际运行的原 JAR 内 `w1.bin` 有 4 字节差异，全部位于 Bavaria `stage07` player layer。原 JAR 的 `(20,10)/(29,19)/(25,20)` 为空，`(7,17)` 为 raw `10`；`decoded/world1/stage07.json` 必须保留 JAR 版本，不能用源码目录资源重新生成后覆盖。
+
+原 JAR 条目的 SHA-256：`w1.bin` 为 `951b998c82383c55144ed82c5c54a7dc70f638017929d46aa155e40b0a77674e`，`map_scotland.out` 为 `5c21ffc3ac32e6f571cba097eaf81f3a7044804d1e4ae19f2c381586eba543c0`。截至 2026-07-13，从这两个 JAR 条目重新解码所得的 13 个 stage JSON 和地图 JSON 与 `decoded/world1` 逐文件一致；manifest 只有记录的 source 路径不同。
 5. 原作视频或截图，仅用于确认画面和用户可见结果。
 6. 现有 Go 实现、旧原型和文字攻略只能作为线索，不能证明原作行为。
 
@@ -255,6 +257,7 @@ Stage 8 的秘密出口要求后期取得的 Freeze Hammer。当前 Angkor-only 
 
 - raw `41` 不是独立分数。初始化时其 background 数值加入关卡紫钻总数 `aYInt`，领奖时同值加入 `aZInt`；Go 端必须同步增加 `VioletGems`，右下角紫钻 HUD、配额、结算分子和最终紫钻资产都读取这条计数链。
 - Bavaria Stage 1 的 raw `41` 宝箱位于 `(25,14)`，background authored value 为 `10`。完整开箱后右下角紫钻必须从 `VioletGems` 增加 10，过关时同步进入 `BavariaStageVioletGems[0]` 和 `VioletGemBank`；`TestBavariaPurpleChestAndMysticHookPersistAcrossStages` 与 HUD 绘制回归覆盖这条链。
+- player raw `6/7` 分别是额外生命和补血，`OVoid()` 使用 `textures[5]`；加载器把该槽绑定到 `cm.f` chunk `4` 的 module `0/1`（`1UP`/药水）。`gen0.f` chunk `8` 是 Bavaria 火焰陷阱，绝不能用作通用拾取物。raw `6` 增加 HUD 左上的生命数，raw `7` 补满 HP；它们不是紫钻或红钻进度。
 - 满血打开 raw `7` 补血箱时，源码在动画开始前把奖励改成 raw `41`/10，因此头顶应显示紫钻和数字 10；生命达到 99 的 raw `6` 先降级成补血，再按是否满血决定是否转成 10 紫钻。
 - 新档按每关 foreground raw `14/33` 建立坐标表。World 0 只有已领取红钻、真正增加生命的 raw `6`、以及徽记会移除坐标；钥匙、补血、raw `41`、工具和 Compass 可按源码重玩。普通已消费宝箱重进时保持打开且为空，Boss 已消费徽记箱重进时变成 10 紫钻奖励。
 - 每次过关都把本局紫钻全部加入资产，允许重玩刷紫钻；红钻按本局新取得量累加，并依靠永久坐标防止同一红钻重复领取。检查点要快照当前红钻坐标列表；额外生命领奖还要同步修改检查点快照，避免复活后箱子看似关闭却没有内容。
@@ -267,6 +270,8 @@ Stage 8 的秘密出口要求后期取得的 Freeze Hammer。当前 Angkor-only 
 
 ## Bavaria 完整性审计边界
 
+- Bavaria 的可解性由原 JAR 的 authored 三层布局保证，不再维护逐关寻路回归。验收应直接核对 JAR `w1.bin` 解码字节、Java 初始化后的层/状态和实际出现 ID 的更新分支；测试只覆盖容易回归的独立状态机，不通过编写路线证明“没有死胡同”。
+- raw `16` authored 底格在初始化时向上复制一格，逻辑、碰撞和销毁始终是两格对象；绘制只从底格执行一次。Java 该分支只把 animation frame 的 `x` 加到绘制坐标，不应用 frame `y`，不能把通用 animation offset 套到铁人上，否则整组会竖直错位。
 - 原 JAR 字节码的 stage 初始化 case `12` 只保存 `abInt/acInt/aaInt`，不会清除 player raw `12`；可读 `i.java` 中的清除语句是反编译伪影。Bavaria Stage 4 的配额门必须保持阻挡，紫钻配额归零后才清除。
 - Bavaria 专属伤害方向不能统一调用无方向 `Hurt`：raw `28` 尖刺使用 `hByteArr[kInt&7]`，raw `16` 长矛使用自身方向，raw `14` 移动机关使用运动方向。静止人物仍须保留 `kInt` 的最后朝向；恢复检查点时源码固定重置为向右的 `kInt=2`。
 - raw `14` 的 cooldown `20` 是等待通路状态；下方和运动方向都堵塞时保持 `20`，通路出现后才从 `19` 倒数。反向机关贴住左侧对象时，原作偶数半帧还有 `(-1,+1)` 像素抖动。
@@ -276,13 +281,13 @@ Stage 8 的秘密出口要求后期取得的 Freeze Hammer。当前 Angkor-only 
 - 水源按列优先扫描并逐个启动；下一水源必须在对象扫描前建立首个子层。phase `1..5`、basin fill、cleanup flow 和 fan reflow 均保存在检查点快照。fan pot 交换、raw `10` 变成 foreground `32`、raw `37` 完成破坏都会调用 `lVoid` 对应的重排入口并播放音效 `13`。
 - 浮力直接使用 packed cell `cell != 0 && cell != 3`，不是按水深猜测。layer-0 shape `7/8` 才切游泳动画并屏蔽锤子/钩索；水中 gravity object 使用 `OVoid()` 的 8 帧上下浮动。raw `11` 爬虫入水进入 `0x100..0x400` 溺亡相位，追踪蛇选择垂直方向时避开水格，layer-0 有水会暂停顶石压伤计时。
 - `ajVoid()` 只由 player raw `47` 在完成 `aqVoid()` 后调用，不是 raw `1`。raw `47` 会生成 foreground `35`；其 `18 -> 12 -> 6 -> 0` 链继续生成 `35/37/34`、把允许的对象向上搬运，并使用 `gen2.f` chunk `3` 与 `gen3.f` chunk `4` 原素材。当前 Bavaria authored 数据没有初始 raw `47`，但共享源码规则已实现。
-- 13 个 stage 的 authored 低位 player/foreground ID 都已有正式逻辑和绘制分支，不会落入诊断蓝块；地图分支、事件 `4/6/19/34`、Mystic Hook、水药、Evil Teutonic Knight 和封印进度链均已接入。源码分支审计不等于输入轨迹证据，发布“一比一完成”结论前仍需全部 13 关无传送 Java/Go 差分回放。
+- 13 个 stage 的 authored 低位 player/foreground ID 都必须有正式逻辑和绘制分支，不能落入诊断蓝块；地图分支、事件 `4/6/19/34`、Mystic Hook、水药、Evil Teutonic Knight 和封印进度链也必须接入。发布“一比一完成”结论前要完成 JAR 布局、Java 初始化状态、对象逐 tick 转换和资源映射审计，但不要求额外证明原布局是否有解。
 
 ## 全局封印世界选择
 
 - Stage 9 徽记演出完成后的 11 步 Loading 进入全局封印选择，而不是直接回 Angkor 地图。界面使用 `mmv.f` 的封印底图/世界覆盖、世界地图图标、原 softkey 和源箭头动画。
 - 四个位置为 Angkor、Bavaria、Siberia、Shop，移动图来自 `a_Config.sealMoveTargets`；Bavaria/Siberia 的红钻解锁价为 `10/25`。解锁闪烁、徽记飞入/白闪/特效和箭头 8 tick 插值均有 `worldselect_test.go` 覆盖。
-- 进度 v6 持久化 `RelicMask`、`WorldUnlocked[3]`、Angkor/Bavaria 各关节点和永久奖励坐标。Angkor 进入 `map_angkor.out`，Bavaria 进入 `map_scotland.out` 并加载全部 13 个数据关；Siberia 与 Shop 仍是明确的不可用内容，不能描述成完整三世界游戏。Bavaria 特殊机制已有源码回归，但在全部 13 关完成无传送正式路线差分前，不能宣称第二世界审计完成。
+- 进度 v6 持久化 `RelicMask`、`WorldUnlocked[3]`、Angkor/Bavaria 各关节点和永久奖励坐标。Angkor 进入 `map_angkor.out`，Bavaria 进入 `map_scotland.out` 并加载全部 13 个数据关；Siberia 与 Shop 仍是明确的不可用内容，不能描述成完整三世界游戏。Bavaria 必须完成全部实际 ID、共享状态机、Boss、地图和进度链的源码审计后才能宣称第二世界审计完成。
 
 ## Angkor 全部关卡素材映射
 
@@ -290,6 +295,8 @@ Stage 8 的秘密出口要求后期取得的 Freeze Hammer。当前 Angkor-only 
 - raw `11` 爬虫：`decoded/sprites/gen1/chunk04-*`，6 个模块；正常帧为 `(aSInt >> 1) % 3`，状态 phase 使用后续模块。
 - foreground raw `6` 压力机关：`decoded/sprites/gen2/chunk09-*`，单个 `24x13` 模块，底部对齐并随压入量下移。
 - `DVoid()` 先从滚动背景缓冲绘制地形，再以相对坐标 `-1..11` 扫描动态格；Go 端不能逐格交替画地面和物体，否则向右滚动的石头、向右喷射的火焰和跨格动画会被后一格地面覆盖。上下左右额外扫描范围也必须保留。
+- 游戏内 sprite 必须通过 `*-animations.json` 与 `*-modules.png` 按 module/frame 元数据组合，不能把 `*-frames.png` 假定成固定 `24x24` atlas。Bavaria world chunk `2` 的 frame 最大高度为 `26`，diggable chunk `1` 的 cell 为 `40x41`（Angkor 为 `35x27`）；固定步长会让 `raw 124..129` 的 `2x3` 旗帜和破碎动画跨行错裁。只有没有 sprite 元数据的整屏启动图可直接加载普通 PNG。
+- `.f` 的 animation-frame `x/y` 不是通用绘制锚点。Java `drawAnimationFrame(..., flags=0, offsetX=0, offsetY=0)` 会忽略它们；只有调用方先执行 `b_SpriteAnimator.applyFrameOffset()` 时才把它们加到 animator 坐标。当前显式使用该语义的是主角、火焰发射器、Stage 6 火炬/火海顶部和 Bavaria Boss；Anaconda、普通对象动画、火海内部平铺、奖励及 UI 动画都不得自动应用 `x/y`。
 - foreground raw `20..23`、运行时 raw `32` 消散帧和 foreground `>=80` 属于源码后置前景扫描，应在主角/动态物体之后绘制；raw `255` 是空值，绝不能按 `>=80` 转成 world frame `175`。
 - raw `22/23` 共用 `gen1.f` chunk `0` animation `0`。序列第 0 帧持续 20 tick 且为空，表示火焰完全收回；之后 reach 才按 frame index `1..10/11..20/21..` 扩展。raw `23` 水平翻转，不能把合法的收回阶段误判成缺素材。
 - foreground raw `6` 的源码绘制会把 Graphics clip 限制在当前 `24x24` 格；下沉模块即使跨过格底也不能漏到下一行。

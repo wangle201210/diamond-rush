@@ -13,9 +13,6 @@ const (
 	bavariaExplosionFrames      = "decoded/sprites/gen0/chunk03-frames.png"
 	bavariaExplosionModules     = "decoded/sprites/gen0/chunk03-modules.png"
 	bavariaExplosionMetadata    = "decoded/sprites/gen0/chunk03-animations.json"
-	bavariaWaterSourceFrames    = "decoded/sprites/gen0/chunk04-frames.png"
-	bavariaWaterSourceModules   = "decoded/sprites/gen0/chunk04-modules.png"
-	bavariaWaterSourceMetadata  = "decoded/sprites/gen0/chunk04-animations.json"
 	bavariaExplosiveFrames      = "decoded/sprites/gen0/chunk05-frames.png"
 	bavariaExplosiveModules     = "decoded/sprites/gen0/chunk05-modules.png"
 	bavariaExplosiveMetadata    = "decoded/sprites/gen0/chunk05-animations.json"
@@ -58,7 +55,6 @@ const (
 
 type bavariaSpriteSet struct {
 	explosion    *spriteSheet
-	waterSource  *spriteSheet
 	explosive    *spriteSheet
 	crawlerTrap  *spriteSheet
 	spike        *spriteSheet
@@ -91,7 +87,6 @@ func loadBavariaSpriteSet() (bavariaSpriteSet, error) {
 		frames, modules, metadata string
 	}{
 		{"explosion", &result.explosion, bavariaExplosionFrames, bavariaExplosionModules, bavariaExplosionMetadata},
-		{"water source", &result.waterSource, bavariaWaterSourceFrames, bavariaWaterSourceModules, bavariaWaterSourceMetadata},
 		{"explosive boulder", &result.explosive, bavariaExplosiveFrames, bavariaExplosiveModules, bavariaExplosiveMetadata},
 		{"crawler trap", &result.crawlerTrap, bavariaCrawlerTrapFrames, bavariaCrawlerTrapModules, bavariaCrawlerTrapMetadata},
 		{"spikes", &result.spike, bavariaSpikeFrames, bavariaSpikeModules, bavariaSpikeMetadata},
@@ -122,7 +117,7 @@ func (g *Game) drawEvilTeutonicKnight(dst *ebiten.Image, camX, camY int) {
 	if boss.State == original.TeutonicKnightStateComplete {
 		return
 	}
-	g.bavaria.knight.drawAnimation(dst, boss.Animation, boss.AnimationTicks, boss.X-camX, boss.WorldY()-camY, 0)
+	g.bavaria.knight.drawAnimationWithFrameOffset(dst, boss.Animation, boss.AnimationTicks, boss.X-camX, boss.WorldY()-camY, 0)
 	if boss.State == original.TeutonicKnightStateDefeated && g.bavaria.explosion != nil {
 		g.bavaria.explosion.drawAnimationSequenceFrame(
 			dst,
@@ -166,8 +161,6 @@ func (g *Game) drawBavariaForeground(dst *ebiten.Image, id original.RawID, px, p
 			frame := clamp(4-g.rt.FanPhase*5/10, 0, 4)
 			g.bavaria.fanPotRed.drawFrame(dst, frame, px, py, 0)
 		}
-	case 27:
-		g.bavaria.waterSource.drawFrame(dst, 0, px, py, 0)
 	case 34:
 		g.bavaria.windColumn.drawAnimationSequenceFrame(dst, 2, 0, px, py, 0)
 	case 35:
@@ -205,7 +198,12 @@ func (g *Game) drawBavariaObject(dst *ebiten.Image, id original.RawID, x, y, px,
 		if timer > 0 {
 			elapsed = 36 - timer
 		}
-		g.bavaria.spear.drawAnimation(dst, animation, elapsed, px, py, 0)
+		frame, ok := g.bavaria.spear.animationFrame(animation, elapsed)
+		if ok {
+			// Java raw 16 copies only animationFrames[x] into bNInt before
+			// drawAnimationFrame; the animation-frame y offset is not applied.
+			g.bavaria.spear.drawFrame(dst, frame.Frame, px+frame.X, py, frame.Flags)
+		}
 	case 18:
 		frame := 0
 		switch {
@@ -250,27 +248,28 @@ func (g *Game) drawBavariaObject(dst *ebiten.Image, id original.RawID, x, y, px,
 func (g *Game) drawBavariaMovingHazard(dst *ebiten.Image, x, y, state, px, py int) {
 	reversed := state&8 != 0
 	body := (g.tick >> 1) % 3
+	bodyX, bodyY := px, py
 	if reversed {
 		body = 2 - body
 		if state&7 != 3 && (g.tick>>1)&1 == 0 && x > 0 {
 			if left, ok := g.rt.At(original.PlayerLayer, x-1, y); ok && left != original.EmptyRawID {
-				px--
-				py++
+				bodyX--
+				bodyY++
 			}
 		}
 	}
-	g.bavaria.movingHazard.drawModule(dst, body, px, py)
-	if state&7 == 3 {
-		return
+	if state&7 != 3 {
+		particle := (g.tick >> 1) % 5
+		module := 3 + particle
+		particleX := px - particle*4
+		if reversed {
+			module = 8 + particle
+			particleX = px + 12 + particle*3
+		}
+		particleY := py + original.TileSize - g.bavaria.movingHazard.moduleHeight(module)
+		g.bavaria.movingHazard.drawModule(dst, module, particleX, particleY)
 	}
-	particle := (g.tick >> 1) % 5
-	module := 3 + particle
-	particleX := px - particle*4
-	if reversed {
-		module = 8 + particle
-		particleX = px + 12 + particle*3
-	}
-	g.bavaria.movingHazard.drawModule(dst, module, particleX, py+original.TileSize)
+	g.bavaria.movingHazard.drawModule(dst, body, bodyX, bodyY)
 }
 
 func (g *Game) drawBavariaSpike(dst *ebiten.Image, x, y, state, px, py int) {

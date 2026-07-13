@@ -264,9 +264,53 @@ func KnownRole(layer Layer, id RawID) (IDRole, bool) {
 			role.Name = "bonus quota marker"
 			role.Source = "original JAR retains raw 12, stores x/y in abInt/acInt and background in aaInt, then clears it when the quota reaches zero"
 			return role, true
+		case id == 8:
+			role.Name = "explosive boulder"
+			role.Source = "i.java initializes raw 8 with the gravity-object state, renders textures[16], and turns a sufficiently fallen raw 8 into the raw 54 explosion"
+			return role, true
+		case id == 14:
+			role.Name = "moving hazard"
+			role.Source = "i.java object update case 14 applies the horizontal/falling cooldown state machine and contact damage"
+			return role, true
+		case id == 16:
+			role.Name = "two-cell spear"
+			role.Source = "i.java stage init duplicates authored raw 16 upward; update and render treat the pair as one directional spear object"
+			return role, true
+		case id == 18:
+			role.Name = "fan switch"
+			role.Source = "i.java hammer impact calls dBoolean() for raw 18, changing ceInt/cfInt and swapping the raw 34/35 fan-pot layers at the middle phase"
+			return role, true
+		case id == 28:
+			role.Name = "extending spike column"
+			role.Source = "i.java object update and render case 28 use the slow/fast global extension lengths and the packed up/down direction"
+			return role, true
 		case id == 30:
 			role.Name = "breakable wall"
 			role.Source = "i.java dBoolean excludes raw 30; tool branch advances damage state and clears at >=16"
+			return role, true
+		case id == 34:
+			role.Name = "blue fan pot"
+			role.Source = "i.java fan transition swaps player raw 34 with foreground raw 15 at ceInt 5 and triggers water reflow"
+			return role, true
+		case id == 35:
+			role.Name = "red fan pot"
+			role.Source = "i.java fan transition swaps player raw 35 with foreground raw 16 at ceInt 5 and triggers water reflow"
+			return role, true
+		case id == 36:
+			role.Name = "crawler trap"
+			role.Source = "i.java object update case 36 activates when raw 11 is directly above, decrements the active enemy group, and damages the hero above"
+			return role, true
+		case id == 37:
+			role.Name = "blast wall"
+			role.Source = "i.java object update case 37 advances an eight-step destruction state, removes the cell, and starts water reflow"
+			return role, true
+		case id == 38:
+			role.Name = "water source"
+			role.Source = "i.java stage init converts raw 38 to foreground raw 27 and registers its background owner with the packed water solver"
+			return role, true
+		case id == 40:
+			role.Name = "water-breathing potion"
+			role.Source = "i.java lVoid(40) awards persistent water traversal state iByteArr[10]"
 			return role, true
 		case id == EntranceRawID:
 			role.Name = "stage entrance marker"
@@ -303,12 +347,11 @@ func KnownRole(layer Layer, id RawID) (IDRole, bool) {
 			return role, true
 		case id == 31:
 			role.Name = "keyed lock body"
-			role.Source = "i.java render branch draws player raw 31 with foreground animation state"
-			role.Confidence = "render-anchor"
+			role.Source = "i.java movement collision blocks player raw 31; the same-cell foreground raw 8/9 or authored world frame owns the visible lock art"
 			return role, true
 		case id == 33:
-			role.Name = "passable overlay raw 33"
-			role.Source = "i.java stage init preserves player raw 33, movement collision groups it with passable object IDs, and render draws it with aClassfArr[22]"
+			role.Name = "passable marker raw 33"
+			role.Source = "i.java stage init preserves player raw 33 and movement collision groups it with passable object IDs; it has no player-object render branch, while foreground raw 33 owns any visible overlay"
 			return role, true
 		case id == 48:
 			role.Name = "moving/pullable object candidate"
@@ -354,6 +397,10 @@ func KnownRole(layer Layer, id RawID) (IDRole, bool) {
 		case id == 53:
 			role.Name = "artifact pickup raw 53"
 			role.Source = "i.java object update calls lVoid(53); pickup sets DInt=0 and stores bit 0 in iByteArr[2]"
+			return role, true
+		case id == 51 || id == 52:
+			role.Name = fmt.Sprintf("artifact pickup raw %d", id)
+			role.Source = "i.java object update calls lVoid(51/52); pickup stores the corresponding world seal bit in iByteArr[2]"
 			return role, true
 		}
 	case ForegroundLayer:
@@ -415,6 +462,12 @@ func KnownRole(layer Layer, id RawID) (IDRole, bool) {
 		case 33:
 			role.Name = "foreground gate overlay raw 33"
 			role.Source = "i.java render groups foreground raw 14/33; enemy-gate scan clears its high state when a matching raw17 group reaches zero"
+			return role, true
+		}
+		if id >= 80 {
+			role.Name = "world tile/frame reference"
+			role.Source = "i.java late foreground render subtracts 80 and draws the resulting world sprite frame"
+			role.Confidence = "render-anchor"
 			return role, true
 		}
 	}

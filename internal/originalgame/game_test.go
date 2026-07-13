@@ -75,6 +75,27 @@ func TestNewLoadsBavariaWorldPackAndArt(t *testing.T) {
 	if g.worldFrames.moduleImage == nil || g.worldFrames.cellH != 26 {
 		t.Fatalf("Bavaria world frames module/cell-height=%v/%d, want metadata composition with 26px atlas height", g.worldFrames.moduleImage != nil, g.worldFrames.cellH)
 	}
+	for name, sheet := range map[string]*spriteSheet{
+		"world frames": g.worldFrames,
+		"boulder":      g.boulder,
+		"diggable":     g.diggable,
+		"floor":        g.floor,
+		"violet gem":   g.violetGem,
+		"red diamond":  g.redDiamond,
+		"checkpoint":   g.checkpoint,
+		"goal":         g.goal,
+		"hazard":       g.hazard,
+	} {
+		if sheet == nil || sheet.moduleImage == nil {
+			t.Errorf("%s still lacks metadata/module rendering", name)
+		}
+	}
+	if g.diggable.cellW != 40 || g.diggable.cellH != 41 {
+		t.Fatalf("Bavaria diggable atlas cell=%dx%d, want source metadata 40x41", g.diggable.cellW, g.diggable.cellH)
+	}
+	if g.commonPickups.image != nil || g.commonPickups.moduleImage == nil || len(g.commonPickups.meta.Modules) != 2 {
+		t.Fatalf("common pickup art frames/modules=%v/%v/%d, want cm.f chunk 4 modules for 1UP and health", g.commonPickups.image != nil, g.commonPickups.moduleImage != nil, len(g.commonPickups.meta.Modules))
+	}
 	for frame := 44; frame <= 49; frame++ {
 		if g.worldFrames.meta.FrameCounts[frame] != 1 {
 			t.Fatalf("Bavaria banner frame %d module count=%d, want one source module", frame, g.worldFrames.meta.FrameCounts[frame])
@@ -392,6 +413,17 @@ func TestBavariaSpikeCoverUsesCellBehindExtension(t *testing.T) {
 		if got := sourceBavariaSpikeCoverOffset(direction); got != want {
 			t.Errorf("spike direction %d cover offset=%d, want %d", direction, got, want)
 		}
+	}
+}
+
+func TestBavariaWaterSourceForegroundIsAnInvisibleRuntimeMarker(t *testing.T) {
+	g, err := New("decoded/world1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dst := ebiten.NewImage(original.TileSize, original.TileSize)
+	if g.drawBavariaForeground(dst, 27, 0, 0) {
+		t.Fatal("foreground raw 27 rendered a sprite; Java uses it only as the runtime water-source marker")
 	}
 }
 

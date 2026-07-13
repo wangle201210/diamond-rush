@@ -25,20 +25,36 @@ const (
 	angkorWorldFrameModules    = "decoded/sprites/0/chunk02-modules.png"
 	angkorWorldFrameMetadata   = "decoded/sprites/0/chunk02-animations.json"
 	angkorBoulderFrameSheet    = "decoded/sprites/0/chunk00-frames.png"
+	angkorBoulderModules       = "decoded/sprites/0/chunk00-modules.png"
+	angkorBoulderMetadata      = "decoded/sprites/0/chunk00-animations.json"
 	angkorDiggableFrameSheet   = "decoded/sprites/0/chunk01-frames.png"
+	angkorDiggableModules      = "decoded/sprites/0/chunk01-modules.png"
+	angkorDiggableMetadata     = "decoded/sprites/0/chunk01-animations.json"
 	angkorFloorSheet           = "decoded/sprites/0/chunk03-modules.png"
+	angkorFloorMetadata        = "decoded/sprites/0/chunk03-animations.json"
 	bavariaWorldFrameSheet     = "decoded/sprites/1/chunk02-frames.png"
 	bavariaWorldFrameModules   = "decoded/sprites/1/chunk02-modules.png"
 	bavariaWorldFrameMetadata  = "decoded/sprites/1/chunk02-animations.json"
 	bavariaBoulderFrameSheet   = "decoded/sprites/1/chunk00-frames.png"
+	bavariaBoulderModules      = "decoded/sprites/1/chunk00-modules.png"
+	bavariaBoulderMetadata     = "decoded/sprites/1/chunk00-animations.json"
 	bavariaDiggableFrameSheet  = "decoded/sprites/1/chunk01-frames.png"
+	bavariaDiggableModules     = "decoded/sprites/1/chunk01-modules.png"
+	bavariaDiggableMetadata    = "decoded/sprites/1/chunk01-animations.json"
 	bavariaFloorSheet          = "decoded/sprites/1/chunk03-modules.png"
+	bavariaFloorMetadata       = "decoded/sprites/1/chunk03-animations.json"
 	violetGemSheet             = "decoded/sprites/cm/chunk02-frames.png"
+	violetGemModules           = "decoded/sprites/cm/chunk02-modules.png"
 	redDiamondSheet            = "decoded/sprites/cm/chunk02-palette01-frames.png"
+	redDiamondModules          = "decoded/sprites/cm/chunk02-palette01-modules.png"
+	gemMetadata                = "decoded/sprites/cm/chunk02-animations.json"
 	checkpointSheet            = "decoded/sprites/cm/chunk06-frames.png"
+	checkpointModules          = "decoded/sprites/cm/chunk06-modules.png"
+	checkpointMetadata         = "decoded/sprites/cm/chunk06-animations.json"
 	quotaModules               = "decoded/sprites/cm/chunk05-modules.png"
 	quotaMetadata              = "decoded/sprites/cm/chunk05-animations.json"
 	goalSheet                  = "decoded/sprites/cm/chunk00-modules.png"
+	goalMetadata               = "decoded/sprites/cm/chunk00-animations.json"
 	doorModuleSheet            = "decoded/sprites/cm/chunk01-modules.png"
 	doorMetadata               = "decoded/sprites/cm/chunk01-animations.json"
 	snakeSheet                 = "decoded/sprites/gen1/chunk05-frames.png"
@@ -48,9 +64,8 @@ const (
 	redSnakeModuleSheet        = "decoded/sprites/gen1/chunk05-palette01-modules.png"
 	crawlerModules             = "decoded/sprites/gen1/chunk04-modules.png"
 	crawlerMetadata            = "decoded/sprites/gen1/chunk04-animations.json"
-	commonPickupSheet          = "decoded/sprites/gen0/chunk08-frames.png"
-	commonPickupModules        = "decoded/sprites/gen0/chunk08-modules.png"
-	commonPickupMetadata       = "decoded/sprites/gen0/chunk08-animations.json"
+	commonPickupModules        = "decoded/sprites/cm/chunk04-modules.png"
+	commonPickupMetadata       = "decoded/sprites/cm/chunk04-animations.json"
 	frozenVioletSheet          = "decoded/sprites/gen0/chunk01-frames.png"
 	frozenVioletModules        = "decoded/sprites/gen0/chunk01-modules.png"
 	frozenVioletMetadata       = "decoded/sprites/gen0/chunk01-animations.json"
@@ -106,6 +121,8 @@ const (
 	resultMedalModules         = "decoded/sprites/ui/chunk04-modules.png"
 	resultMedalMetadata        = "decoded/sprites/ui/chunk04-animations.json"
 	hazardEmitterSheet         = "decoded/sprites/gen0/chunk09-frames.png"
+	hazardEmitterModules       = "decoded/sprites/gen0/chunk09-modules.png"
+	hazardEmitterMetadata      = "decoded/sprites/gen0/chunk09-animations.json"
 	hazardFlameSheet           = "decoded/sprites/gen1/chunk00-frames.png"
 	hazardFlameModuleSheet     = "decoded/sprites/gen1/chunk00-modules.png"
 	hazardFlameMetadata        = "decoded/sprites/gen1/chunk00-animations.json"
@@ -190,8 +207,6 @@ const (
 	sourceHeroTurnStep         = 6
 	framePadding               = 2
 	frameCols                  = 16
-	diggableFrameCellW         = 35
-	diggableFrameCellH         = 27
 	playfieldHeight            = 240
 	playfieldTop               = 40
 )
@@ -222,17 +237,6 @@ const (
 	resultEffectDoubleLong
 )
 
-var diggableFrameBounds = [...]image.Rectangle{
-	image.Rect(0, 0, 24, 24),
-	image.Rect(-1, -1, 24, 24),
-	image.Rect(-3, -3, 25, 24),
-	image.Rect(-4, -3, 27, 24),
-	image.Rect(-4, -2, 27, 24),
-	image.Rect(-5, 0, 30, 24),
-	image.Rect(-6, 2, 28, 25),
-	image.Rect(-3, 8, 27, 24),
-}
-
 type worldEffect struct {
 	Point     original.Point
 	Animation int
@@ -252,16 +256,16 @@ type Game struct {
 	pack                   *original.WorldPack
 	rt                     *original.Runtime
 	worldFrames            *spriteSheet
-	boulder                *ebiten.Image
-	diggable               *ebiten.Image
-	floor                  *ebiten.Image
-	violetGem              *ebiten.Image
-	redDiamond             *ebiten.Image
-	checkpoint             *ebiten.Image
+	boulder                *spriteSheet
+	diggable               *spriteSheet
+	floor                  *spriteSheet
+	violetGem              *spriteSheet
+	redDiamond             *spriteSheet
+	checkpoint             *spriteSheet
 	quota                  *spriteSheet
-	goal                   *ebiten.Image
+	goal                   *spriteSheet
 	door                   *spriteSheet
-	hazard                 *ebiten.Image
+	hazard                 *spriteSheet
 	snakes                 *spriteSheet
 	redSnakes              *spriteSheet
 	crawler                *spriteSheet
@@ -462,27 +466,27 @@ func New(worldDir string) (*Game, error) {
 	if err != nil {
 		return nil, fmt.Errorf("load world frame sheet: %w", err)
 	}
-	boulder, err := loadTransparentSheet(visuals.boulder)
+	boulder, err := loadSpriteSheetWithModules(visuals.boulder, visuals.boulderModules, visuals.boulderMetadata)
 	if err != nil {
 		return nil, fmt.Errorf("load boulder frame sheet: %w", err)
 	}
-	diggable, err := loadTransparentSheet(visuals.diggable)
+	diggable, err := loadSpriteSheetWithModules(visuals.diggable, visuals.diggableModules, visuals.diggableMetadata)
 	if err != nil {
 		return nil, fmt.Errorf("load diggable frame sheet: %w", err)
 	}
-	floor, err := loadTransparentSheet(visuals.floor)
+	floor, err := loadModuleSpriteSheet(visuals.floor, visuals.floorMetadata)
 	if err != nil {
 		return nil, fmt.Errorf("load floor sheet: %w", err)
 	}
-	violetGem, err := loadTransparentSheet(violetGemSheet)
+	violetGem, err := loadSpriteSheetWithModules(violetGemSheet, violetGemModules, gemMetadata)
 	if err != nil {
 		return nil, fmt.Errorf("load violet gem sheet: %w", err)
 	}
-	redDiamond, err := loadTransparentSheet(redDiamondSheet)
+	redDiamond, err := loadSpriteSheetWithModules(redDiamondSheet, redDiamondModules, gemMetadata)
 	if err != nil {
 		return nil, fmt.Errorf("load red diamond sheet: %w", err)
 	}
-	checkpoint, err := loadTransparentSheet(checkpointSheet)
+	checkpoint, err := loadSpriteSheetWithModules(checkpointSheet, checkpointModules, checkpointMetadata)
 	if err != nil {
 		return nil, fmt.Errorf("load checkpoint sheet: %w", err)
 	}
@@ -490,7 +494,7 @@ func New(worldDir string) (*Game, error) {
 	if err != nil {
 		return nil, fmt.Errorf("load quota marker: %w", err)
 	}
-	goal, err := loadTransparentSheet(goalSheet)
+	goal, err := loadModuleSpriteSheet(goalSheet, goalMetadata)
 	if err != nil {
 		return nil, fmt.Errorf("load goal sheet: %w", err)
 	}
@@ -498,7 +502,7 @@ func New(worldDir string) (*Game, error) {
 	if err != nil {
 		return nil, fmt.Errorf("load door sprite: %w", err)
 	}
-	hazard, err := loadTransparentSheet(hazardEmitterSheet)
+	hazard, err := loadSpriteSheetWithModules(hazardEmitterSheet, hazardEmitterModules, hazardEmitterMetadata)
 	if err != nil {
 		return nil, fmt.Errorf("load hazard emitter sheet: %w", err)
 	}
@@ -514,7 +518,7 @@ func New(worldDir string) (*Game, error) {
 	if err != nil {
 		return nil, fmt.Errorf("load crawler modules: %w", err)
 	}
-	commonPickups, err := loadSpriteSheetWithModules(commonPickupSheet, commonPickupModules, commonPickupMetadata)
+	commonPickups, err := loadModuleSpriteSheet(commonPickupModules, commonPickupMetadata)
 	if err != nil {
 		return nil, fmt.Errorf("load common pickups: %w", err)
 	}
@@ -1580,7 +1584,7 @@ func (g *Game) drawStageResults(screen *ebiten.Image) {
 
 	if g.resultPhase >= resultPhaseVioletGems {
 		offset := stageResultRowOffset(g.resultPhase, resultPhaseVioletGems, g.resultPhaseTicks)
-		drawSpriteFrame(screen, g.violetGem, 0, 7+offset, resultVioletLabelY)
+		g.violetGem.drawFrame(screen, 0, 7+offset, resultVioletLabelY, 0)
 		g.fontSmall.drawText(screen, "DIAMONDS", original.ScreenWidth/2, resultVioletLabelY, true, textColor)
 		count := g.rt.VioletGems
 		if g.resultPhase == resultPhaseVioletGems {
@@ -1590,7 +1594,7 @@ func (g *Game) drawStageResults(screen *ebiten.Image) {
 	}
 	if g.resultPhase >= resultPhaseRedDiamonds {
 		offset := stageResultRowOffset(g.resultPhase, resultPhaseRedDiamonds, g.resultPhaseTicks)
-		drawSpriteFrame(screen, g.redDiamond, 0, 7+offset, resultRedLabelY)
+		g.redDiamond.drawFrame(screen, 0, 7+offset, resultRedLabelY, 0)
 		g.fontSmall.drawText(screen, "RED DIAMONDS", original.ScreenWidth/2, resultRedLabelY, true, textColor)
 		g.fontSmall.drawText(screen, fmt.Sprintf("%d/%d", g.rt.RedDiamonds, g.rt.TotalRedDiamonds), original.ScreenWidth/2, resultRedCountY, true, textColor)
 		g.drawStageResultAward(screen, resultAwardVioletGems, resultPhaseRedDiamonds, 69, 86, resultEffectDoubleShort)
@@ -1903,8 +1907,8 @@ func (g *Game) drawFallingTorchStage(dst *ebiten.Image, camX, camY int) {
 		return
 	}
 	torchY := 42*original.TileSize - camY
-	g.fallingTorches.drawAnimation(dst, g.rt.FallingTorchAnimation, g.rt.FallingTorchAnimationTicks, 10*original.TileSize-camX, torchY, 0)
-	g.fallingTorches.drawAnimation(dst, g.rt.FallingTorchAnimation, g.rt.FallingTorchAnimationTicks, 14*original.TileSize-camX, torchY, 1)
+	g.fallingTorches.drawAnimationWithFrameOffset(dst, g.rt.FallingTorchAnimation, g.rt.FallingTorchAnimationTicks, 10*original.TileSize-camX, torchY, 0)
+	g.fallingTorches.drawAnimationWithFrameOffset(dst, g.rt.FallingTorchAnimation, g.rt.FallingTorchAnimationTicks, 14*original.TileSize-camX, torchY, 1)
 
 	if g.rt.FallingTorchWarningTicks > 10 && g.fallingDebris != nil {
 		for particle := 3; particle < 13; particle += 2 {
@@ -1933,8 +1937,8 @@ func (g *Game) drawFallingTorchStage(dst *ebiten.Image, camX, camY int) {
 		}
 	}
 	topX := 168 + original.ScreenWidth/2 - camX
-	g.fallingFire.drawAnimation(dst, g.rt.RisingFireAnimation, g.rt.RisingFireAnimationTicks, topX, fireY, 0)
-	g.fallingFire.drawAnimation(dst, g.rt.RisingFireAnimation, g.rt.RisingFireAnimationTicks, topX, fireY, 1)
+	g.fallingFire.drawAnimationWithFrameOffset(dst, g.rt.RisingFireAnimation, g.rt.RisingFireAnimationTicks, topX, fireY, 0)
+	g.fallingFire.drawAnimationWithFrameOffset(dst, g.rt.RisingFireAnimation, g.rt.RisingFireAnimationTicks, topX, fireY, 1)
 
 	flash := (g.tick << 3) % 160
 	green := 160 - flash
@@ -1981,7 +1985,7 @@ func (g *Game) drawCellBackground(dst *ebiten.Image, x, y, px, py int) {
 	drawRect(dst, px, py, original.TileSize, original.TileSize, color.RGBA{18, 20, 24, 255})
 	playerID, _ := g.rt.At(original.PlayerLayer, x, y)
 	if playerID == original.EmptyRawID || playerID < 80 {
-		drawSpriteFrame(dst, g.floor, 0, px, py)
+		g.floor.drawModule(dst, 0, px, py)
 	} else {
 		g.drawWorldFrame(dst, int(playerID-80), px, py)
 	}
@@ -2001,9 +2005,9 @@ func (g *Game) drawCellObjects(dst *ebiten.Image, x, y, px, py int) {
 			if order != int(original.EmptyRawID) && order >= g.rt.CheckpointProgress {
 				frame = (g.tick >> 1) % 7
 			}
-			drawSpriteFrame(dst, g.checkpoint, frame, px, py)
+			g.checkpoint.drawFrame(dst, frame, px, py, 0)
 		case id == 5 || id == 28:
-			drawSpriteFrame(dst, g.goal, sourceGoalFrameForWorld(g.worldIndex, g.stageIndex), px, py)
+			g.goal.drawModule(dst, sourceGoalFrameForWorld(g.worldIndex, g.stageIndex), px, py)
 		case id == 6:
 			g.drawPressureSwitch(dst, x, y, px, py, playerID)
 		case id == 7:
@@ -2044,17 +2048,17 @@ func (g *Game) drawCellObjects(dst *ebiten.Image, x, y, px, py int) {
 				frame := (g.objectStateAt(x, y) & 0x38) >> 3
 				g.drawBoulderFrame(dst, frame, px, py)
 			case 1:
-				drawSpriteFrame(dst, g.violetGem, sourceGemFrame(g.tick), px, py)
+				g.violetGem.drawFrame(dst, sourceGemFrame(g.tick), px, py, 0)
 			case 2:
-				drawSpriteFrame(dst, g.redDiamond, sourceGemFrame(g.tick), px, py)
+				g.redDiamond.drawFrame(dst, sourceGemFrame(g.tick), px, py, 0)
 			case 4:
 				g.drawCenteredModule(dst, g.goldKey, 0, px, py)
 			case 5:
 				g.drawCenteredModule(dst, g.silverKey, 0, px, py)
 			case 6:
-				g.commonPickups.drawFrame(dst, 0, px, py, 0)
+				g.commonPickups.drawModule(dst, 0, px, py)
 			case 7:
-				g.commonPickups.drawFrame(dst, 1, px, py, 0)
+				g.commonPickups.drawModule(dst, 1, px, py)
 			case 9:
 				switch g.rt.FrozenOriginalAt(x, y) {
 				case 1:
@@ -2084,11 +2088,11 @@ func (g *Game) drawCellObjects(dst *ebiten.Image, x, y, px, py int) {
 			case 19:
 				g.drawSnake(dst, x, y, px, py)
 			case 22:
-				drawSpriteFrame(dst, g.hazard, 1, px, py)
-				g.flames.drawAnimation(dst, 0, g.tick, px+original.TileSize, py, 0)
+				g.hazard.drawFrame(dst, 1, px, py, 0)
+				g.flames.drawAnimationWithFrameOffset(dst, 0, g.tick, px+original.TileSize, py, 0)
 			case 23:
-				drawSpriteFrame(dst, g.hazard, 0, px, py)
-				g.flames.drawAnimation(dst, 0, g.tick, px, py, 1)
+				g.hazard.drawFrame(dst, 0, px, py, 0)
+				g.flames.drawAnimationWithFrameOffset(dst, 0, g.tick, px, py, 1)
 			case 43:
 				g.drawSnake(dst, x, y, px, py)
 			case 48:
@@ -2110,7 +2114,7 @@ func (g *Game) drawCellForegroundOverlay(dst *ebiten.Image, x, y, px, py int) {
 	foregroundID, _ := g.rt.At(original.ForegroundLayer, x, y)
 	switch {
 	case foregroundID == 32:
-		g.drawDiggableFrame(dst, clamp(g.rt.ForegroundStateAt(x, y), 0, len(diggableFrameBounds)-1), px, py)
+		g.drawDiggableFrame(dst, g.rt.ForegroundStateAt(x, y), px, py)
 	case foregroundID >= 20 && foregroundID < 26:
 		g.foregroundEffects.drawAnimationSequenceFrame(dst, sourceForegroundEffectAnimation(foregroundID), sourceForegroundEffectSequence(g.tick), px, py, 0)
 	default:
@@ -2354,35 +2358,14 @@ func (g *Game) drawWorldFrame(dst *ebiten.Image, frame, px, py int) {
 }
 
 func (g *Game) drawBoulderFrame(dst *ebiten.Image, frame, px, py int) {
-	drawSpriteFrame(dst, g.boulder, frame, px, py)
+	g.boulder.drawFrame(dst, frame, px, py, 0)
 }
 
 func (g *Game) drawDiggableFrame(dst *ebiten.Image, frame, px, py int) {
-	frame = clamp(frame, 0, len(diggableFrameBounds)-1)
-	srcX := framePadding + (frame%frameCols)*(diggableFrameCellW+framePadding)
-	srcY := framePadding + (frame/frameCols)*(diggableFrameCellH+framePadding)
-	bounds := diggableFrameBounds[frame]
-	w := bounds.Dx()
-	h := bounds.Dy()
-	if g.diggable == nil || srcX+w > g.diggable.Bounds().Dx() || srcY+h > g.diggable.Bounds().Dy() {
-		drawRect(dst, px, py, original.TileSize, original.TileSize, color.RGBA{30, 140, 65, 255})
+	if g.diggable == nil || len(g.diggable.meta.FrameCounts) == 0 {
 		return
 	}
-	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(float64(px+bounds.Min.X), float64(py+bounds.Min.Y))
-	dst.DrawImage(g.diggable.SubImage(image.Rect(srcX, srcY, srcX+w, srcY+h)).(*ebiten.Image), op)
-}
-
-func drawSpriteFrame(dst, sheet *ebiten.Image, frame, px, py int) {
-	srcX := framePadding + (frame%frameCols)*(original.TileSize+framePadding)
-	srcY := framePadding + (frame/frameCols)*(original.TileSize+framePadding)
-	if sheet == nil || srcX+original.TileSize > sheet.Bounds().Dx() || srcY+original.TileSize > sheet.Bounds().Dy() {
-		drawRect(dst, px, py, original.TileSize, original.TileSize, color.RGBA{120, 40, 160, 255})
-		return
-	}
-	op := &ebiten.DrawImageOptions{}
-	op.GeoM.Translate(float64(px), float64(py))
-	dst.DrawImage(sheet.SubImage(image.Rect(srcX, srcY, srcX+original.TileSize, srcY+original.TileSize)).(*ebiten.Image), op)
+	g.diggable.drawFrame(dst, clamp(frame, 0, len(g.diggable.meta.FrameCounts)-1), px, py, 0)
 }
 
 func (g *Game) drawPlayer(dst *ebiten.Image, px, py int) {
@@ -2401,7 +2384,7 @@ func (g *Game) drawPlayer(dst *ebiten.Image, px, py int) {
 		}
 	}
 	animation, animationTick := g.heroAnimationState()
-	g.hero.drawAnimation(dst, animation, animationTick, px, py, 0)
+	g.hero.drawAnimationWithFrameOffset(dst, animation, animationTick, px, py, 0)
 	if (g.rt.ChestOpening && chestRewardIconVisible(g.hero, g.rt.ChestAnimation, g.rt.ChestTicks)) || g.rt.RelicCelebrating {
 		g.drawChestRewardIcon(dst, px, py-original.TileSize)
 	}
@@ -2475,15 +2458,15 @@ func (g *Game) drawChestRewardEffect(dst *ebiten.Image, px, py int) {
 func (g *Game) drawChestRewardIcon(dst *ebiten.Image, px, py int) bool {
 	switch g.rt.ChestRewardID {
 	case 2:
-		drawSpriteFrame(dst, g.redDiamond, 0, px, py)
+		g.redDiamond.drawFrame(dst, 0, px, py, 0)
 	case 4:
 		g.drawCenteredModule(dst, g.goldKey, 0, px, py)
 	case 5:
 		g.drawCenteredModule(dst, g.silverKey, 0, px, py)
 	case 6:
-		g.commonPickups.drawFrame(dst, 0, px, py, 0)
+		g.commonPickups.drawModule(dst, 0, px, py)
 	case 7:
-		g.commonPickups.drawFrame(dst, 1, px, py, 0)
+		g.commonPickups.drawModule(dst, 1, px, py)
 	case 24:
 		g.tools.drawModule(dst, 0, px, py)
 	case 27:
@@ -2491,7 +2474,7 @@ func (g *Game) drawChestRewardIcon(dst *ebiten.Image, px, py int) bool {
 	case 26:
 		g.tools.drawModule(dst, 2, px, py)
 	case 41:
-		drawSpriteFrame(dst, g.violetGem, 0, px, py)
+		g.violetGem.drawFrame(dst, 0, px, py, 0)
 		g.hud.drawNumber(dst, g.rt.ChestRewardValue, px+original.TileSize, py+14)
 	case 42:
 		g.compassPickup.drawModule(dst, 0, px, py)

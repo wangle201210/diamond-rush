@@ -12,8 +12,13 @@ type worldVisualDefinition struct {
 	frameModules      string
 	frameMetadata     string
 	boulder           string
+	boulderModules    string
+	boulderMetadata   string
 	diggable          string
+	diggableModules   string
+	diggableMetadata  string
 	floor             string
+	floorMetadata     string
 	mapHeaderSheet    string
 	mapHeaderModules  string
 	mapHeaderMetadata string
@@ -26,8 +31,13 @@ func worldVisualDefinitionFor(world int) worldVisualDefinition {
 			frameModules:      bavariaWorldFrameModules,
 			frameMetadata:     bavariaWorldFrameMetadata,
 			boulder:           bavariaBoulderFrameSheet,
+			boulderModules:    bavariaBoulderModules,
+			boulderMetadata:   bavariaBoulderMetadata,
 			diggable:          bavariaDiggableFrameSheet,
+			diggableModules:   bavariaDiggableModules,
+			diggableMetadata:  bavariaDiggableMetadata,
 			floor:             bavariaFloorSheet,
+			floorMetadata:     bavariaFloorMetadata,
 			mapHeaderSheet:    bavariaMapHeaderSheet,
 			mapHeaderModules:  bavariaMapHeaderModules,
 			mapHeaderMetadata: bavariaMapHeaderMetadata,
@@ -38,8 +48,13 @@ func worldVisualDefinitionFor(world int) worldVisualDefinition {
 		frameModules:      angkorWorldFrameModules,
 		frameMetadata:     angkorWorldFrameMetadata,
 		boulder:           angkorBoulderFrameSheet,
+		boulderModules:    angkorBoulderModules,
+		boulderMetadata:   angkorBoulderMetadata,
 		diggable:          angkorDiggableFrameSheet,
+		diggableModules:   angkorDiggableModules,
+		diggableMetadata:  angkorDiggableMetadata,
 		floor:             angkorFloorSheet,
+		floorMetadata:     angkorFloorMetadata,
 		mapHeaderSheet:    worldMapHeaderSheet,
 		mapHeaderModules:  worldMapHeaderModules,
 		mapHeaderMetadata: worldMapHeaderMetadata,
@@ -114,15 +129,15 @@ func (g *Game) switchWorld(world int) error {
 	if err != nil {
 		return fmt.Errorf("load %s world frames: %w", worldName(world), err)
 	}
-	boulder, err := loadTransparentSheet(definition.boulder)
+	boulder, err := loadSpriteSheetWithModules(definition.boulder, definition.boulderModules, definition.boulderMetadata)
 	if err != nil {
 		return fmt.Errorf("load %s boulder: %w", worldName(world), err)
 	}
-	diggable, err := loadTransparentSheet(definition.diggable)
+	diggable, err := loadSpriteSheetWithModules(definition.diggable, definition.diggableModules, definition.diggableMetadata)
 	if err != nil {
 		return fmt.Errorf("load %s diggable tile: %w", worldName(world), err)
 	}
-	floor, err := loadTransparentSheet(definition.floor)
+	floor, err := loadModuleSpriteSheet(definition.floor, definition.floorMetadata)
 	if err != nil {
 		return fmt.Errorf("load %s floor: %w", worldName(world), err)
 	}
