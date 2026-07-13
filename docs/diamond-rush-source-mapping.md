@@ -769,6 +769,16 @@ Go implication:
 - The Go runtime extracts the three lossless title images to `decoded/sprites/splash/`. Normal startup now enters this menu; `ORIGINALRUSH_STAGE` remains an explicit developer override that bypasses it.
 - The JSON progress format has no in-stage snapshot. `Continue` therefore returns an unfinished save to the intro tutorial, or a completed-tutorial save to its highest explicitly unlocked Angkor map node.
 
+## Go Display Cadence Boundary
+
+- Java gameplay remains authoritative at `20 TPS`. `internal/originalgame.Game.Update` runs at `60 TPS`, captures desktop input, and calls the complete source update once every three adapter updates; it does not run only selected Runtime methods at the higher rate.
+- One-shot Action, Recall, Skip and map-direction edges are consumed exactly once at the next source boundary. If the corresponding source state rejects input on that tick, the edge is discarded rather than replayed after an animation or script unlocks input. Held movement is sampled continuously and supplied to each source step.
+- Runtime `ObjectMotion` remains packed in source values such as player/gravity `18 -> 12 -> 6 -> 0`, snake `21 -> 18 -> ... -> 0`, and crawler five-pixel decrements. `renderPhase=0..2` derives temporary intermediate offsets for drawing; those offsets never mutate layer, timer or collision state.
+- `cameraX/cameraY` remain the source camera passed to `Runtime.SetViewport`. Normal following and tutorial/enemy-gate/foreground demo pans predict the next source camera only for 60 Hz display interpolation.
+- Bavaria spike display extent similarly interpolates between the current and next source phase, while `SpikeSlowExtent/SpikeFastExtent` remain the only values used for collision.
+- The renderer caches its one-pixel solid primitive and all sprite frame/module `SubImage` handles during loading. Normal cell and UI drawing therefore submits cached images instead of allocating Ebitengine atlas images per frame.
+- `TestUpdateRunsOneSourceFramePerThreeRenderUpdates` checks the scheduler; `TestSixtyHzSchedulerPreservesTwentyHzRuntimeState` compares paced and direct runtime layers; `TestRenderInterpolationDoesNotMutateSourceMotion` verifies that intermediate motion is draw-only.
+
 ## Current Go Package Mapping
 
 | Go package/path | Responsibilities | Java reference |

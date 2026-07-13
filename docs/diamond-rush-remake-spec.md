@@ -187,6 +187,20 @@ Acceptance:
 
 Keep gameplay facts in `internal/original`; Ebitengine and host-platform concerns belong in `internal/originalgame`.
 
+### Logic And Display Cadence
+
+- The authoritative Java-equivalent state machine runs at `20 TPS`. `g.tick`, `TickSourceFrame`, menus, maps, tutorials, results, collision, damage, rewards, audio events and persistence advance only in that source step.
+- Ebitengine runs the desktop adapter at `60 TPS`. It samples host input on every update, consumes each edge once at the next source boundary, and executes one complete source step for every three display updates.
+- `renderPhase` may interpolate player, enemy, gravity-object, hook, moving-hazard, spike, camera and UI positions. These intermediate values are temporary draw inputs and must never be written to `Runtime`.
+- The source camera remains the value passed to `Runtime.SetViewport`; a predicted/interpolated camera is used only by drawing. Stage loads, checkpoint restores, recalls, deaths and scripted camera cuts must not reuse stale visual state.
+- Draw-time code must not allocate `ebiten.Image` objects or repeatedly create sprite `SubImage` handles. Solid primitives and frame/module sub-images are cached during initialization.
+
+Acceptance:
+
+- Three 60 Hz adapter updates produce exactly one 20 Hz source update.
+- For the same source-boundary input sequence, paced and direct execution have identical player/layer/object state after every source tick.
+- Smooth rendering changes neither movement arrival ticks nor collision, hazard, reward, sound or save events.
+
 ## Original-Behavior Requirements
 
 ### Screen And Camera
@@ -432,6 +446,8 @@ Current implementation:
 - `internal/originalgame` renders the original `240x320` composition: a `40px` source HUD, a `240px` scrolling playfield with `24px` tiles, and a `40px` source HUD. It uses extracted Angkor floor/wall/boulder/vegetation art, source gem/checkpoint/goal/enemy/hazard art, and the original hero animation metadata.
 - HUD frames, hero frames, snake frames, foreground effects, and flame frames are composed from their extracted source modules and JSON offsets/flip flags. This avoids the clipping present in convenience `frames.png` sheets for non-zero frame anchors.
 - Rendering follows the Java pass order: first the scrolling tile background, then dynamic foreground/player objects over the relative `-1..11` source scan, then late foreground overlays. This keeps rolling rocks and horizontal flames from being overwritten by later floor cells, clips pressure switches to one tile, and preserves the authored foreground occlusion over the hero.
+- The desktop adapter refreshes at `60 TPS` while the complete source state machine remains `20 TPS`. Input edges are retained only until the next source boundary; visual interpolation covers player/object motion, spikes, source/demo cameras, map travel, world-selection motion, stage-title entry and result-row entry without writing intermediate values back to the runtime.
+- Solid-color drawing uses one cached pixel and sprite sheets cache frame/module sub-images at load time, eliminating the per-cell `ebiten.NewImage` and repeated `SubImage` allocation path from normal drawing.
 - Angkor Stage 1 runs at the Java loop's `20 TPS`. Its 60-tick title is an overlay rather than a simulation pause, and player-layer raw `79` automatically walks the hero four cells from `(0,17)` to the first checkpoint before accepting movement input.
 - Stage initialization creates the source temporary foreground raw `7` entrance door at `(2,17)` with merged state `0x3f`. The fourth raw `79` auto-entry step runs `doorHeadClose`, changes it to blocking state `0x0f`, and emits source sound `14`.
 - Player movement uses the source `18 -> 12 -> 6 -> 0` sub-tile offset. The camera follows the rendered position with the Java horizontal and vertical dead zones instead of hard-centering each tile.
