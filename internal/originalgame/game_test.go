@@ -820,7 +820,7 @@ func TestSecretExitMessageFitsAndDrawsOnSourceScreen(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	lines := []string{"Congratulations! You have", "unlocked a secret path!"}
+	lines := []string{tr(textSecretUnlockedFirst), tr(textSecretUnlockedSecond)}
 	for _, line := range lines {
 		if width := g.fontSmall.stringWidth(line) + 10; width > original.ScreenWidth {
 			t.Fatalf("secret message line %q panel width=%d, exceeds %d", line, width, original.ScreenWidth)

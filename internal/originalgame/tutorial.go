@@ -3,50 +3,13 @@ package originalgame
 import (
 	"image/color"
 	"strings"
+	"unicode"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/wangle201210/zskc/internal/original"
 )
 
 const angkorTutorialStage = 13
-
-var angkorTutorialTexts = [39]string{
-	0:  "I should check that chest first.",
-	1:  "Avoid blocking your own path",
-	2:  "when pushing rocks.",
-	3:  "You can return all objects to their original positions",
-	4:  "by going back to the last circle and pressing " + desktopActionKeyLabel + ".",
-	5:  "If you cannot reach the circle",
-	6:  "and your way is blocked,",
-	7:  "you can press " + desktopRecallKeyLabel + " at any time to go back to the last circle",
-	8:  "but it will cost you a life.",
-	9:  "Is this a kind of seal?",
-	10: "Ah! The seal is reacting!",
-	11: "Let's see what happens if I step on it...",
-	12: "The great temple of Angkor Wat...",
-	13: "I'm finally in!",
-	14: "Let's go!",
-	15: "Look at the magic padlock in front of you!",
-	16: "Collect the indicated number of gems to open it.",
-	17: "Oh! This door is locked!",
-	18: "I'm sure the key must be nearby...",
-	19: "You found a compass! It will help you find your way out.",
-	20: "You found the mystic mallet!",
-	21: "Press " + desktopActionKeyLabel + " to use it.",
-	22: "Great! Now I can crush those weak walls.",
-	32: "The final chamber in Angkor Wat! The fire crystal is supposed to be hidden here...",
-	33: "But I have a bad feeling about this...",
-	34: "The silver diamond is here... I'm sure of it!",
-	35: "Hmm... I feel a dark force nearby...",
-	36: "Let's rock!",
-}
-
-func tutorialText(index int) string {
-	if index < 0 || index >= len(angkorTutorialTexts) {
-		return ""
-	}
-	return angkorTutorialTexts[index]
-}
 
 func (g *Game) drawTutorialPrompt(screen *ebiten.Image) {
 	if g == nil || g.rt == nil || g.fontSmall == nil {
@@ -74,7 +37,7 @@ func (g *Game) drawTutorialPrompt(screen *ebiten.Image) {
 }
 
 func (g *Game) drawTutorialBubblePrompt(screen *ebiten.Image, prompt original.TutorialPrompt, lines []string) {
-	lineHeight := g.fontSmall.meta.FontHeight
+	lineHeight := g.fontSmall.lineHeight()
 	panelY := prompt.Y + 4
 	panelHeight := len(lines)*lineHeight + 4
 	fill := color.RGBA{0x00, 0x00, 0x49, 0xff}
@@ -86,12 +49,12 @@ func (g *Game) drawTutorialBubblePrompt(screen *ebiten.Image, prompt original.Tu
 }
 
 func (g *Game) drawTutorialBottomPrompt(screen *ebiten.Image, lines []string) {
-	lineHeight := g.fontSmall.meta.FontHeight
+	lineHeight := g.fontSmall.lineHeight()
 	fill := color.RGBA{0x00, 0x00, 0x49, 0xff}
 	bodyHeight := len(lines)*lineHeight + 8
 	g.drawDemoPanelWithSheet(screen, g.demoUIBlue, 6, 212, 226, bodyHeight, fill)
 
-	label := "Hint:"
+	label := tr(textHint)
 	labelWidth := g.fontSmall.stringWidth(label) + 10
 	g.drawDemoPanelWithSheet(screen, g.demoUIBlue, 16, 193, labelWidth, 16, fill)
 	drawRect(screen, 13, 195, labelWidth+6, 3, fill)
@@ -116,7 +79,7 @@ func (g *Game) drawTutorialChrome(screen *ebiten.Image) {
 	drawRect(screen, 0, 0, original.ScreenWidth, 42, color.Black)
 	drawRect(screen, 0, 278, original.ScreenWidth, 42, color.Black)
 	g.drawTutorialPortrait(screen)
-	g.fontSmall.drawText(screen, desktopSkipKeyLabel+": SKIP", 2, 318, false, color.White)
+	g.fontSmall.drawText(screen, tr(textPromptSkip, desktopSkipKeyLabel), 2, 318, false, color.White)
 }
 
 func (g *Game) drawTutorialPortrait(screen *ebiten.Image) {
@@ -152,22 +115,75 @@ func (g *Game) drawTutorialFlash(screen *ebiten.Image) {
 }
 
 func wrapTutorialText(font *bitmapFont, text string, maxWidth int) []string {
-	words := strings.Fields(text)
-	if len(words) == 0 || font == nil {
+	if strings.TrimSpace(text) == "" || font == nil || maxWidth <= 0 {
 		return nil
 	}
 	lines := make([]string, 0, 3)
-	line := words[0]
-	for _, word := range words[1:] {
-		candidate := line + " " + word
-		if font.stringWidth(candidate) <= maxWidth {
-			line = candidate
+	line := ""
+	pendingSpace := false
+	flush := func() {
+		line = strings.TrimSpace(line)
+		if line != "" {
+			lines = append(lines, line)
+		}
+		line = ""
+		pendingSpace = false
+	}
+	for _, token := range tutorialWrapTokens(text) {
+		if token == "\n" {
+			flush()
 			continue
 		}
-		lines = append(lines, line)
-		line = word
+		if token == " " {
+			pendingSpace = line != ""
+			continue
+		}
+		candidate := line
+		if pendingSpace && candidate != "" {
+			candidate += " "
+		}
+		candidate += token
+		if line == "" || font.stringWidth(candidate) <= maxWidth {
+			line = candidate
+			pendingSpace = false
+			continue
+		}
+		flush()
+		line = token
 	}
-	return append(lines, line)
+	flush()
+	return lines
+}
+
+func tutorialWrapTokens(text string) []string {
+	tokens := make([]string, 0, len([]rune(text)))
+	var ascii strings.Builder
+	flushASCII := func() {
+		if ascii.Len() == 0 {
+			return
+		}
+		tokens = append(tokens, ascii.String())
+		ascii.Reset()
+	}
+	for _, char := range text {
+		switch {
+		case char == '\n':
+			flushASCII()
+			tokens = append(tokens, "\n")
+		case unicode.IsSpace(char):
+			flushASCII()
+			if len(tokens) == 0 || tokens[len(tokens)-1] != " " {
+				tokens = append(tokens, " ")
+			}
+		case char <= unicode.MaxASCII:
+			ascii.WriteRune(char)
+		default:
+			flushASCII()
+			tokens = append(tokens, string(char))
+		}
+	}
+	flushASCII()
+	return tokens
 }
 
 func (g *Game) drawTutorialSealCell(dst *ebiten.Image, x, y, px, py int) {

@@ -427,6 +427,10 @@ type Game struct {
 	startupWorldOverridden bool
 }
 
+func setWindowTitleForWorld(world int) {
+	ebiten.SetWindowTitle(windowTitleForWorld(world))
+}
+
 func Run() error {
 	startupWorld, worldOverridden, err := requestedStartupWorld()
 	if err != nil {
@@ -473,7 +477,7 @@ func Run() error {
 	}
 	defer g.sounds.Stop()
 	ebiten.SetTPS(renderTPS)
-	ebiten.SetWindowTitle(fmt.Sprintf("Diamond Rush Original Runtime - %s World %d", worldName(g.worldIndex), g.worldIndex))
+	setWindowTitleForWorld(g.worldIndex)
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 	options := &ebiten.RunGameOptions{}
 	if runtime.GOOS == "darwin" {
@@ -750,6 +754,16 @@ func New(worldDir string) (*Game, error) {
 	fontMedium, err := loadBitmapFont(fontMediumSheet, fontMediumMetadata)
 	if err != nil {
 		return nil, fmt.Errorf("load FreeJ2ME medium font: %w", err)
+	}
+	cjkFont, err := loadSystemCJKFont()
+	if err != nil {
+		return nil, fmt.Errorf("load system Chinese font: %w", err)
+	}
+	if err := fontSmall.useCJKSource(cjkFont.source); err != nil {
+		return nil, fmt.Errorf("create small Chinese font: %w", err)
+	}
+	if err := fontMedium.useCJKSource(cjkFont.source); err != nil {
+		return nil, fmt.Errorf("create medium Chinese font: %w", err)
 	}
 	sounds, err := loadOriginalSounds(originalAudioDir)
 	if err != nil {
@@ -1542,6 +1556,8 @@ func toolLevelSpecialItemMask(level int) int {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
+	g.fontSmall.beginFrame()
+	g.fontMedium.beginFrame()
 	screen.Fill(color.RGBA{6, 8, 10, 255})
 	if g.sealExitActive {
 		g.drawSealLoading(screen)
@@ -1610,9 +1626,9 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	} else if g.introTicks < stageIntroDuration {
 		g.drawStageIntro(screen)
 	} else if g.rt.ReachedGoal {
-		drawSourcePanelLabel(screen, g.fontMedium, "CONGRATULATIONS!", original.ScreenWidth/2, playfieldTop+160)
+		drawSourcePanelLabel(screen, g.fontMedium, tr(textCongratulations), original.ScreenWidth/2, playfieldTop+160)
 	} else if g.checkpointBannerUntil > g.tick {
-		drawSourcePanelLabel(screen, g.fontMedium, "CHECKPOINT", original.ScreenWidth/2, playfieldTop+playfieldHeight-g.fontMedium.meta.FontHeight-10)
+		drawSourcePanelLabel(screen, g.fontMedium, tr(textCheckpoint), original.ScreenWidth/2, playfieldTop+playfieldHeight-g.fontMedium.lineHeight()-10)
 	}
 	if curtain := g.deathCurtainHeight(); curtain > 0 {
 		drawRect(screen, 0, 0, original.ScreenWidth, curtain, color.Black)
@@ -1620,14 +1636,20 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	}
 }
 
+func (g *Game) DrawFinalScreen(screen ebiten.FinalScreen, offscreen *ebiten.Image, geoM ebiten.GeoM) {
+	ebiten.DefaultDrawFinalScreen(screen, offscreen, geoM)
+	g.fontSmall.drawFinalCJK(screen, geoM)
+	g.fontMedium.drawFinalCJK(screen, geoM)
+}
+
 func enemyGateMessageText(index int) string {
 	switch index {
 	case 51:
-		return "Defeat the Great Anaconda!"
+		return tr(textObjectiveAnaconda)
 	case 58:
-		return "Light the torch!"
+		return tr(textObjectiveTorch)
 	default:
-		return "Defeat everyone!"
+		return tr(textObjectiveEnemies)
 	}
 }
 
@@ -1700,14 +1722,14 @@ func (g *Game) drawSealLoading(screen *ebiten.Image) {
 	drawRect(screen, 4, 316, 231, 1, color.RGBA{0xfc, 0x9a, 0x04, 0xff})
 	drawRect(screen, 4, 310, 1, 6, color.RGBA{0xfc, 0x9a, 0x04, 0xff})
 	drawRect(screen, 234, 310, 1, 6, color.RGBA{0xfc, 0x9a, 0x04, 0xff})
-	g.fontMedium.drawText(screen, "LOADING", original.ScreenWidth/2, 304, true, color.White)
+	g.fontMedium.drawText(screen, tr(textLoading), original.ScreenWidth/2, 304, true, color.White)
 }
 
 func (g *Game) drawSecretExit(screen *ebiten.Image) {
 	screen.Fill(color.Black)
 	drawSourcePanelLines(screen, g.fontSmall, []string{
-		"Congratulations! You have",
-		"unlocked a secret path!",
+		tr(textSecretUnlockedFirst),
+		tr(textSecretUnlockedSecond),
 	}, original.ScreenWidth/2, 164)
 }
 
@@ -1728,13 +1750,13 @@ func (g *Game) drawStageResults(screen *ebiten.Image) {
 	screen.Fill(color.RGBA{0x26, 0x17, 0x07, 0xff})
 	textColor := color.White
 	titleOffset, completeOffset := stageResultTitleOffsetsAtRenderPhase(g.resultPhase, g.resultPhaseTicks, g.renderPhase)
-	g.fontSmall.drawText(screen, fmt.Sprintf("STAGE %d", g.stageIndex+1), original.ScreenWidth/2+titleOffset, resultStageTitleY, true, textColor)
-	g.fontSmall.drawText(screen, "COMPLETE!", original.ScreenWidth/2+completeOffset, resultCompleteY, true, textColor)
+	g.fontSmall.drawText(screen, tr(textStage, g.stageIndex+1), original.ScreenWidth/2+titleOffset, resultStageTitleY, true, textColor)
+	g.fontSmall.drawText(screen, tr(textComplete), original.ScreenWidth/2+completeOffset, resultCompleteY, true, textColor)
 
 	if g.resultPhase >= resultPhaseVioletGems {
 		offset := stageResultRowOffsetAtRenderPhase(g.resultPhase, resultPhaseVioletGems, g.resultPhaseTicks, g.renderPhase)
 		g.violetGem.drawFrame(screen, 0, 7+offset, resultVioletLabelY, 0)
-		g.fontSmall.drawText(screen, "DIAMONDS", original.ScreenWidth/2, resultVioletLabelY, true, textColor)
+		g.fontSmall.drawText(screen, tr(textDiamonds), original.ScreenWidth/2, resultVioletLabelY, true, textColor)
 		count := g.rt.VioletGems
 		if g.resultPhase == resultPhaseVioletGems {
 			count = min(g.resultPhaseTicks>>1, count)
@@ -1744,30 +1766,30 @@ func (g *Game) drawStageResults(screen *ebiten.Image) {
 	if g.resultPhase >= resultPhaseRedDiamonds {
 		offset := stageResultRowOffsetAtRenderPhase(g.resultPhase, resultPhaseRedDiamonds, g.resultPhaseTicks, g.renderPhase)
 		g.redDiamond.drawFrame(screen, 0, 7+offset, resultRedLabelY, 0)
-		g.fontSmall.drawText(screen, "RED DIAMONDS", original.ScreenWidth/2, resultRedLabelY, true, textColor)
+		g.fontSmall.drawText(screen, tr(textRedDiamonds), original.ScreenWidth/2, resultRedLabelY, true, textColor)
 		g.fontSmall.drawText(screen, fmt.Sprintf("%d/%d", g.rt.RedDiamonds, g.rt.TotalRedDiamonds), original.ScreenWidth/2, resultRedCountY, true, textColor)
 		g.drawStageResultAward(screen, resultAwardVioletGems, resultPhaseRedDiamonds, 69, 86, resultEffectDoubleShort)
 	}
 	if g.resultPhase >= resultPhaseHits {
 		offset := stageResultRowOffsetAtRenderPhase(g.resultPhase, resultPhaseHits, g.resultPhaseTicks, g.renderPhase)
 		g.drawHeroResultIcon(screen, 10, 7+offset, resultHitsIconY)
-		g.fontSmall.drawText(screen, "HITS", original.ScreenWidth/2, resultHitsLabelY, true, textColor)
+		g.fontSmall.drawText(screen, tr(textHits), original.ScreenWidth/2, resultHitsLabelY, true, textColor)
 		g.fontSmall.drawText(screen, fmt.Sprintf("%d", g.rt.HitCount), original.ScreenWidth/2, resultHitsCountY, true, textColor)
 		g.drawStageResultAward(screen, resultAwardRedDiamonds, resultPhaseHits, 125, 142, resultEffectHalf)
 	}
 	if g.resultPhase >= resultPhaseRetries {
 		offset := stageResultRowOffsetAtRenderPhase(g.resultPhase, resultPhaseRetries, g.resultPhaseTicks, g.renderPhase)
 		g.drawHeroResultIcon(screen, 12, 7+offset, resultRetriesIconY)
-		g.fontSmall.drawText(screen, "RETRIES", original.ScreenWidth/2, resultRetriesLabelY, true, textColor)
+		g.fontSmall.drawText(screen, tr(textRetries), original.ScreenWidth/2, resultRetriesLabelY, true, textColor)
 		g.fontSmall.drawText(screen, fmt.Sprintf("%d", g.rt.Retries), original.ScreenWidth/2, resultRetriesCountY, true, textColor)
 		g.drawStageResultAward(screen, resultAwardNoHits, resultPhaseRetries, 181, 198, resultEffectHalf)
 	}
 	if g.resultPhase >= resultPhaseComplete {
 		g.drawStageResultAward(screen, resultAwardNoRetries, resultPhaseComplete, 237, 254, resultEffectDoubleLong)
 	}
-	prompt := desktopActionKeyLabel + ": SKIP"
+	prompt := tr(textPromptSkip, desktopActionKeyLabel)
 	if g.resultPhase == resultPhaseComplete {
-		prompt = desktopActionKeyLabel + ": CONTINUE"
+		prompt = tr(textPromptContinue, desktopActionKeyLabel)
 	}
 	g.fontSmall.drawText(screen, prompt, 5, 318, false, textColor)
 }
@@ -1780,7 +1802,7 @@ func (g *Game) drawStageResultLoading(screen *ebiten.Image) {
 	drawRect(screen, 4, 316, 231, 1, color.RGBA{0xfc, 0x9a, 0x04, 0xff})
 	drawRect(screen, 4, 310, 1, 6, color.RGBA{0xfc, 0x9a, 0x04, 0xff})
 	drawRect(screen, 234, 310, 1, 6, color.RGBA{0xfc, 0x9a, 0x04, 0xff})
-	g.fontMedium.drawText(screen, "LOADING", original.ScreenWidth/2, 304, true, color.White)
+	g.fontMedium.drawText(screen, tr(textLoading), original.ScreenWidth/2, 304, true, color.White)
 }
 
 func (g *Game) drawHeroResultIcon(screen *ebiten.Image, animation, x, y int) {
@@ -2062,8 +2084,8 @@ func (g *Game) drawHUD(screen *ebiten.Image) {
 
 func (g *Game) drawStageIntro(screen *ebiten.Image) {
 	worldX, stageX := stageTitlePositionsAtRenderPhase(g.introTicks, g.renderPhase)
-	drawSourcePanelLabel(screen, g.fontMedium, strings.ToUpper(worldName(g.worldIndex)), worldX, playfieldTop+15)
-	drawSourcePanelLabel(screen, g.fontMedium, fmt.Sprintf("STAGE %d", g.stageIndex+1), stageX, playfieldTop+50)
+	drawSourcePanelLabel(screen, g.fontMedium, worldDisplayName(g.worldIndex), worldX, playfieldTop+15)
+	drawSourcePanelLabel(screen, g.fontMedium, tr(textStage, g.stageIndex+1), stageX, playfieldTop+50)
 }
 
 func stageTitlePositions(tick int) (int, int) {
@@ -2896,11 +2918,22 @@ func imageHasTransparency(img image.Image) bool {
 }
 
 func resolvePath(path string) string {
+	executablePath, _ := os.Executable()
+	return resolvePathFromExecutable(path, executablePath)
+}
+
+func resolvePathFromExecutable(path, executablePath string) string {
 	if filepath.IsAbs(path) {
 		return path
 	}
 	if _, err := os.Stat(path); err == nil {
 		return path
+	}
+	if executablePath != "" {
+		fallback := filepath.Join(filepath.Dir(executablePath), path)
+		if _, err := os.Stat(fallback); err == nil {
+			return fallback
+		}
 	}
 	fallback := filepath.Join("..", "..", path)
 	if _, err := os.Stat(fallback); err == nil {

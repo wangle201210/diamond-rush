@@ -221,14 +221,14 @@ func TestAngkorWorldMapUsesSecretStageTitles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := g.worldMapStageTitle(6); got != "STAGE 7" {
-		t.Fatalf("normal map title=%q, want STAGE 7", got)
+	if got := g.worldMapStageTitle(6); got != "第7关" {
+		t.Fatalf("normal map title=%q, want 第7关", got)
 	}
-	if got := g.worldMapStageTitle(9); got != "SECRET STAGE 1" {
-		t.Fatalf("secret map title=%q, want SECRET STAGE 1", got)
+	if got := g.worldMapStageTitle(9); got != "隐藏关卡1" {
+		t.Fatalf("secret map title=%q, want 隐藏关卡1", got)
 	}
-	if got := g.worldMapStageTitle(12); got != "SECRET STAGE 4" {
-		t.Fatalf("secret map title=%q, want SECRET STAGE 4", got)
+	if got := g.worldMapStageTitle(12); got != "隐藏关卡4" {
+		t.Fatalf("secret map title=%q, want 隐藏关卡4", got)
 	}
 }
 

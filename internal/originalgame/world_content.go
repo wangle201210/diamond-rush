@@ -113,6 +113,7 @@ func (g *Game) switchWorld(world int) error {
 	}
 	if g.pack != nil && g.pack.World == world {
 		g.worldIndex = world
+		setWindowTitleForWorld(world)
 		return nil
 	}
 	dir := filepath.Join(g.worldRoot, fmt.Sprintf("world%d", world))
@@ -155,5 +156,6 @@ func (g *Game) switchWorld(world int) error {
 	g.worldMapHeader = mapHeader
 	g.worldDir = dir
 	g.worldIndex = world
+	setWindowTitleForWorld(world)
 	return nil
 }

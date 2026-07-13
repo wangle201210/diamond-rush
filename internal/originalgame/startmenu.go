@@ -17,7 +17,7 @@ const (
 	startMenuYes
 )
 
-const startMenuRowHeight = 13
+const startMenuRowHeight = 16
 
 func (g *Game) enterStartMenu(hasProgress bool) {
 	g.mode = gameModeStartMenu
@@ -140,10 +140,10 @@ func (g *Game) drawStartMenu(screen *ebiten.Image) {
 		screen.DrawImage(g.splashLogo, nil)
 	}
 
-	items := []string{"New game"}
+	items := []string{tr(textMenuNewGame)}
 	selected := 0
 	if g.startMenuHasProgress {
-		items = []string{"Continue", "New game"}
+		items = []string{tr(textMenuContinue), tr(textMenuNewGame)}
 		selected = g.startMenuSelection
 	}
 	g.drawStartMenuRows(screen, items, selected, original.ScreenHeight-startMenuRowHeight+2)
@@ -153,15 +153,15 @@ func (g *Game) drawNewGameConfirmation(screen *ebiten.Image) {
 	screen.Fill(color.Black)
 	if g.fontSmall != nil {
 		lines := []string{
-			"Starting a new game",
-			"deletes your progress.",
-			"Are you sure?",
+			tr(textMenuConfirmStart),
+			tr(textMenuConfirmDelete),
+			tr(textMenuConfirmQuestion),
 		}
 		for index, line := range lines {
 			g.fontSmall.drawText(screen, line, original.ScreenWidth/2, 123+index*15, true, color.White)
 		}
 	}
-	g.drawStartMenuRows(screen, []string{"No", "Yes"}, g.startMenuConfirmChoice, 190)
+	g.drawStartMenuRows(screen, []string{tr(textMenuNo), tr(textMenuYes)}, g.startMenuConfirmChoice, 190)
 }
 
 func (g *Game) drawStartMenuRows(screen *ebiten.Image, items []string, selected, bottom int) {

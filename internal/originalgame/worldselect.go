@@ -256,7 +256,7 @@ func (g *Game) drawWorldSelect(screen *ebiten.Image) {
 		g.softkeys.drawFrame(screen, 3, 2, 308, 0)
 	}
 	if g.fontSmall != nil {
-		text := desktopRecallKeyLabel + ": MAIN MENU"
+		text := tr(textPromptMainMenu, desktopRecallKeyLabel)
 		g.fontSmall.drawText(screen, text, 218-g.fontSmall.stringWidth(text), 314, false, color.White)
 	}
 
@@ -361,20 +361,20 @@ func (g *Game) drawWorldSelectPrompt(screen *ebiten.Image) {
 	if g.fontSmall == nil {
 		return
 	}
-	action := "Press " + desktopActionKeyLabel + " to go to"
+	action := tr(textWorldGoTo, desktopActionKeyLabel)
 	if g.worldSelectPosition != sealPositionShop && !g.progress.WorldUnlocked[g.worldSelectPosition] {
-		action = fmt.Sprintf("%d red diamonds to go to", sealWorldPrices[g.worldSelectPosition])
+		action = tr(textWorldNeedRedDiamonds, sealWorldPrices[g.worldSelectPosition])
 	}
 	lines := []string{action, sealWorldName(g.worldSelectPosition)}
 	width := max(g.fontSmall.stringWidth(lines[0]), g.fontSmall.stringWidth(lines[1]))
-	lineHeight := g.fontSmall.meta.FontHeight
+	lineHeight := g.fontSmall.lineHeight()
 	height := lineHeight * len(lines)
 	x := (original.ScreenWidth-width)/2 - 3
-	y := 240 - g.fontSmall.meta.FontHeight/2 - 3
-	g.drawDemoPanel(screen, x, y, width+6, height+5, color.RGBA{0x6c, 0x49, 0x0b, 0xff})
 	top := 240 - height/2
+	y := top - 3
+	g.drawDemoPanel(screen, x, y, width+6, height+6, color.RGBA{0x6c, 0x49, 0x0b, 0xff})
 	for index, line := range lines {
-		g.fontSmall.drawText(screen, line, original.ScreenWidth/2, top+sourceFontYOffset+index*lineHeight, true, color.White)
+		g.fontSmall.drawText(screen, line, original.ScreenWidth/2, top+sourceFontYOffset+localizedPanelOpticalYOffset+index*lineHeight, true, color.White)
 	}
 }
 
@@ -404,13 +404,13 @@ func (g *Game) drawDemoPanelWithSheet(screen *ebiten.Image, sheet *spriteSheet, 
 func sealWorldName(position int) string {
 	switch position {
 	case sealPositionAngkor:
-		return "Angkor Wat"
+		return tr(textWorldAngkor)
 	case sealPositionBavaria:
-		return "Bavaria"
+		return tr(textWorldBavaria)
 	case sealPositionSiberia:
-		return "Siberia"
+		return tr(textWorldSiberia)
 	case sealPositionShop:
-		return "Shop"
+		return tr(textWorldShop)
 	default:
 		return ""
 	}

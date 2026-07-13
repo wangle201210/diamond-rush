@@ -6,7 +6,6 @@ import (
 	"image/color"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -256,7 +255,7 @@ func (g *Game) drawWorldMap(screen *ebiten.Image) {
 	if g.worldMapHeader != nil {
 		g.worldMapHeader.drawFrame(screen, 0, original.ScreenWidth/2, 0, 0)
 	}
-	g.fontMedium.drawText(screen, strings.ToUpper(worldName(g.worldIndex)), original.ScreenWidth/2, 12, true, color.White)
+	g.fontMedium.drawText(screen, worldDisplayName(g.worldIndex), original.ScreenWidth/2, 15, true, color.White)
 	g.fontMedium.drawText(screen, g.worldMapStageTitle(g.worldMapDisplayStage()), 8, 61, false, color.White)
 	if g.worldMapGround != nil {
 		g.worldMapGround.drawFrame(screen, 0, 120, 171, 0)
@@ -275,8 +274,8 @@ func (g *Game) drawWorldMap(screen *ebiten.Image) {
 	g.fontSmall.drawText(screen, fmt.Sprintf("%d", g.progress.ExtraLives), 41, 290, true, color.White)
 	g.fontSmall.drawText(screen, fmt.Sprintf("%d", g.progress.VioletGemBank), 99, 290, true, color.White)
 	g.fontSmall.drawText(screen, fmt.Sprintf("%d", g.progress.RedDiamondBank), 174, 290, true, color.White)
-	selectPrompt := desktopActionKeyLabel + ": SELECT"
-	worldsPrompt := desktopNavigationKeyLabel + ": WORLDS"
+	selectPrompt := tr(textPromptSelect, desktopActionKeyLabel)
+	worldsPrompt := tr(textPromptWorlds, desktopNavigationKeyLabel)
 	g.fontSmall.drawText(screen, worldsPrompt, 2, 314, false, color.White)
 	g.fontSmall.drawText(screen, selectPrompt, 236-g.fontSmall.stringWidth(selectPrompt), 314, false, color.White)
 }
@@ -319,7 +318,7 @@ func (g *Game) drawWorldMapLoading(screen *ebiten.Image) {
 	drawRect(screen, 5, 310, progress, 6, color.RGBA{0xce, 0x9b, 0x00, 0xff})
 	drawRect(screen, 4, 309, 231, 1, color.RGBA{0xfc, 0x9a, 0x04, 0xff})
 	drawRect(screen, 4, 316, 231, 1, color.RGBA{0xfc, 0x9a, 0x04, 0xff})
-	g.fontMedium.drawText(screen, "LOADING", original.ScreenWidth/2, 304, true, color.White)
+	g.fontMedium.drawText(screen, tr(textLoading), original.ScreenWidth/2, 304, true, color.White)
 }
 
 func (g *Game) drawWorldMapPaths(screen *ebiten.Image) {
@@ -409,9 +408,9 @@ func (g *Game) worldMapDisplayStage() int {
 
 func (g *Game) worldMapStageTitle(stage int) string {
 	if node, ok := g.worldMap.nodeForStage(stage); ok && node.Type == 1 {
-		return fmt.Sprintf("SECRET STAGE %d", stage-worldFirstSecretStage(g.worldIndex)+1)
+		return tr(textSecretStage, stage-worldFirstSecretStage(g.worldIndex)+1)
 	}
-	return fmt.Sprintf("STAGE %d", stage+1)
+	return tr(textStage, stage+1)
 }
 
 func angkorStageImplemented(stage int) bool {
