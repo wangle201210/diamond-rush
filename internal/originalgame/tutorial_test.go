@@ -34,14 +34,14 @@ func TestAngkorTutorialTextMappingMatchesSource(t *testing.T) {
 }
 
 func TestDesktopControlLabelsMatchKeyboardBindings(t *testing.T) {
-	if desktopActionKeyLabel != "SPACE" || desktopRecallKeyLabel != "ENTER" || desktopSkipKeyLabel != "S" {
-		t.Fatalf("desktop labels action=%q recall=%q skip=%q", desktopActionKeyLabel, desktopRecallKeyLabel, desktopSkipKeyLabel)
+	if desktopActionKeyLabel != "SPACE" || desktopRecallKeyLabel != "ENTER" || desktopNavigationKeyLabel != "TAB" || desktopSkipKeyLabel != "S" {
+		t.Fatalf("desktop labels action=%q recall=%q navigation=%q skip=%q", desktopActionKeyLabel, desktopRecallKeyLabel, desktopNavigationKeyLabel, desktopSkipKeyLabel)
 	}
 	g, err := New(defaultWorldDir)
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, label := range []string{desktopActionKeyLabel, desktopRecallKeyLabel, desktopSkipKeyLabel} {
+	for _, label := range []string{desktopActionKeyLabel, desktopRecallKeyLabel, desktopNavigationKeyLabel, desktopSkipKeyLabel} {
 		if !g.fontSmall.supports(label) {
 			t.Errorf("desktop control label is not renderable: %q", label)
 		}

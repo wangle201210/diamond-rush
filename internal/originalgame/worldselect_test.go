@@ -99,6 +99,33 @@ func TestWorldSelectDrawsOriginalSelectorAssets(t *testing.T) {
 	}
 }
 
+func TestWorldSelectCancelReturnsToMainMenu(t *testing.T) {
+	g, err := New(defaultWorldDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g.enterWorldSelect(-1)
+	if err := g.updateSource(sourceInput{Recall: true}); err != nil {
+		t.Fatal(err)
+	}
+	if g.mode != gameModeStartMenu || !g.startMenuHasProgress {
+		t.Fatalf("cancel mode/has-progress=%d/%v, want saved-game main menu", g.mode, g.startMenuHasProgress)
+	}
+}
+
+func TestWorldSelectCannotEnterLockedWorld(t *testing.T) {
+	g, err := New(defaultWorldDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g.enterWorldSelect(-1)
+	g.worldSelectPosition = sealPositionBavaria
+	g.updateWorldSelect(true, 0, 0)
+	if g.mode != gameModeWorldSelect || g.worldIndex != sealPositionAngkor {
+		t.Fatalf("locked-world activation mode/world=%d/%d, want selector/Angkor", g.mode, g.worldIndex)
+	}
+}
+
 func TestSealMoveTableMatchesOriginalConfig(t *testing.T) {
 	want := [4][4]int{
 		{-1, -1, 0, -1},

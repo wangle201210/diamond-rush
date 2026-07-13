@@ -1275,6 +1275,9 @@ func TestMacActionAndRecallShortcutsAreUnambiguous(t *testing.T) {
 	if !tutorialSkipPressedWith(keySet(ebiten.KeyS)) || tutorialSkipPressedWith(keySet(ebiten.KeySpace)) {
 		t.Fatal("tutorial skip must use S without consuming Space")
 	}
+	if !navigationPressedWith(keySet(ebiten.KeyTab)) || navigationPressedWith(keySet(ebiten.KeyEnter)) {
+		t.Fatal("world/stage navigation must use Tab without consuming Enter")
+	}
 	if dx, dy := heldDirectionWith(keySet(ebiten.KeyDigit8)); dx != 0 || dy != 1 {
 		t.Fatalf("plain 8 movement = %d,%d, want down", dx, dy)
 	}

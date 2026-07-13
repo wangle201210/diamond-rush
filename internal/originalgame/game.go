@@ -18,9 +18,10 @@ import (
 )
 
 const (
-	desktopActionKeyLabel = "SPACE"
-	desktopRecallKeyLabel = "ENTER"
-	desktopSkipKeyLabel   = "S"
+	desktopActionKeyLabel     = "SPACE"
+	desktopRecallKeyLabel     = "ENTER"
+	desktopNavigationKeyLabel = "TAB"
+	desktopSkipKeyLabel       = "S"
 
 	angkorWorldFrameSheet      = "decoded/sprites/0/chunk02-frames.png"
 	angkorWorldFrameModules    = "decoded/sprites/0/chunk02-modules.png"
@@ -271,6 +272,7 @@ const (
 type sourceInput struct {
 	Action      bool
 	Recall      bool
+	Navigate    bool
 	Skip        bool
 	DirectionDX int
 	DirectionDY int
@@ -281,6 +283,7 @@ type sourceInput struct {
 type pendingSourceInput struct {
 	Action      bool
 	Recall      bool
+	Navigate    bool
 	Skip        bool
 	DirectionDX int
 	DirectionDY int
@@ -376,6 +379,7 @@ type Game struct {
 	secretExitTicks        int
 	sealExitActive         bool
 	sealExitTicks          int
+	sealExitIncoming       int
 	worldSelectPosition    int
 	worldSelectArrowX      int
 	worldSelectArrowY      int
@@ -864,6 +868,9 @@ func (g *Game) captureInput() bool {
 	if recallPressed() {
 		g.pendingInput.Recall = true
 	}
+	if navigationPressed() {
+		g.pendingInput.Navigate = true
+	}
 	if tutorialSkipPressed() {
 		g.pendingInput.Skip = true
 	}
@@ -879,6 +886,7 @@ func (g *Game) consumeSourceInput() sourceInput {
 	input := sourceInput{
 		Action:      g.pendingInput.Action,
 		Recall:      g.pendingInput.Recall,
+		Navigate:    g.pendingInput.Navigate,
 		Skip:        g.pendingInput.Skip,
 		DirectionDX: g.pendingInput.DirectionDX,
 		DirectionDY: g.pendingInput.DirectionDY,
@@ -891,6 +899,7 @@ func (g *Game) consumeSourceInput() sourceInput {
 	}
 	g.pendingInput.Action = false
 	g.pendingInput.Recall = false
+	g.pendingInput.Navigate = false
 	g.pendingInput.Skip = false
 	g.pendingInput.DirectionDX = 0
 	g.pendingInput.DirectionDY = 0
@@ -903,6 +912,14 @@ func (g *Game) updateSource(input sourceInput) error {
 		g.sourceInput = sourceInput{}
 	}()
 	g.tick++
+	if g.sealExitActive {
+		g.sealExitTicks++
+		if g.sealExitTicks >= sealLoadingSteps {
+			g.sealExitActive = false
+			g.enterWorldSelect(g.sealExitIncoming)
+		}
+		return nil
+	}
 	if g.mode == gameModeStartMenu {
 		g.updateStartMenu(input.Action, input.DirectionDY)
 		return nil
@@ -915,20 +932,17 @@ func (g *Game) updateSource(input sourceInput) error {
 		g.updateWorldSelect(input.Action, input.DirectionDX, input.DirectionDY)
 		return nil
 	}
-	if g.sealExitActive {
-		g.sealExitTicks++
-		if g.sealExitTicks >= sealLoadingSteps {
-			g.sealExitActive = false
-			g.enterWorldSelect(g.worldIndex)
-		}
-		return nil
-	}
 	if g.secretExitActive {
 		g.secretExitTicks++
 		if g.secretExitTicks > secretExitDuration {
 			g.secretExitActive = false
 			g.enterWorldMap()
 		}
+		return nil
+	}
+	if input.Navigate && g.rt != nil && !g.worldDone && !(g.worldIndex == original.WorldAngkor && g.stageIndex == angkorTutorialStage && !g.progress.TutorialComplete) {
+		g.pendingMapTarget = -1
+		g.enterWorldMap()
 		return nil
 	}
 	if g.introTicks < stageIntroDuration {
@@ -1347,6 +1361,7 @@ func (g *Game) beginSealExit() {
 	g.pendingMapTarget = -1
 	g.sealExitActive = true
 	g.sealExitTicks = 0
+	g.sealExitIncoming = g.worldIndex
 	g.message = fmt.Sprintf("%s seal recovered", worldName(g.worldIndex))
 }
 
@@ -1410,6 +1425,7 @@ func (g *Game) loadStage(index int) {
 	g.secretExitTicks = 0
 	g.sealExitActive = false
 	g.sealExitTicks = 0
+	g.sealExitIncoming = -1
 	g.pendingMapTarget = -1
 	g.resultPhase = resultPhaseLoading
 	g.resultPhaseTicks = 0
@@ -1527,6 +1543,10 @@ func toolLevelSpecialItemMask(level int) int {
 
 func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(color.RGBA{6, 8, 10, 255})
+	if g.sealExitActive {
+		g.drawSealLoading(screen)
+		return
+	}
 	if g.mode == gameModeStartMenu {
 		g.drawStartMenu(screen)
 		return
@@ -1537,10 +1557,6 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	}
 	if g.mode == gameModeWorldSelect {
 		g.drawWorldSelect(screen)
-		return
-	}
-	if g.sealExitActive {
-		g.drawSealLoading(screen)
 		return
 	}
 	if g.secretExitActive {
@@ -2770,6 +2786,14 @@ func heldDirectionWith(pressed func(ebiten.Key) bool) (int, int) {
 
 func recallPressed() bool {
 	return recallPressedWith(inpututil.IsKeyJustPressed, ebiten.IsKeyPressed)
+}
+
+func navigationPressed() bool {
+	return navigationPressedWith(inpututil.IsKeyJustPressed)
+}
+
+func navigationPressedWith(justPressed func(ebiten.Key) bool) bool {
+	return justPressed(ebiten.KeyTab)
 }
 
 func recallPressedWith(justPressed, pressed func(ebiten.Key) bool) bool {

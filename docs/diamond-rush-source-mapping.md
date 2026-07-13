@@ -79,7 +79,7 @@ Go implication:
 - Model the game in terms of `Up`, `Down`, `Left`, `Right`, `Action5`, `Star`, `Pound`, `LeftSoft`, `RightSoft`.
 - Desktop mappings are adapter concerns only.
 - The current macOS adapter maps `Space`/`5`/numpad `5` to `Action5`, and maps `Enter`/`R`/`Backspace`/numpad `*`/`Shift+8` to `Star`. Tutorial Skip uses `S`, so Space never has both Skip and interaction semantics.
-- Player-facing desktop prompts must name the mapped keys as `SPACE`, `ENTER`, and `S`; source phone labels or sprites such as `Press 5`, the blue `5`, and the blue `*` must not be shown as keyboard instructions.
+- Player-facing desktop prompts must name the mapped keys as `SPACE`, `ENTER`, `TAB`, and `S`; source phone labels or sprites such as `Press 5`, the blue `5`, and the blue `*` must not be shown as keyboard instructions. `TAB` is the desktop-only world/stage navigation path: stage to current world map, then world map to the global selector. It does not replace any authoritative Java stage action.
 - A new direction does not move the hero immediately. `i.java:1531-1532` marks a stationary facing change with `kInt|=0x1000`; the player update at `10692-10699` turns in place with `jInt=18`, then counts `18 -> 12 -> 6 -> 0`. A released tap only turns, a second same-direction press moves, and a held direction moves on the update after the turn finishes. Apply this only to player input; scripted and entrance movement bypass it.
 
 ## Main State Machine

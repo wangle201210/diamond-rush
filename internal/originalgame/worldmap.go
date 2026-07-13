@@ -209,6 +209,14 @@ func (g *Game) updateWorldMap(action bool) {
 		}
 		return
 	}
+	if g.sourceInput.Navigate {
+		g.pendingMapTarget = -1
+		g.sealExitActive = true
+		g.sealExitTicks = 0
+		g.sealExitIncoming = -1
+		g.message = "world selection"
+		return
+	}
 	if action {
 		stage := g.worldMapSelectedStage
 		if !g.progress.stageUnlockedForWorld(g.worldIndex, stage) {
@@ -268,6 +276,8 @@ func (g *Game) drawWorldMap(screen *ebiten.Image) {
 	g.fontSmall.drawText(screen, fmt.Sprintf("%d", g.progress.VioletGemBank), 99, 290, true, color.White)
 	g.fontSmall.drawText(screen, fmt.Sprintf("%d", g.progress.RedDiamondBank), 174, 290, true, color.White)
 	selectPrompt := desktopActionKeyLabel + ": SELECT"
+	worldsPrompt := desktopNavigationKeyLabel + ": WORLDS"
+	g.fontSmall.drawText(screen, worldsPrompt, 2, 314, false, color.White)
 	g.fontSmall.drawText(screen, selectPrompt, 236-g.fontSmall.stringWidth(selectPrompt), 314, false, color.White)
 }
 

@@ -71,7 +71,10 @@ func (p *originalProgress) unlockEligibleWorlds() int {
 func (g *Game) enterWorldSelect(incomingRelic int) {
 	g.mode = gameModeWorldSelect
 	g.worldSelectUnlocking = g.progress.unlockEligibleWorlds()
-	g.worldSelectPosition = sealPositionAngkor
+	g.worldSelectPosition = g.worldIndex
+	if g.worldSelectPosition < sealPositionAngkor || g.worldSelectPosition > sealPositionSiberia {
+		g.worldSelectPosition = sealPositionAngkor
+	}
 	if g.worldSelectUnlocking != 0 {
 		g.worldSelectPosition = g.worldSelectUnlocking
 	}
@@ -136,6 +139,10 @@ func (g *Game) updateWorldSelect(action bool, dx, dy int) {
 	}
 
 	g.worldSelectArrowTick++
+	if g.sourceInput.Recall {
+		g.enterStartMenu(true)
+		return
+	}
 	if action {
 		g.activateWorldSelectPosition()
 		return
@@ -249,7 +256,7 @@ func (g *Game) drawWorldSelect(screen *ebiten.Image) {
 		g.softkeys.drawFrame(screen, 3, 2, 308, 0)
 	}
 	if g.fontSmall != nil {
-		text := "Main menu"
+		text := desktopRecallKeyLabel + ": MAIN MENU"
 		g.fontSmall.drawText(screen, text, 218-g.fontSmall.stringWidth(text), 314, false, color.White)
 	}
 

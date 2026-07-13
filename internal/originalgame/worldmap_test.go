@@ -141,6 +141,54 @@ func TestWorldMapCannotEnterLockedNormalStage(t *testing.T) {
 	}
 }
 
+func TestTabNavigatesFromStageToUnlockedWorld(t *testing.T) {
+	g, err := New(defaultWorldDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g.progress.WorldUnlocked[sealPositionBavaria] = true
+	g.progress.unlockStageForWorld(sealPositionAngkor, 3)
+	g.progress.unlockStageForWorld(sealPositionBavaria, 2)
+	if err := g.switchWorld(sealPositionBavaria); err != nil {
+		t.Fatal(err)
+	}
+	g.loadStage(2)
+	g.mode = gameModeStage
+	if err := g.updateSource(sourceInput{Navigate: true}); err != nil {
+		t.Fatal(err)
+	}
+	if g.mode != gameModeWorldMap || g.worldMapSelectedStage != 2 {
+		t.Fatalf("first Tab mode/stage=%d/%d, want Bavaria map/Stage 3", g.mode, g.worldMapSelectedStage)
+	}
+	g.worldMapLoadingStep = worldMapLoadingSteps
+	g.worldMapTravelTick = worldMapTravelTicks
+	if err := g.updateSource(sourceInput{Recall: true}); err != nil {
+		t.Fatal(err)
+	}
+	if g.sealExitActive || g.mode != gameModeWorldMap {
+		t.Fatal("Enter must not start world switching from the world map")
+	}
+	if err := g.updateSource(sourceInput{Navigate: true}); err != nil {
+		t.Fatal(err)
+	}
+	for step := 0; step < sealLoadingSteps; step++ {
+		if err := g.updateSource(sourceInput{}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if g.mode != gameModeWorldSelect || g.worldSelectPosition != sealPositionBavaria {
+		t.Fatalf("selector mode/position=%d/%d, want current Bavaria world", g.mode, g.worldSelectPosition)
+	}
+	g.worldSelectPosition = sealPositionAngkor
+	g.activateWorldSelectPosition()
+	if g.mode != gameModeWorldMap || g.worldIndex != sealPositionAngkor || g.stageIndex != 3 {
+		t.Fatalf("Angkor return mode/world/stage=%d/%d/%d, want world map/Angkor/Stage 4", g.mode, g.worldIndex, g.stageIndex)
+	}
+	if !g.progress.BavariaStageUnlocked[2] {
+		t.Fatal("returning to Angkor discarded Bavaria map progress")
+	}
+}
+
 func TestAngkorWorldMapExitTargetsMatchSourceBranches(t *testing.T) {
 	worldMap, err := loadWorldMap(filepath.Join(defaultWorldDir, "map.json"))
 	if err != nil {
