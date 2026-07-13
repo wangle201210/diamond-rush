@@ -22,6 +22,13 @@ type worldVisualDefinition struct {
 	mapHeaderSheet    string
 	mapHeaderModules  string
 	mapHeaderMetadata string
+	foregroundEffects spriteVisualDefinition
+}
+
+type spriteVisualDefinition struct {
+	sheet    string
+	modules  string
+	metadata string
 }
 
 func worldVisualDefinitionFor(world int) worldVisualDefinition {
@@ -41,6 +48,11 @@ func worldVisualDefinitionFor(world int) worldVisualDefinition {
 			mapHeaderSheet:    bavariaMapHeaderSheet,
 			mapHeaderModules:  bavariaMapHeaderModules,
 			mapHeaderMetadata: bavariaMapHeaderMetadata,
+			foregroundEffects: spriteVisualDefinition{
+				sheet:    bavariaForegroundEffectSheet,
+				modules:  bavariaForegroundEffectModules,
+				metadata: bavariaForegroundEffectMetadata,
+			},
 		}
 	}
 	return worldVisualDefinition{
@@ -58,6 +70,11 @@ func worldVisualDefinitionFor(world int) worldVisualDefinition {
 		mapHeaderSheet:    worldMapHeaderSheet,
 		mapHeaderModules:  worldMapHeaderModules,
 		mapHeaderMetadata: worldMapHeaderMetadata,
+		foregroundEffects: spriteVisualDefinition{
+			sheet:    foregroundEffectSheet,
+			modules:  foregroundEffectModules,
+			metadata: foregroundEffectMetadata,
+		},
 	}
 }
 
@@ -142,6 +159,10 @@ func (g *Game) switchWorld(world int) error {
 	if err != nil {
 		return fmt.Errorf("load %s floor: %w", worldName(world), err)
 	}
+	foregroundEffects, err := loadSpriteSheetWithModules(definition.foregroundEffects.sheet, definition.foregroundEffects.modules, definition.foregroundEffects.metadata)
+	if err != nil {
+		return fmt.Errorf("load %s foreground effects: %w", worldName(world), err)
+	}
 	mapHeader, err := loadSpriteSheetWithModules(definition.mapHeaderSheet, definition.mapHeaderModules, definition.mapHeaderMetadata)
 	if err != nil {
 		return fmt.Errorf("load %s map header: %w", worldName(world), err)
@@ -153,6 +174,7 @@ func (g *Game) switchWorld(world int) error {
 	g.boulder = boulder
 	g.diggable = diggable
 	g.floor = floor
+	g.foregroundEffects = foregroundEffects
 	g.worldMapHeader = mapHeader
 	g.worldDir = dir
 	g.worldIndex = world

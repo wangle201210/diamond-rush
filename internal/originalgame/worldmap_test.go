@@ -152,6 +152,9 @@ func TestTabNavigatesFromStageToUnlockedWorld(t *testing.T) {
 	if err := g.switchWorld(sealPositionBavaria); err != nil {
 		t.Fatal(err)
 	}
+	if frame, ok := g.foregroundEffects.animationFrameAtSequence(0, 0); !ok || frame.Frame != 4 {
+		t.Fatalf("Bavaria switch kept Angkor foreground art: frame=%d,%v", frame.Frame, ok)
+	}
 	g.loadStage(2)
 	g.mode = gameModeStage
 	if err := g.updateSource(sourceInput{Navigate: true}); err != nil {

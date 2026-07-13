@@ -215,6 +215,12 @@ const (
 	playfieldTop               = 40
 )
 
+const (
+	bavariaForegroundEffectSheet    = "decoded/sprites/gen2/chunk01-frames.png"
+	bavariaForegroundEffectModules  = "decoded/sprites/gen2/chunk01-modules.png"
+	bavariaForegroundEffectMetadata = "decoded/sprites/gen2/chunk01-animations.json"
+)
+
 var hookRopeColor = color.RGBA{211, 215, 231, 255}
 
 var (
@@ -591,7 +597,7 @@ func New(worldDir string) (*Game, error) {
 	if err != nil {
 		return nil, fmt.Errorf("load silver lock sprite: %w", err)
 	}
-	foregroundEffects, err := loadSpriteSheetWithModules(foregroundEffectSheet, foregroundEffectModules, foregroundEffectMetadata)
+	foregroundEffects, err := loadSpriteSheetWithModules(visuals.foregroundEffects.sheet, visuals.foregroundEffects.modules, visuals.foregroundEffects.metadata)
 	if err != nil {
 		return nil, fmt.Errorf("load foreground effects: %w", err)
 	}
@@ -2361,11 +2367,7 @@ func sourceForegroundEffectSequence(sourceTick int) int {
 }
 
 func sourceForegroundEffectAnimation(id original.RawID) int {
-	animation := int(id - 20)
-	if animation >= 0 && animation < 4 {
-		animation ^= 2
-	}
-	return animation
+	return int(id) - 20
 }
 
 func sourceWorldOverlayFrame(id original.RawID) (int, bool) {

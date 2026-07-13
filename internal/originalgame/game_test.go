@@ -160,6 +160,9 @@ func TestNewLoadsAngkorWorldPack(t *testing.T) {
 	if g.lastDX != 1 || g.lastDY != 0 || g.heroTurnOffset != 0 {
 		t.Fatalf("initial facing=%d,%d turn=%d, want source right/settled", g.lastDX, g.lastDY, g.heroTurnOffset)
 	}
+	if frame, ok := g.foregroundEffects.animationFrameAtSequence(0, 0); !ok || frame.Frame != 0 {
+		t.Fatalf("Angkor foreground animation 0 starts at frame %d,%v, want gen0.f chunk 4 frame 0", frame.Frame, ok)
+	}
 }
 
 func TestNewLoadsBavariaWorldPackAndArt(t *testing.T) {
@@ -202,6 +205,9 @@ func TestNewLoadsBavariaWorldPackAndArt(t *testing.T) {
 	}
 	if g.commonPickups.image != nil || g.commonPickups.moduleImage == nil || len(g.commonPickups.meta.Modules) != 2 {
 		t.Fatalf("common pickup art frames/modules=%v/%v/%d, want cm.f chunk 4 modules for 1UP and health", g.commonPickups.image != nil, g.commonPickups.moduleImage != nil, len(g.commonPickups.meta.Modules))
+	}
+	if frame, ok := g.foregroundEffects.animationFrameAtSequence(0, 0); !ok || frame.Frame != 4 {
+		t.Fatalf("Bavaria foreground animation 0 starts at frame %d,%v, want gen2.f chunk 1 frame 4", frame.Frame, ok)
 	}
 	for frame := 44; frame <= 49; frame++ {
 		if g.worldFrames.meta.FrameCounts[frame] != 1 {
@@ -510,7 +516,7 @@ func TestLateForegroundOverlayKeepsEmptyRawIDTransparent(t *testing.T) {
 			t.Errorf("foreground sequence at tick %d=%d, want %d", tick, got, want)
 		}
 	}
-	for id, want := range map[original.RawID]int{20: 2, 21: 3, 22: 0, 23: 1} {
+	for id, want := range map[original.RawID]int{20: 0, 21: 1, 22: 2, 23: 3} {
 		if got := sourceForegroundEffectAnimation(id); got != want {
 			t.Errorf("foreground raw %d animation=%d, want upright composite animation %d", id, got, want)
 		}
