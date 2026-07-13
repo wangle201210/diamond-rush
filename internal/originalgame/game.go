@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -203,6 +204,8 @@ const (
 	chestShortRewardTick       = 23
 	chestShortRewardSequence   = 6
 	sourceTPS                  = 20
+	renderTPS                  = 60
+	renderStepsPerSource       = renderTPS / sourceTPS
 	sourceHeroTurnStartOffset  = 18
 	sourceHeroTurnStep         = 6
 	framePadding               = 2
@@ -212,6 +215,19 @@ const (
 )
 
 var hookRopeColor = color.RGBA{211, 215, 231, 255}
+
+var (
+	solidPixelOnce sync.Once
+	solidPixel     *ebiten.Image
+)
+
+func ensureSolidPixel() *ebiten.Image {
+	solidPixelOnce.Do(func() {
+		solidPixel = ebiten.NewImage(1, 1)
+		solidPixel.Fill(color.White)
+	})
+	return solidPixel
+}
 
 const resultPhaseLoading = -1
 
@@ -251,6 +267,26 @@ const (
 	gameModeWorldSelect
 	gameModeStartMenu
 )
+
+type sourceInput struct {
+	Action      bool
+	Recall      bool
+	Skip        bool
+	DirectionDX int
+	DirectionDY int
+	MoveDX      int
+	MoveDY      int
+}
+
+type pendingSourceInput struct {
+	Action      bool
+	Recall      bool
+	Skip        bool
+	DirectionDX int
+	DirectionDY int
+	HeldDX      int
+	HeldDY      int
+}
 
 type Game struct {
 	pack                   *original.WorldPack
@@ -331,6 +367,10 @@ type Game struct {
 	pendingMapTarget       int
 	message                string
 	tick                   int
+	renderTick             int
+	renderPhase            int
+	pendingInput           pendingSourceInput
+	sourceInput            sourceInput
 	worldDone              bool
 	secretExitActive       bool
 	secretExitTicks        int
@@ -428,7 +468,7 @@ func Run() error {
 		g.sounds.Play(worldMusic(g.worldIndex))
 	}
 	defer g.sounds.Stop()
-	ebiten.SetTPS(sourceTPS)
+	ebiten.SetTPS(renderTPS)
 	ebiten.SetWindowTitle(fmt.Sprintf("Diamond Rush Original Runtime - %s World %d", worldName(g.worldIndex), g.worldIndex))
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 	options := &ebiten.RunGameOptions{}
@@ -456,6 +496,7 @@ func requestedStartupWorld() (world int, overridden bool, err error) {
 }
 
 func New(worldDir string) (*Game, error) {
+	ensureSolidPixel()
 	resolvedWorldDir := resolvePath(worldDir)
 	pack, err := original.LoadWorldDir(resolvedWorldDir)
 	if err != nil {
@@ -801,22 +842,77 @@ func New(worldDir string) (*Game, error) {
 }
 
 func (g *Game) Update() error {
-	g.tick++
-	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
+	if g.captureInput() {
 		return ebiten.Termination
 	}
+
+	g.renderPhase = g.renderTick % renderStepsPerSource
+	g.renderTick++
+	if g.renderPhase != 0 {
+		return nil
+	}
+	return g.updateSource(g.consumeSourceInput())
+}
+
+func (g *Game) captureInput() bool {
+	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
+		return true
+	}
+	if centerActionPressed() {
+		g.pendingInput.Action = true
+	}
+	if recallPressed() {
+		g.pendingInput.Recall = true
+	}
+	if tutorialSkipPressed() {
+		g.pendingInput.Skip = true
+	}
+	if dx, dy := justPressedDirection(); dx != 0 || dy != 0 {
+		g.pendingInput.DirectionDX = dx
+		g.pendingInput.DirectionDY = dy
+	}
+	g.pendingInput.HeldDX, g.pendingInput.HeldDY = heldDirection()
+	return false
+}
+
+func (g *Game) consumeSourceInput() sourceInput {
+	input := sourceInput{
+		Action:      g.pendingInput.Action,
+		Recall:      g.pendingInput.Recall,
+		Skip:        g.pendingInput.Skip,
+		DirectionDX: g.pendingInput.DirectionDX,
+		DirectionDY: g.pendingInput.DirectionDY,
+		MoveDX:      g.pendingInput.HeldDX,
+		MoveDY:      g.pendingInput.HeldDY,
+	}
+	if input.MoveDX == 0 && input.MoveDY == 0 {
+		input.MoveDX = input.DirectionDX
+		input.MoveDY = input.DirectionDY
+	}
+	g.pendingInput.Action = false
+	g.pendingInput.Recall = false
+	g.pendingInput.Skip = false
+	g.pendingInput.DirectionDX = 0
+	g.pendingInput.DirectionDY = 0
+	return input
+}
+
+func (g *Game) updateSource(input sourceInput) error {
+	g.sourceInput = input
+	defer func() {
+		g.sourceInput = sourceInput{}
+	}()
+	g.tick++
 	if g.mode == gameModeStartMenu {
-		_, dy := justPressedDirection()
-		g.updateStartMenu(centerActionPressed(), dy)
+		g.updateStartMenu(input.Action, input.DirectionDY)
 		return nil
 	}
 	if g.mode == gameModeWorldMap {
-		g.updateWorldMap(centerActionPressed())
+		g.updateWorldMap(input.Action)
 		return nil
 	}
 	if g.mode == gameModeWorldSelect {
-		dx, dy := justPressedDirection()
-		g.updateWorldSelect(centerActionPressed(), dx, dy)
+		g.updateWorldSelect(input.Action, input.DirectionDX, input.DirectionDY)
 		return nil
 	}
 	if g.sealExitActive {
@@ -839,7 +935,7 @@ func (g *Game) Update() error {
 		g.introTicks++
 	}
 	if g.worldDone {
-		g.updateStageResults(centerActionPressed())
+		g.updateStageResults(input.Action)
 		return nil
 	}
 	// Java updates active foreground/player objects before reducing the
@@ -874,9 +970,9 @@ func (g *Game) Update() error {
 		return nil
 	}
 	if g.rt.TutorialScriptActive {
-		if tutorialSkipPressed() {
+		if input.Skip {
 			g.rt.SkipTutorialScript()
-		} else if _, ok := g.rt.TutorialPrompt(); ok && centerActionPressed() {
+		} else if _, ok := g.rt.TutorialPrompt(); ok && input.Action {
 			g.rt.AdvanceTutorialPrompt()
 		}
 	}
@@ -908,7 +1004,7 @@ func (g *Game) Update() error {
 		g.updateCamera()
 		return nil
 	}
-	if g.rt.CanAcceptInput() && g.heroTurnOffset == 0 && centerActionPressed() {
+	if g.rt.CanAcceptInput() && g.heroTurnOffset == 0 && input.Action {
 		if g.rt.IsCheckpoint(g.rt.Player.X, g.rt.Player.Y) {
 			if g.rt.ResetCheckpoint() {
 				g.resetHeroFacing()
@@ -926,7 +1022,7 @@ func (g *Game) Update() error {
 		}
 		g.playPendingSounds()
 	}
-	if g.rt.CanAcceptInput() && recallPressed() {
+	if g.rt.CanAcceptInput() && input.Recall {
 		onCheckpoint := g.rt.IsCheckpoint(g.rt.Player.X, g.rt.Player.Y)
 		if g.rt.RecallCheckpoint() {
 			g.setHeroTurnOffset(0)
@@ -951,7 +1047,7 @@ func (g *Game) Update() error {
 		g.updateCamera()
 		return nil
 	}
-	dx, dy := heldDirection()
+	dx, dy := input.MoveDX, input.MoveDY
 	if dx != 0 || dy != 0 {
 		if g.rt.CanAcceptInput() {
 			g.handlePlayerDirection(dx, dy)
@@ -1171,6 +1267,43 @@ func (g *Game) syncHeroMotion() {
 		g.lastDY = motion.DY
 		g.rt.SetPlayerFacing(motion.DX, motion.DY)
 	}
+}
+
+func interpolatedRemaining(remaining, step, renderPhase int) int {
+	if remaining <= 0 || step <= 0 || renderPhase <= 0 {
+		return max(0, remaining)
+	}
+	advance := step * clamp(renderPhase, 0, renderStepsPerSource) / renderStepsPerSource
+	return max(0, remaining-advance)
+}
+
+func sourceObjectMotionStep(id original.RawID) int {
+	switch id {
+	case 19, 43:
+		return 3
+	case 11:
+		return 5
+	default:
+		return 6
+	}
+}
+
+func (g *Game) visualObjectMotion(id original.RawID, idx int) original.ObjectMotion {
+	if g == nil || g.rt == nil || idx < 0 || idx >= len(g.rt.ObjectMotion) {
+		return original.ObjectMotion{}
+	}
+	motion := g.rt.ObjectMotion[idx]
+	motion.Remaining = interpolatedRemaining(motion.Remaining, sourceObjectMotionStep(id), g.renderPhase)
+	return motion
+}
+
+func (g *Game) visualPlayerMotionForPhase(renderPhase int) original.ObjectMotion {
+	if g == nil || g.rt == nil {
+		return original.ObjectMotion{}
+	}
+	motion := g.rt.PlayerMotion
+	motion.Remaining = interpolatedRemaining(motion.Remaining, 6, renderPhase)
+	return motion
 }
 
 func (g *Game) beginStageResults() {
@@ -1578,12 +1711,12 @@ func (g *Game) drawStageResults(screen *ebiten.Image) {
 	}
 	screen.Fill(color.RGBA{0x26, 0x17, 0x07, 0xff})
 	textColor := color.White
-	titleOffset, completeOffset := stageResultTitleOffsets(g.resultPhase, g.resultPhaseTicks)
+	titleOffset, completeOffset := stageResultTitleOffsetsAtRenderPhase(g.resultPhase, g.resultPhaseTicks, g.renderPhase)
 	g.fontSmall.drawText(screen, fmt.Sprintf("STAGE %d", g.stageIndex+1), original.ScreenWidth/2+titleOffset, resultStageTitleY, true, textColor)
 	g.fontSmall.drawText(screen, "COMPLETE!", original.ScreenWidth/2+completeOffset, resultCompleteY, true, textColor)
 
 	if g.resultPhase >= resultPhaseVioletGems {
-		offset := stageResultRowOffset(g.resultPhase, resultPhaseVioletGems, g.resultPhaseTicks)
+		offset := stageResultRowOffsetAtRenderPhase(g.resultPhase, resultPhaseVioletGems, g.resultPhaseTicks, g.renderPhase)
 		g.violetGem.drawFrame(screen, 0, 7+offset, resultVioletLabelY, 0)
 		g.fontSmall.drawText(screen, "DIAMONDS", original.ScreenWidth/2, resultVioletLabelY, true, textColor)
 		count := g.rt.VioletGems
@@ -1593,21 +1726,21 @@ func (g *Game) drawStageResults(screen *ebiten.Image) {
 		g.fontSmall.drawText(screen, fmt.Sprintf("%d/%d", count, g.rt.TotalVioletGems), original.ScreenWidth/2, resultVioletCountY, true, textColor)
 	}
 	if g.resultPhase >= resultPhaseRedDiamonds {
-		offset := stageResultRowOffset(g.resultPhase, resultPhaseRedDiamonds, g.resultPhaseTicks)
+		offset := stageResultRowOffsetAtRenderPhase(g.resultPhase, resultPhaseRedDiamonds, g.resultPhaseTicks, g.renderPhase)
 		g.redDiamond.drawFrame(screen, 0, 7+offset, resultRedLabelY, 0)
 		g.fontSmall.drawText(screen, "RED DIAMONDS", original.ScreenWidth/2, resultRedLabelY, true, textColor)
 		g.fontSmall.drawText(screen, fmt.Sprintf("%d/%d", g.rt.RedDiamonds, g.rt.TotalRedDiamonds), original.ScreenWidth/2, resultRedCountY, true, textColor)
 		g.drawStageResultAward(screen, resultAwardVioletGems, resultPhaseRedDiamonds, 69, 86, resultEffectDoubleShort)
 	}
 	if g.resultPhase >= resultPhaseHits {
-		offset := stageResultRowOffset(g.resultPhase, resultPhaseHits, g.resultPhaseTicks)
+		offset := stageResultRowOffsetAtRenderPhase(g.resultPhase, resultPhaseHits, g.resultPhaseTicks, g.renderPhase)
 		g.drawHeroResultIcon(screen, 10, 7+offset, resultHitsIconY)
 		g.fontSmall.drawText(screen, "HITS", original.ScreenWidth/2, resultHitsLabelY, true, textColor)
 		g.fontSmall.drawText(screen, fmt.Sprintf("%d", g.rt.HitCount), original.ScreenWidth/2, resultHitsCountY, true, textColor)
 		g.drawStageResultAward(screen, resultAwardRedDiamonds, resultPhaseHits, 125, 142, resultEffectHalf)
 	}
 	if g.resultPhase >= resultPhaseRetries {
-		offset := stageResultRowOffset(g.resultPhase, resultPhaseRetries, g.resultPhaseTicks)
+		offset := stageResultRowOffsetAtRenderPhase(g.resultPhase, resultPhaseRetries, g.resultPhaseTicks, g.renderPhase)
 		g.drawHeroResultIcon(screen, 12, 7+offset, resultRetriesIconY)
 		g.fontSmall.drawText(screen, "RETRIES", original.ScreenWidth/2, resultRetriesLabelY, true, textColor)
 		g.fontSmall.drawText(screen, fmt.Sprintf("%d", g.rt.Retries), original.ScreenWidth/2, resultRetriesCountY, true, textColor)
@@ -1689,18 +1822,26 @@ func stageResultPhaseDuration(phase, violetGems int) int {
 }
 
 func stageResultTitleOffsets(phase, tick int) (int, int) {
+	return stageResultTitleOffsetsAtRenderPhase(phase, tick, 0)
+}
+
+func stageResultTitleOffsetsAtRenderPhase(phase, tick, renderPhase int) (int, int) {
 	if phase != resultPhaseTitle {
 		return 0, 0
 	}
-	raw := -100 + tick*10
+	raw := (-100*renderStepsPerSource + (tick*renderStepsPerSource+renderPhase)*10) / renderStepsPerSource
 	return min(raw, 0), min(raw-240, 0)
 }
 
 func stageResultRowOffset(phase, rowPhase, tick int) int {
+	return stageResultRowOffsetAtRenderPhase(phase, rowPhase, tick, 0)
+}
+
+func stageResultRowOffsetAtRenderPhase(phase, rowPhase, tick, renderPhase int) int {
 	if phase != rowPhase {
 		return 0
 	}
-	return min(-100+tick*10, 0)
+	return min((-100*renderStepsPerSource+(tick*renderStepsPerSource+renderPhase)*10)/renderStepsPerSource, 0)
 }
 
 func stageResultAwards(rt *original.Runtime) byte {
@@ -1731,6 +1872,7 @@ func (g *Game) cameraPixels() (int, int) {
 	if g.rt == nil {
 		return g.cameraX, g.cameraY
 	}
+	cameraX, cameraY := g.renderCameraBase()
 	shake := g.rt.FallingTorchShake(g.tick)
 	if g.rt.Anaconda.Enabled && g.rt.Anaconda.RumbleTicks > 0 {
 		rumble := g.rt.Anaconda.RumbleTicks
@@ -1740,7 +1882,37 @@ func (g *Game) cameraPixels() (int, int) {
 		rumble := g.rt.TeutonicKnight.RumbleTicks
 		shake = max(shake, rumble*g.tick%((rumble>>1)+1)%12)
 	}
-	return g.cameraX, max(0, g.cameraY-shake)
+	return cameraX, max(0, cameraY-shake)
+}
+
+func (g *Game) renderCameraBase() (int, int) {
+	if g == nil || g.rt == nil || g.renderPhase <= 0 {
+		return g.cameraX, g.cameraY
+	}
+	nextX, nextY := g.predictedNextSourceCamera()
+	return g.cameraX + (nextX-g.cameraX)*g.renderPhase/renderStepsPerSource,
+		g.cameraY + (nextY-g.cameraY)*g.renderPhase/renderStepsPerSource
+}
+
+func (g *Game) predictedNextSourceCamera() (int, int) {
+	if targetX, targetY, _, elapsed, duration, ok := g.rt.TutorialCamera(); ok {
+		return interpolateDemoCamera(g.demoCameraStartX, g.demoCameraStartY, targetX, targetY, elapsed+1, duration)
+	}
+	if targetX, targetY, _, elapsed, duration, ok := g.rt.EnemyGateDemoCamera(); ok {
+		return interpolateDemoCamera(g.demoCameraStartX, g.demoCameraStartY, targetX, targetY, elapsed+1, duration)
+	}
+	if targetX, targetY, elapsed, duration, ok := g.rt.ForegroundDemoCamera(); ok {
+		return interpolateDemoCamera(g.demoCameraStartX, g.demoCameraStartY, targetX, targetY, elapsed+1, duration)
+	}
+	playerX, playerY := g.renderedPlayerPixelsForPhase(renderStepsPerSource)
+	return g.followCameraPosition(g.cameraX, g.cameraY, playerX, playerY)
+}
+
+func interpolateDemoCamera(startX, startY, targetX, targetY, elapsed, duration int) (int, int) {
+	duration = max(1, duration)
+	elapsed = clamp(elapsed, 0, duration)
+	return (targetX*elapsed + startX*(duration-elapsed)) / duration,
+		(targetY*elapsed + startY*(duration-elapsed)) / duration
 }
 
 func (g *Game) resetCamera() {
@@ -1799,27 +1971,39 @@ func (g *Game) updateCamera() {
 	}
 	g.demoCameraLocked = false
 	g.demoCameraPhase = 0
-	playerX, playerY := g.renderedPlayerPixels()
+	playerX, playerY := g.renderedPlayerPixelsForPhase(0)
+	g.cameraX, g.cameraY = g.followCameraPosition(g.cameraX, g.cameraY, playerX, playerY)
+}
+
+func (g *Game) followCameraPosition(cameraX, cameraY, playerX, playerY int) (int, int) {
 	maxX := max(0, g.rt.Width()*original.TileSize-original.ScreenWidth)
 	maxY := max(0, g.rt.Height()*original.TileSize-playfieldHeight)
-	if playerX < g.cameraX+96 {
-		g.cameraX = (g.cameraX - 96 + playerX) >> 1
-	} else if playerX > g.cameraX+120 {
-		g.cameraX = (g.cameraX - 120 + playerX) >> 1
+	if playerX < cameraX+96 {
+		cameraX = (cameraX - 96 + playerX) >> 1
+	} else if playerX > cameraX+120 {
+		cameraX = (cameraX - 120 + playerX) >> 1
 	}
 	screenPlayerY := playerY + playfieldTop
-	if screenPlayerY < g.cameraY+96 {
-		g.cameraY = (g.cameraY - 96 + screenPlayerY) >> 1
-	} else if screenPlayerY > g.cameraY+160 {
-		g.cameraY = (g.cameraY - 160 + screenPlayerY) >> 1
+	if screenPlayerY < cameraY+96 {
+		cameraY = (cameraY - 96 + screenPlayerY) >> 1
+	} else if screenPlayerY > cameraY+160 {
+		cameraY = (cameraY - 160 + screenPlayerY) >> 1
 	}
-	g.cameraX = clamp(g.cameraX, 0, maxX)
-	g.cameraY = clamp(g.cameraY, 0, maxY)
+	return clamp(cameraX, 0, maxX), clamp(cameraY, 0, maxY)
 }
 
 func (g *Game) renderedPlayerPixels() (int, int) {
-	return g.rt.Player.X*original.TileSize - g.lastDX*g.heroMoveOffset,
-		g.rt.Player.Y*original.TileSize - g.lastDY*g.heroMoveOffset
+	return g.renderedPlayerPixelsForPhase(g.renderPhase)
+}
+
+func (g *Game) renderedPlayerPixelsForPhase(renderPhase int) (int, int) {
+	motion := g.visualPlayerMotionForPhase(renderPhase)
+	dx, dy := g.lastDX, g.lastDY
+	if motion.DX != 0 || motion.DY != 0 {
+		dx, dy = motion.DX, motion.DY
+	}
+	return g.rt.Player.X*original.TileSize - dx*motion.Remaining,
+		g.rt.Player.Y*original.TileSize - dy*motion.Remaining
 }
 
 type hudCounterValues struct {
@@ -1861,19 +2045,24 @@ func (g *Game) drawHUD(screen *ebiten.Image) {
 }
 
 func (g *Game) drawStageIntro(screen *ebiten.Image) {
-	worldX, stageX := stageTitlePositions(g.introTicks)
+	worldX, stageX := stageTitlePositionsAtRenderPhase(g.introTicks, g.renderPhase)
 	drawSourcePanelLabel(screen, g.fontMedium, strings.ToUpper(worldName(g.worldIndex)), worldX, playfieldTop+15)
 	drawSourcePanelLabel(screen, g.fontMedium, fmt.Sprintf("STAGE %d", g.stageIndex+1), stageX, playfieldTop+50)
 }
 
 func stageTitlePositions(tick int) (int, int) {
-	remaining := stageIntroDuration - clamp(tick, 0, stageIntroDuration)
+	return stageTitlePositionsAtRenderPhase(tick, 0)
+}
+
+func stageTitlePositionsAtRenderPhase(tick, renderPhase int) (int, int) {
+	duration := stageIntroDuration * renderStepsPerSource
+	remaining := duration - clamp(tick*renderStepsPerSource+renderPhase, 0, duration)
 	worldX := original.ScreenWidth / 2
 	switch {
-	case remaining < 20:
-		worldX = (remaining - 10) * original.ScreenWidth / 20
-	case remaining >= 50:
-		worldX = (stageIntroDuration - remaining) * original.ScreenWidth / 15
+	case remaining < 20*renderStepsPerSource:
+		worldX = (remaining - 10*renderStepsPerSource) * original.ScreenWidth / (20 * renderStepsPerSource)
+	case remaining >= 50*renderStepsPerSource:
+		worldX = (duration - remaining) * original.ScreenWidth / (15 * renderStepsPerSource)
 	}
 	return worldX, original.ScreenWidth - worldX
 }
@@ -2032,9 +2221,9 @@ func (g *Game) drawCellObjects(dst *ebiten.Image, x, y, px, py int) {
 		idx := x + y*g.rt.Width()
 		motion := original.ObjectMotion{}
 		if idx >= 0 && idx < len(g.rt.ObjectMotion) {
-			motion = g.rt.ObjectMotion[idx]
+			motion = g.visualObjectMotion(playerID, idx)
 			if playerID == 0 || playerID == 1 || playerID == 8 || playerID == 9 || playerID == 47 {
-				offsetX, offsetY := g.rt.GravityObjectRenderOffset(x, y, g.tick)
+				offsetX, offsetY := g.rt.GravityObjectRenderOffsetWithMotion(x, y, g.tick, motion)
 				px += offsetX
 				py += offsetY
 			} else {
@@ -2236,21 +2425,26 @@ func (g *Game) pressureSwitchOffset(x, y int, playerID original.RawID) int {
 		idx := x + y*g.rt.Width()
 		remaining := 0
 		if idx >= 0 && idx < len(g.rt.ObjectMotion) {
-			remaining = g.rt.ObjectMotion[idx].Remaining
+			remaining = g.visualObjectMotion(playerID, idx).Remaining
 		}
 		if remaining <= 12 {
 			return 12 - remaining
 		}
 	} else if g.rt.Player == (original.Point{X: x, Y: y}) {
-		if g.rt.PlayerMotion.Remaining <= 12 {
-			return 12 - g.rt.PlayerMotion.Remaining
+		remaining := g.visualPlayerMotionForPhase(g.renderPhase).Remaining
+		if remaining <= 12 {
+			return 12 - remaining
 		}
-	} else if g.rt.Player.Y == y && g.rt.PlayerMotion.Remaining > 12 {
+	} else if g.rt.Player.Y == y {
+		motion := g.visualPlayerMotionForPhase(g.renderPhase)
+		if motion.Remaining <= 12 {
+			return 0
+		}
 		switch {
-		case g.rt.Player.X == x-1 && g.rt.PlayerMotion.DX < 0:
-			return g.rt.PlayerMotion.Remaining - 12
-		case g.rt.Player.X == x+1 && g.rt.PlayerMotion.DX > 0:
-			return g.rt.PlayerMotion.Remaining - 12
+		case g.rt.Player.X == x-1 && motion.DX < 0:
+			return motion.Remaining - 12
+		case g.rt.Player.X == x+1 && motion.DX > 0:
+			return motion.Remaining - 12
 		}
 	}
 	return 0
@@ -2260,7 +2454,7 @@ func (g *Game) drawHookSegment(dst *ebiten.Image, x, y, px, py int) {
 	idx := x + y*g.rt.Width()
 	remaining := 0
 	if idx >= 0 && idx < len(g.rt.ObjectMotion) {
-		remaining = clamp(g.rt.ObjectMotion[idx].Remaining, 0, original.TileSize)
+		remaining = clamp(g.visualObjectMotion(32, idx).Remaining, 0, original.TileSize)
 	}
 	state := g.objectStateAt(x, y)
 	startX, tipX, module := hookSegmentGeometry(state, remaining, px)
@@ -2537,11 +2731,14 @@ func chestRewardEffectTick(effects *spriteSheet, effectAnimation, heroAnimation,
 }
 
 func drawRect(dst *ebiten.Image, x, y, w, h int, c color.Color) {
-	img := ebiten.NewImage(w, h)
-	img.Fill(c)
+	if dst == nil || w <= 0 || h <= 0 {
+		return
+	}
 	op := &ebiten.DrawImageOptions{}
+	op.GeoM.Scale(float64(w), float64(h))
 	op.GeoM.Translate(float64(x), float64(y))
-	dst.DrawImage(img, op)
+	op.ColorScale.ScaleWithColor(c)
+	dst.DrawImage(ensureSolidPixel(), op)
 }
 
 func boolToInt(value bool) int {

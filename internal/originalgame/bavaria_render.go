@@ -274,6 +274,10 @@ func (g *Game) drawBavariaMovingHazard(dst *ebiten.Image, x, y, state, px, py in
 
 func (g *Game) drawBavariaSpike(dst *ebiten.Image, x, y, state, px, py int) {
 	extent := g.rt.SpikeExtentAt(x, y)
+	if g.renderPhase > 0 {
+		next := g.rt.SpikeExtentAtSourceTick(x, y, g.tick+1)
+		extent += (next - extent) * g.renderPhase / renderStepsPerSource
+	}
 	segments := 1
 	if extent > 0 {
 		segments = (extent-1)/original.TileSize + 2

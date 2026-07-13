@@ -1251,6 +1251,18 @@ func (rt *Runtime) SpikeExtentAt(x, y int) int {
 	return rt.spikeExtentAt(x, y)
 }
 
+// SpikeExtentAtSourceTick returns the visual extent for a source-frame phase
+// without changing the collision extent stored on Runtime.
+func (rt *Runtime) SpikeExtentAtSourceTick(x, y, sourceTick int) int {
+	if x < 0 || y < 0 || x >= rt.Width() || y >= rt.Height() {
+		return 0
+	}
+	if rt.ObjectState[rt.index(x, y)]&0x8 != 0 {
+		return sourceSpikeExtent(sourceTick, 44, 7, 15, 8, 15)
+	}
+	return sourceSpikeExtent(sourceTick, 89, 15, 30, 15, 30)
+}
+
 func (rt *Runtime) spikeTipAt(x, y int) (Point, bool) {
 	if x < 0 || y < 0 || x >= rt.Width() || y >= rt.Height() || rt.PlayerLayer[rt.index(x, y)] != 28 {
 		return Point{}, false
@@ -1506,8 +1518,16 @@ func (rt *Runtime) GravityObjectRenderOffset(x, y, sourceTick int) (int, int) {
 	if x < 0 || y < 0 || x >= rt.Width() || y >= rt.Height() {
 		return 0, 0
 	}
+	return rt.GravityObjectRenderOffsetWithMotion(x, y, sourceTick, rt.ObjectMotion[rt.index(x, y)])
+}
+
+// GravityObjectRenderOffsetWithMotion computes the source draw transform for a
+// caller-provided motion snapshot. It does not mutate authoritative runtime state.
+func (rt *Runtime) GravityObjectRenderOffsetWithMotion(x, y, sourceTick int, motion ObjectMotion) (int, int) {
+	if x < 0 || y < 0 || x >= rt.Width() || y >= rt.Height() {
+		return 0, 0
+	}
 	idx := rt.index(x, y)
-	motion := rt.ObjectMotion[idx]
 	dx := -motion.DX * motion.Remaining
 	dy := -motion.DY*motion.Remaining + rt.waterBobOffsetAt(x, y, sourceTick)
 	state := rt.ObjectState[idx]

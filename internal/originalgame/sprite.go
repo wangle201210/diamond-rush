@@ -49,13 +49,15 @@ type spriteMetadata struct {
 }
 
 type spriteSheet struct {
-	image       *ebiten.Image
-	moduleImage *ebiten.Image
-	meta        spriteMetadata
-	cellW       int
-	cellH       int
-	moduleCellW int
-	moduleCellH int
+	image        *ebiten.Image
+	moduleImage  *ebiten.Image
+	frameImages  []*ebiten.Image
+	moduleImages []*ebiten.Image
+	meta         spriteMetadata
+	cellW        int
+	cellH        int
+	moduleCellW  int
+	moduleCellH  int
 }
 
 func loadSpriteSheet(imagePath, metadataPath string) (*spriteSheet, error) {
@@ -110,7 +112,7 @@ func loadSpriteSheetAssets(imagePath, modulePath, metadataPath string) (*spriteS
 		moduleCellW = max(moduleCellW, module.W)
 		moduleCellH = max(moduleCellH, module.H)
 	}
-	return &spriteSheet{
+	sheet := &spriteSheet{
 		image:       img,
 		moduleImage: moduleImage,
 		meta:        metadata,
@@ -118,7 +120,37 @@ func loadSpriteSheetAssets(imagePath, modulePath, metadataPath string) (*spriteS
 		cellH:       cellH,
 		moduleCellW: moduleCellW,
 		moduleCellH: moduleCellH,
-	}, nil
+	}
+	sheet.cacheSubImages()
+	return sheet, nil
+}
+
+func (s *spriteSheet) cacheSubImages() {
+	if s == nil {
+		return
+	}
+	if s.image != nil {
+		s.frameImages = make([]*ebiten.Image, len(s.meta.Frames))
+		for index, frame := range s.meta.Frames {
+			srcX := framePadding + (index%frameCols)*(s.cellW+framePadding)
+			srcY := framePadding + (index/frameCols)*(s.cellH+framePadding)
+			if frame.W <= 0 || frame.H <= 0 || srcX+frame.W > s.image.Bounds().Dx() || srcY+frame.H > s.image.Bounds().Dy() {
+				continue
+			}
+			s.frameImages[index] = s.image.SubImage(image.Rect(srcX, srcY, srcX+frame.W, srcY+frame.H)).(*ebiten.Image)
+		}
+	}
+	if s.moduleImage != nil {
+		s.moduleImages = make([]*ebiten.Image, len(s.meta.Modules))
+		for index, module := range s.meta.Modules {
+			srcX := framePadding + (index%frameCols)*(s.moduleCellW+framePadding)
+			srcY := framePadding + (index/frameCols)*(s.moduleCellH+framePadding)
+			if module.W <= 0 || module.H <= 0 || srcX+module.W > s.moduleImage.Bounds().Dx() || srcY+module.H > s.moduleImage.Bounds().Dy() {
+				continue
+			}
+			s.moduleImages[index] = s.moduleImage.SubImage(image.Rect(srcX, srcY, srcX+module.W, srcY+module.H)).(*ebiten.Image)
+		}
+	}
 }
 
 func (s *spriteSheet) drawAnimation(dst *ebiten.Image, animation, tick, px, py, flags int) {
@@ -256,9 +288,7 @@ func (s *spriteSheet) drawFrame(dst *ebiten.Image, frameIndex, px, py, flags int
 	if frame.W <= 0 || frame.H <= 0 {
 		return
 	}
-	srcX := framePadding + (frameIndex%frameCols)*(s.cellW+framePadding)
-	srcY := framePadding + (frameIndex/frameCols)*(s.cellH+framePadding)
-	if srcX+frame.W > s.image.Bounds().Dx() || srcY+frame.H > s.image.Bounds().Dy() {
+	if frameIndex >= len(s.frameImages) || s.frameImages[frameIndex] == nil {
 		return
 	}
 	op := &ebiten.DrawImageOptions{}
@@ -273,8 +303,7 @@ func (s *spriteSheet) drawFrame(dst *ebiten.Image, frameIndex, px, py, flags int
 		translateY = py - frame.Y
 	}
 	op.GeoM.Translate(float64(translateX), float64(translateY))
-	src := s.image.SubImage(image.Rect(srcX, srcY, srcX+frame.W, srcY+frame.H)).(*ebiten.Image)
-	dst.DrawImage(src, op)
+	dst.DrawImage(s.frameImages[frameIndex], op)
 }
 
 func (s *spriteSheet) drawComposedFrame(dst *ebiten.Image, frameIndex, px, py, flags int) bool {
@@ -317,9 +346,7 @@ func (s *spriteSheet) drawModuleWithFlags(dst *ebiten.Image, moduleIndex, px, py
 	if module.W <= 0 || module.H <= 0 {
 		return
 	}
-	srcX := framePadding + (moduleIndex%frameCols)*(s.moduleCellW+framePadding)
-	srcY := framePadding + (moduleIndex/frameCols)*(s.moduleCellH+framePadding)
-	if srcX+module.W > s.moduleImage.Bounds().Dx() || srcY+module.H > s.moduleImage.Bounds().Dy() {
+	if moduleIndex >= len(s.moduleImages) || s.moduleImages[moduleIndex] == nil {
 		return
 	}
 	op := &ebiten.DrawImageOptions{}
@@ -334,8 +361,7 @@ func (s *spriteSheet) drawModuleWithFlags(dst *ebiten.Image, moduleIndex, px, py
 		translateY += module.H
 	}
 	op.GeoM.Translate(float64(translateX), float64(translateY))
-	src := s.moduleImage.SubImage(image.Rect(srcX, srcY, srcX+module.W, srcY+module.H)).(*ebiten.Image)
-	dst.DrawImage(src, op)
+	dst.DrawImage(s.moduleImages[moduleIndex], op)
 }
 
 func (s *spriteSheet) drawNumber(dst *ebiten.Image, value, rightX, y int) {

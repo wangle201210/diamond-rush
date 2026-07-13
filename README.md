@@ -66,3 +66,16 @@ go build -o /tmp/originalrush-smoke ./cmd/originalrush
 开发时可用 `ORIGINALRUSH_STAGE=1..14 go run ./cmd/originalrush` 直达 Angkor 数据关，`14` 是教程；使用 `ORIGINALRUSH_WORLD=bavaria ORIGINALRUSH_STAGE=1..13 go run ./cmd/originalrush` 可直达 Bavaria。该覆盖不改变正常启动选择，但完成关卡仍会写入当前 `HOME` 下的进度文件。
 
 常用资源工具命令记录在 `AGENTS.md` 和 `decoded/README.md`。
+
+## Wule资源Profile
+
+西游主题Wule资源与原版资源并行存放，不覆盖`decoded/`。当前`go run ./cmd/originalrush`仍固定运行原版；Wule profile尚未生产最终素材，标记为`ready=false`，不会拿原版图片补缺。
+
+资源规划和场景Brief可重复生成并校验：
+
+```bash
+go run ./tools/pilgrimmanifest
+go run ./tools/pilgrimmanifest -check
+```
+
+双profile根目录、独立存档命名空间和禁止fallback规则见`assets/resource-profiles.json`；Wule侧说明见`assets/pilgrim/README.md`。

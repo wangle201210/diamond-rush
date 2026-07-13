@@ -55,6 +55,9 @@ cd /Users/wanna/mine/github/wangle201210/DiamondRushSource
 
 - 逻辑画布为 `240x320`，上 HUD `40px`，游戏区 `240px`，下 HUD `40px`。
 - 格子为 `24x24px`，主循环为 `20 TPS`。
+- Ebitengine 外层以 `60 TPS` 采集输入和刷新显示，但完整源码步骤只能每 3 次 Update 执行一次；`g.tick`、`TickSourceFrame()`、菜单、地图、教学、结算、碰撞、伤害和存档均保持 `20 TPS`。`renderTick/renderPhase` 只允许用于显示。
+- 60Hz 中间坐标必须由 `ObjectMotion`/相机源码状态临时计算，不能写回 Runtime。逻辑相机 `cameraX/cameraY` 仍传给 `SetViewport()`，平滑相机只由 Draw 使用；切关、复活、召回和脚本切镜不能继承旧插值状态。
+- Draw 路径禁止创建 `ebiten.Image` 或重复构造 sprite `SubImage`；纯色矩形和精灵子图必须在加载期缓存。否则即使逻辑只有 20 TPS，也会因 GPU atlas 分配出现真实掉帧。
 - Java `byte` 有符号；解码 JSON 中 raw `255` 对应 Java `-1`，通常表示空对象。
 - 关卡按 `player -> background -> foreground` 三层存储，每层均为 `width * height` 字节。
 - `crtStagePlayerLayer[x][y]` 保存角色、可动物体、敌人和拾取物的 raw ID。

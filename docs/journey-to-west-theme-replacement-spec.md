@@ -574,6 +574,8 @@ content/pilgrim/
 
 制作目录第2.10节定义的`assets.json`是资源状态的单一事实源，必须恰好登记121个`R`项和15个`D`项。运行时通过`runtime-resource-map.json`按语义键解析资源，并用`stage-scenes.json`、`asset-scene-bindings.json`、`animation-events.json`、`audio-events.json`、`text-key-map.json`、`font-glyphs.txt`和`procedural-fx.json`补全场景、事件、本地化与环境效果关系；有意保留的关卡、地图和demo非可见命令逐文件进入`retained-content-exceptions.json`，不能作为资源回退白名单。
 
+原版与Wule资源必须长期并行：`assets/resource-profiles.json`以`original`为默认，只读`decoded/`；`wule`只读`assets/pilgrim/`与`content/pilgrim/`并使用独立存档路径。两者都禁止fallback。`original-source-lock.json`锁定原版精灵、音频、字体和关卡文件；生成Wule资料前后哈希不一致时立即失败。Wule素材和独立入口尚未接入时保持`ready=false`，现有`cmd/originalrush`及其资源路径不因本阶段工作而改变。
+
 资源状态按`specified -> unblocked -> materialized -> integrated -> verified -> packaged`推进。图片、音频、文本、配置、系统资源和删除项都必须有可验证产物或删除证据、SHA-256、来源记录及防回退测试。只有自动生成的`closure-report.json`确认以下条件全部成立，才能称第一阶段资源生产闭环：
 
 - 121个`R`项、15个`D`项、全部world/scene variant和`zh-CN/en-US`locale均达到各自分发目标的`packaged`。
@@ -584,7 +586,7 @@ content/pilgrim/
 - 发行包内每个玩家可见及第三方资源都能反查到`assets.json`和`provenance.csv`；构建生成的manifest可反查生成器、提交和输入哈希，旧PNG、MIDI、字体、Logo、对话和加载路径扫描为零。
 - 保留内容只包含例外清单中哈希固定的关卡层、地图连接和demo命令；原PNG、音频、字体、头像、可见文本及旧资源metadata不能借该例外进入发行包。
 
-截至2026-07-13，文档层面的语义、依赖和验收规则已经闭合；实际manifest、高清资产、双语文本、固定字体、程序化效果和运行时解析器尚未完成，因此项目当前仍处于`specified`，不能表述为生产闭环。
+截至2026-07-13，文档层面的语义、依赖和验收规则已经闭合；资产/场景/绑定/地形/原资源锁五份基础manifest、41份场景Brief和423个数据mask已经生成。高清资产、双语文本、固定字体、程序化效果和Wule运行时解析器仍未完成，因此项目整体仍处于`specified`，不能表述为生产闭环。
 
 ## 12. 生成式素材规则
 

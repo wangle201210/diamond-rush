@@ -18,6 +18,98 @@ func TestLayoutUsesOriginalPhoneScreen(t *testing.T) {
 	}
 }
 
+func TestUpdateRunsOneSourceFramePerThreeRenderUpdates(t *testing.T) {
+	g, err := New(defaultWorldDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for update := 1; update <= 7; update++ {
+		if err := g.Update(); err != nil {
+			t.Fatal(err)
+		}
+		wantSourceTick := (update + renderStepsPerSource - 1) / renderStepsPerSource
+		if g.tick != wantSourceTick {
+			t.Fatalf("render update %d source tick=%d, want %d", update, g.tick, wantSourceTick)
+		}
+		wantPhase := (update - 1) % renderStepsPerSource
+		if g.renderPhase != wantPhase {
+			t.Fatalf("render update %d phase=%d, want %d", update, g.renderPhase, wantPhase)
+		}
+	}
+}
+
+func TestSixtyHzSchedulerPreservesTwentyHzRuntimeState(t *testing.T) {
+	direct, err := New(defaultWorldDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	paced, err := New(defaultWorldDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	const sourceFrames = 40
+	for frame := 0; frame < sourceFrames; frame++ {
+		if err := direct.updateSource(sourceInput{}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for frame := 0; frame < sourceFrames*renderStepsPerSource; frame++ {
+		if err := paced.Update(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if paced.tick != direct.tick || paced.rt.Player != direct.rt.Player || paced.rt.PlayerMotion != direct.rt.PlayerMotion {
+		t.Fatalf("paced source state tick/player/motion=%d/%+v/%+v, direct=%d/%+v/%+v", paced.tick, paced.rt.Player, paced.rt.PlayerMotion, direct.tick, direct.rt.Player, direct.rt.PlayerMotion)
+	}
+	if !slices.Equal(paced.rt.PlayerLayer, direct.rt.PlayerLayer) ||
+		!slices.Equal(paced.rt.Foreground, direct.rt.Foreground) ||
+		!slices.Equal(paced.rt.Background, direct.rt.Background) ||
+		!slices.Equal(paced.rt.ObjectState, direct.rt.ObjectState) ||
+		!slices.Equal(paced.rt.ObjectMotion, direct.rt.ObjectMotion) {
+		t.Fatal("60Hz scheduler changed authoritative runtime layers")
+	}
+}
+
+func TestRenderInterpolationDoesNotMutateSourceMotion(t *testing.T) {
+	cases := []struct {
+		name      string
+		id        original.RawID
+		remaining int
+		want      [3]int
+	}{
+		{"player-style", 0, 18, [3]int{18, 16, 14}},
+		{"snake", 19, 21, [3]int{21, 20, 19}},
+		{"crawler", 11, 18, [3]int{18, 17, 15}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			rt := &original.Runtime{ObjectMotion: []original.ObjectMotion{{DX: 1, Remaining: tc.remaining}}}
+			g := &Game{rt: rt}
+			for phase, want := range tc.want {
+				g.renderPhase = phase
+				if got := g.visualObjectMotion(tc.id, 0).Remaining; got != want {
+					t.Fatalf("phase %d remaining=%d, want %d", phase, got, want)
+				}
+			}
+			if got := rt.ObjectMotion[0].Remaining; got != tc.remaining {
+				t.Fatalf("source remaining mutated to %d, want %d", got, tc.remaining)
+			}
+		})
+	}
+}
+
+func TestPendingInputIsConsumedOnceAtSourceBoundary(t *testing.T) {
+	g := &Game{pendingInput: pendingSourceInput{Action: true, Recall: true, DirectionDX: 1}}
+	first := g.consumeSourceInput()
+	if !first.Action || !first.Recall || first.MoveDX != 1 || first.DirectionDX != 1 {
+		t.Fatalf("first source input=%+v", first)
+	}
+	second := g.consumeSourceInput()
+	if second.Action || second.Recall || second.DirectionDX != 0 || second.MoveDX != 0 {
+		t.Fatalf("one-shot input replayed on second source boundary: %+v", second)
+	}
+}
+
 func TestNewLoadsAngkorWorldPack(t *testing.T) {
 	g, err := New(defaultWorldDir)
 	if err != nil {
@@ -263,7 +355,7 @@ func TestStage08SealUsesDedicatedLoadingTransition(t *testing.T) {
 	g.rt.RelicMask = 1
 	g.rt.Anaconda.SealCollected = true
 	g.rt.Anaconda.StageComplete = true
-	if err := g.Update(); err != nil {
+	if err := g.updateSource(sourceInput{}); err != nil {
 		t.Fatal(err)
 	}
 	if !g.sealExitActive || g.worldDone || !g.progress.StageCleared[8] {
@@ -275,14 +367,14 @@ func TestStage08SealUsesDedicatedLoadingTransition(t *testing.T) {
 	screen := ebiten.NewImage(original.ScreenWidth, original.ScreenHeight)
 	g.Draw(screen)
 	for step := 0; step < sealLoadingSteps-1; step++ {
-		if err := g.Update(); err != nil {
+		if err := g.updateSource(sourceInput{}); err != nil {
 			t.Fatal(err)
 		}
 	}
 	if g.mode != gameModeStage || !g.sealExitActive {
 		t.Fatalf("seal transition ended before loading step 11: mode=%d active=%v ticks=%d", g.mode, g.sealExitActive, g.sealExitTicks)
 	}
-	if err := g.Update(); err != nil {
+	if err := g.updateSource(sourceInput{}); err != nil {
 		t.Fatal(err)
 	}
 	if g.mode != gameModeWorldSelect || g.sealExitActive || g.worldSelectIncoming != sealPositionAngkor {
@@ -302,14 +394,14 @@ func TestBavariaSealUsesDedicatedLoadingTransition(t *testing.T) {
 	g.rt.RelicMask = 2
 	g.rt.SealCollected = true
 	g.rt.SealStageComplete = true
-	if err := g.Update(); err != nil {
+	if err := g.updateSource(sourceInput{}); err != nil {
 		t.Fatal(err)
 	}
 	if !g.sealExitActive || g.worldDone || !g.progress.BavariaStageCleared[bavariaSealStage] {
 		t.Fatalf("Bavaria seal transition active=%v worldDone=%v stageCleared=%v", g.sealExitActive, g.worldDone, g.progress.BavariaStageCleared[bavariaSealStage])
 	}
 	for step := 0; step < sealLoadingSteps; step++ {
-		if err := g.Update(); err != nil {
+		if err := g.updateSource(sourceInput{}); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -660,7 +752,7 @@ func TestStage06SecretExitSkipsResultsAndTravelsToSecretStageOne(t *testing.T) {
 		t.Fatalf("secret target=%d unlocks=%v, want target 9 only", g.pendingMapTarget, g.progress.StageUnlocked)
 	}
 	for g.secretExitActive {
-		if err := g.Update(); err != nil {
+		if err := g.updateSource(sourceInput{}); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -699,7 +791,7 @@ func TestStage07SecretExitSkipsResultsAndTravelsToSecretStageFour(t *testing.T) 
 		t.Fatalf("Stage 8 secret target=%d unlocks=%v, want target 12 without normal Stage 9", g.pendingMapTarget, g.progress.StageUnlocked)
 	}
 	for g.secretExitActive {
-		if err := g.Update(); err != nil {
+		if err := g.updateSource(sourceInput{}); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -1512,7 +1604,7 @@ func TestUpdateAutoWalksRaw79EntranceAndCommitsCheckpoint(t *testing.T) {
 		t.Fatal(err)
 	}
 	for sourceTick := 0; sourceTick < 17; sourceTick++ {
-		if err := g.Update(); err != nil {
+		if err := g.updateSource(sourceInput{}); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -1542,7 +1634,7 @@ func TestCompassCacheTracksSourceDirectionWhileStageIdles(t *testing.T) {
 		t.Fatal(err)
 	}
 	for sourceTick := 1; sourceTick <= 320; sourceTick++ {
-		if err := g.Update(); err != nil {
+		if err := g.updateSource(sourceInput{}); err != nil {
 			t.Fatal(err)
 		}
 		if sourceTick&0xf != 0 {

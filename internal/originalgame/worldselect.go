@@ -273,7 +273,8 @@ func (g *Game) drawWorldSelect(screen *ebiten.Image) {
 		return
 	}
 	if g.sealArrow != nil {
-		g.sealArrow.drawAnimationSequenceFrame(screen, 0, g.worldSelectArrowTick, original.ScreenWidth/2+g.worldSelectArrowX, 136+g.worldSelectArrowY, 0)
+		x, y := g.renderedWorldSelectArrow()
+		g.sealArrow.drawAnimationSequenceFrame(screen, 0, g.worldSelectArrowTick, original.ScreenWidth/2+x, 136+y, 0)
 	}
 	if g.worldSelectUnlocking == 0 {
 		g.drawWorldSelectPrompt(screen)
@@ -294,7 +295,8 @@ func (g *Game) worldSelectOverlayVisible(world int) bool {
 
 func (g *Game) drawIncomingSealRelic(screen *ebiten.Image) {
 	relic := g.worldSelectIncoming
-	g.drawSealRelic(screen, relic, g.worldSelectRelicX, g.worldSelectRelicY)
+	x, y := g.renderedIncomingSealRelic()
+	g.drawSealRelic(screen, relic, x, y)
 	if g.worldSelectFlashTick > 0 && g.worldSelectFlashTick < sealRelicFlashTicks && g.worldSelectFlashTick%2 == 0 {
 		rgb := 838860 * (g.worldSelectFlashTick - 1)
 		screen.Fill(color.RGBA{uint8(rgb >> 16), uint8(rgb >> 8), uint8(rgb), 0xff})
@@ -303,6 +305,32 @@ func (g *Game) drawIncomingSealRelic(screen *ebiten.Image) {
 		offset := sealItemOffsets[relic]
 		g.pickupEffects.drawAnimationSequenceFrame(screen, 5, g.worldSelectEffectTick-1, original.ScreenWidth/2+offset[0]-12, 124+offset[1], 0)
 	}
+}
+
+func (g *Game) renderedWorldSelectArrow() (int, int) {
+	x, y := g.worldSelectArrowX, g.worldSelectArrowY
+	if g.renderPhase <= 0 || g.worldSelectMoveTick >= sealMoveTicks {
+		return x, y
+	}
+	remaining := max(1, sealMoveTicks-g.worldSelectMoveTick)
+	nextX := x + (g.worldSelectTargetX-x)/remaining
+	nextY := y + (g.worldSelectTargetY-y)/remaining
+	return x + (nextX-x)*g.renderPhase/renderStepsPerSource,
+		y + (nextY-y)*g.renderPhase/renderStepsPerSource
+}
+
+func (g *Game) renderedIncomingSealRelic() (int, int) {
+	x, y := g.worldSelectRelicX, g.worldSelectRelicY
+	if g.renderPhase <= 0 || g.worldSelectIncoming < 0 || g.worldSelectIncoming >= len(sealItemOffsets) {
+		return x, y
+	}
+	target := sealItemOffsets[g.worldSelectIncoming]
+	targetX := original.ScreenWidth/2 + target[0]
+	targetY := 136 + target[1]
+	nextX := approach(x, targetX, 3)
+	nextY := approach(y, targetY, 2)
+	return x + (nextX-x)*g.renderPhase/renderStepsPerSource,
+		y + (nextY-y)*g.renderPhase/renderStepsPerSource
 }
 
 func (g *Game) drawSealRelic(screen *ebiten.Image, relic, centerX, centerY int) {

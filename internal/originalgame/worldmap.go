@@ -221,7 +221,7 @@ func (g *Game) updateWorldMap(action bool) {
 		}
 		return
 	}
-	dx, dy := justPressedDirection()
+	dx, dy := g.sourceInput.DirectionDX, g.sourceInput.DirectionDY
 	if dx == 0 && dy == 0 {
 		return
 	}
@@ -379,9 +379,10 @@ func (g *Game) drawWorldMapHero(screen *ebiten.Image) {
 	}
 	x0, y0 := worldMapScreenPoint(from)
 	x1, y1 := worldMapScreenPoint(to)
-	tick := clamp(g.worldMapTravelTick, 0, worldMapTravelTicks)
-	x := x0 + (x1-x0)*tick/worldMapTravelTicks
-	y := y0 + (y1-y0)*tick/worldMapTravelTicks
+	tick := clamp(g.worldMapTravelTick*renderStepsPerSource+g.renderPhase, 0, worldMapTravelTicks*renderStepsPerSource)
+	duration := worldMapTravelTicks * renderStepsPerSource
+	x := x0 + (x1-x0)*tick/duration
+	y := y0 + (y1-y0)*tick/duration
 	frame := 6
 	if x1 < x0 {
 		frame = 7
