@@ -734,7 +734,6 @@ func packImages(images []*image.RGBA, cellW, cellH int) image.Image {
 	cols := 16
 	rows := (len(images) + cols - 1) / cols
 	img := image.NewRGBA(image.Rect(0, 0, cols*(cellW+padding)+padding, rows*(cellH+padding)+padding))
-	draw.Draw(img, img.Bounds(), image.NewUniform(color.RGBA{20, 22, 28, 255}), image.Point{}, draw.Src)
 	for i, src := range images {
 		if src == nil {
 			continue
@@ -766,11 +765,15 @@ func flip(src *image.RGBA, flags int) *image.RGBA {
 }
 
 func argb(v uint32) color.RGBA {
+	a := uint8(v >> 24)
+	premultiply := func(component uint8) uint8 {
+		return uint8((uint16(component)*uint16(a) + 127) / 255)
+	}
 	return color.RGBA{
-		R: uint8(v >> 16),
-		G: uint8(v >> 8),
-		B: uint8(v),
-		A: uint8(v >> 24),
+		R: premultiply(uint8(v >> 16)),
+		G: premultiply(uint8(v >> 8)),
+		B: premultiply(uint8(v)),
+		A: a,
 	}
 }
 

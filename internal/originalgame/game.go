@@ -2840,6 +2840,9 @@ func loadTransparentSheet(path string) (*ebiten.Image, error) {
 	if err != nil {
 		return nil, err
 	}
+	if imageHasTransparency(img) {
+		return ebiten.NewImageFromImage(img), nil
+	}
 	bounds := img.Bounds()
 	rgba := image.NewRGBA(bounds)
 	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
@@ -2853,6 +2856,19 @@ func loadTransparentSheet(path string) (*ebiten.Image, error) {
 		}
 	}
 	return ebiten.NewImageFromImage(rgba), nil
+}
+
+func imageHasTransparency(img image.Image) bool {
+	bounds := img.Bounds()
+	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+			_, _, _, alpha := img.At(x, y).RGBA()
+			if alpha != 0xffff {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func resolvePath(path string) string {

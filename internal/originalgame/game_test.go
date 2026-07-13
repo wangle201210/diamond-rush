@@ -1,6 +1,8 @@
 package originalgame
 
 import (
+	"image"
+	"image/color"
 	"image/png"
 	"os"
 	"slices"
@@ -9,6 +11,19 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/wangle201210/zskc/internal/original"
 )
+
+func TestImageTransparencyDetectionPreservesAlphaSprites(t *testing.T) {
+	img := image.NewNRGBA(image.Rect(0, 0, 2, 1))
+	img.SetNRGBA(0, 0, color.NRGBA{R: 20, G: 22, B: 28, A: 255})
+	img.SetNRGBA(1, 0, color.NRGBA{R: 255, G: 255, B: 255, A: 128})
+	if !imageHasTransparency(img) {
+		t.Fatal("partially transparent sprite atlas was treated as a legacy opaque sheet")
+	}
+	img.SetNRGBA(1, 0, color.NRGBA{R: 255, G: 255, B: 255, A: 255})
+	if imageHasTransparency(img) {
+		t.Fatal("fully opaque legacy sprite atlas was treated as alpha-bearing")
+	}
+}
 
 func TestLayoutUsesOriginalPhoneScreen(t *testing.T) {
 	g := &Game{}

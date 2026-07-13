@@ -299,6 +299,7 @@ Stage 8 的秘密出口要求后期取得的 Freeze Hammer。当前 Angkor-only 
 - foreground raw `6` 压力机关：`decoded/sprites/gen2/chunk09-*`，单个 `24x13` 模块，底部对齐并随压入量下移。
 - `DVoid()` 先从滚动背景缓冲绘制地形，再以相对坐标 `-1..11` 扫描动态格；Go 端不能逐格交替画地面和物体，否则向右滚动的石头、向右喷射的火焰和跨格动画会被后一格地面覆盖。上下左右额外扫描范围也必须保留。
 - 游戏内 sprite 必须通过 `*-animations.json` 与 `*-modules.png` 按 module/frame 元数据组合，不能把 `*-frames.png` 假定成固定 `24x24` atlas。Bavaria world chunk `2` 的 frame 最大高度为 `26`，diggable chunk `1` 的 cell 为 `40x41`（Angkor 为 `35x27`）；固定步长会让 `raw 124..129` 的 `2x3` 旗帜和破碎动画跨行错裁。只有没有 sprite 元数据的整屏启动图可直接加载普通 PNG。
+- `drsprite` 必须把 `.f` 的 ARGB 调色板颜色预乘后写入 `image.RGBA`，并让 atlas padding 保持 alpha `0`。不能先铺不透明诊断底色再 `draw.Over`，否则透明或半透明边缘会被固化成深色黑边。运行时优先信任 PNG alpha；仅对旧的完全不透明诊断图兼容 `(20,22,28)` 色键。
 - `.f` 的 animation-frame `x/y` 不是通用绘制锚点。Java `drawAnimationFrame(..., flags=0, offsetX=0, offsetY=0)` 会忽略它们；只有调用方先执行 `b_SpriteAnimator.applyFrameOffset()` 时才把它们加到 animator 坐标。当前显式使用该语义的是主角、火焰发射器、Stage 6 火炬/火海顶部和 Bavaria Boss；Anaconda、普通对象动画、火海内部平铺、奖励及 UI 动画都不得自动应用 `x/y`。
 - foreground raw `20..23`、运行时 raw `32` 消散帧和 foreground `>=80` 属于源码后置前景扫描，应在主角/动态物体之后绘制；raw `255` 是空值，绝不能按 `>=80` 转成 world frame `175`。
 - raw `22/23` 共用 `gen1.f` chunk `0` animation `0`。序列第 0 帧持续 20 tick 且为空，表示火焰完全收回；之后 reach 才按 frame index `1..10/11..20/21..` 扩展。raw `23` 水平翻转，不能把合法的收回阶段误判成缺素材。
