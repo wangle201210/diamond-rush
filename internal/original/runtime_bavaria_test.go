@@ -608,9 +608,17 @@ func TestBavariaWaterBlocksHeroWithoutPotionAndBuoysGravityObjects(t *testing.T)
 	}
 	rt.SetForTest(PlayerLayer, 15, 15, 0)
 	rt.water.Cells[rt.index(15, 15)] = waterCellSet(0, 0, 1, 0, 3)
+	rt.water.Cells[rt.index(15, 14)] = waterCellSet(0, 0, 1, 0, 3)
 	rt.syncWaterState()
 	if !rt.tickGravityObjectAt(15, 15) || rt.PlayerLayer[rt.index(15, 14)] != 0 {
 		t.Fatal("a submerged boulder did not move upward with source buoyancy")
+	}
+	surfaceIdx := rt.index(15, 14)
+	rt.ObjectMotion[surfaceIdx] = ObjectMotion{}
+	rt.ObjectState[surfaceIdx] = 3 | 4<<explosiveFallShift
+	rt.water.Cells[rt.index(15, 13)] = 0
+	if rt.tickGravityObjectAt(15, 14) || rt.PlayerLayer[surfaceIdx] != 0 || rt.ObjectState[surfaceIdx]&explosiveFallMask != 0 {
+		t.Fatal("surface boulder entered a dry cell or retained its source fall distance")
 	}
 }
 
@@ -637,6 +645,66 @@ func TestBavariaStageEightWaterSourcesStartInSourceColumnOrder(t *testing.T) {
 	rt.TickSourceFrame(20, 130, 4)
 	if got := rt.WaterAt(33, 5); got != 1 || rt.PlayerLayer[thirdSource] != EmptyRawID {
 		t.Fatalf("third source at frame 130 outlet/raw=%d/%d, want 1/empty", got, rt.PlayerLayer[thirdSource])
+	}
+}
+
+func TestBavariaStageEightUpperWebReflowSettlesForLowerWeb(t *testing.T) {
+	rt := mustLoadBavariaRuntime(t, 7)
+	rt.SpecialItemMask |= 4
+	sourceTick := 1
+	for ; sourceTick <= 2000 && rt.WaterInitializing; sourceTick++ {
+		rt.TickSourceFrame(53, sourceTick, 4)
+	}
+	if rt.WaterInitializing || rt.water.Phase != 3 {
+		t.Fatalf("initial water did not settle by tick %d: phase=%d", sourceTick, rt.water.Phase)
+	}
+
+	rt.Player = Point{X: 7, Y: 16}
+	rt.PlayerMotion = ObjectMotion{}
+	if !rt.TryMove(0, 1) {
+		t.Fatal("hero could not enter the upper raw10 web")
+	}
+	rt.TickSourceFrame(53, sourceTick, 4)
+	sourceTick++
+	for ; sourceTick <= 1000 && rt.WaterInitializing; sourceTick++ {
+		rt.TickSourceFrame(53, sourceTick, 4)
+	}
+	if rt.WaterInitializing || rt.water.Phase != 3 {
+		t.Fatalf("upper-web reflow did not settle by tick %d: phase=%d drain=%d basin=%d", sourceTick, rt.water.Phase, rt.water.DrainTick, rt.water.BasinTimer)
+	}
+
+	lowerWeb := Point{X: 11, Y: 22}
+	if rt.PlayerLayer[rt.index(lowerWeb.X, lowerWeb.Y)] != 10 {
+		t.Fatalf("lower web raw=%d, want raw10", rt.PlayerLayer[rt.index(lowerWeb.X, lowerWeb.Y)])
+	}
+	rt.Player = Point{X: 12, Y: 22}
+	rt.PlayerMotion = ObjectMotion{}
+	if !rt.TryMove(-1, 0) {
+		t.Fatalf("hero with potion could not enter lower web: phase=%d water=%d", rt.water.Phase, rt.WaterAt(lowerWeb.X, lowerWeb.Y))
+	}
+}
+
+func TestBavariaDrainTargetDoesNotCreateWaterInEmptyShape(t *testing.T) {
+	rt := mustLoadBavariaRuntime(t, 8)
+	x, y, flowID := 10, 10, 1
+	rt.water.Cells[rt.index(x, y)] = 0
+	rt.water.Cells[rt.index(x, y+1)] = 0
+	rt.water.Flows[flowID-1] = 0
+	rt.waterFlowSet(flowID, 1, 28, 3)
+	rt.waterFlowSet(flowID, 1, 47, 2)
+	rt.waterFlowSet(flowID, x, 14, 6)
+	rt.waterFlowSet(flowID, y, 20, 6)
+	rt.waterFlowSet(flowID, 1, 49, 5)
+	rt.waterFlowSet(flowID, 2, 26, 2)
+	rt.setWaterCellField(x, y, 2, flowID, 0, 3)
+	rt.setWaterCellField(x, y, 2, 7, 3, 4)
+	rt.water.DrainFlowID = flowID
+	rt.water.DrainTargetY = y + 1
+	rt.water.DrainTick = 1
+
+	rt.tickWaterDrain()
+	if got := rt.waterCellAt(x, y+1); got != 0 {
+		t.Fatalf("drain target gained packed water %#x, want empty shape 0", got)
 	}
 }
 

@@ -641,8 +641,8 @@ func (rt *Runtime) startWaterReflow(pivotX, pivotY int) {
 	if newFlow > 0 {
 		rt.waterFlowSet(newFlow, 6, 28, 3)
 	}
+	// Java leaves dzInt disabled until the new flow actually reaches a basin.
 	rt.water.ReflowDirection = 0
-	rt.water.BasinTimer = 0
 }
 
 func (rt *Runtime) moveWaterForReflow(x, y, direction int) int {
@@ -724,7 +724,12 @@ func (rt *Runtime) tickWaterDrain() {
 				nextLayer, nextY = 0, y+1
 			}
 			shape := waterCellGet(rt.waterCellAt(x-column, nextY), nextLayer, 3, 4)
-			if (nextY == rt.water.DrainTargetY && layer == 2 && (shape == 0 || shape == 3)) || (nextY != rt.water.DrainTargetY || layer != 2) && shape != 12 && shape != 9 {
+			atDrainTarget := nextY == rt.water.DrainTargetY && layer == 2
+			writeWake := shape != 12 && shape != 9
+			if atDrainTarget {
+				writeWake = shape != 0 && shape != 3
+			}
+			if writeWake {
 				rt.setWaterCellField(x-column, nextY, nextLayer, 7, 3, 4)
 			}
 		}

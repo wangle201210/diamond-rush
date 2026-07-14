@@ -1091,7 +1091,10 @@ func (rt *Runtime) tickGravityObjectAt(x, y int) bool {
 	if rt.gravityObjectBuoyantAt(x, y) {
 		motion.RollDX = 0
 		motion.RollOffset = 0
-		if y > 0 && rt.tryMoveGravityObject(x, y, x, y-1, id) {
+		// aqVoid() only moves a buoyant object upward while the target cell
+		// also contains packed water. At the surface it stays in the top wet
+		// cell and clears the accumulated fall state.
+		if y > 0 && rt.waterCellAt(x, y-1) != 0 && rt.tryMoveGravityObject(x, y, x, y-1, id) {
 			return true
 		}
 		rt.ObjectState[idx] &^= objectDirectionMask | gravityRollPreparing | gravityMoveRight | gravityMoveLeft | explosiveFallMask

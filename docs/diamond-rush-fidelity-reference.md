@@ -285,7 +285,10 @@ Stage 8 的秘密出口要求后期取得的 Freeze Hammer。当前 Angkor-only 
 - fan pot 在稳定端点也必须可见：相位 `0` 的 foreground raw `15` 使用蓝罐 frame `0`、player raw `35` 使用红罐 frame `4`；相位 `9` 的 player raw `34` 使用蓝罐 frame `4`、foreground raw `16` 使用红罐 frame `0`。Java 的 `aVoid()` 把这些端点预绘入滚动背景缓冲，动态绘制只补相位 `1..5`/`5..8`；Go 每帧重绘场景，因此必须显式绘制端点。相位 `5` 才交换 player/foreground 层。
 - 水状态以 Java `eIntArrArr` 的三个 9-bit 子层保存：每层为 3-bit owner、4-bit shape、2-bit 横向偏移；`aLongArr/bLongArr` 对应 15 个 flow/source packed record。`WaterDepth` 现在只由 packed cells 同步生成，供碰撞和 HUD/渲染做占用查询，不能再作为权威状态写入。
 - 水源按列优先扫描并逐个启动；下一水源必须在对象扫描前建立首个子层。phase `1..5`、basin fill、cleanup flow 和 fan reflow 均保存在检查点快照。fan pot 交换、raw `10` 变成 foreground `32`、raw `37` 完成破坏都会调用 `lVoid` 对应的重排入口并播放音效 `13`。
+- 障碍清除触发 phase `5` 重排时，Java 只启动排水计时 `dqInt`，不能提前把 basin timer `dzInt` 从 `-1` 改为 `0`；新 flow 真正撞到 basin 时才同时启动填盆和排水。提前启动会让 Bavaria Stage 8 上方网 `(7,17)` 清除后的旧水先排完，把仍有余量的新 basin 永久留在 phase `2`，进而阻止携带神秘药水的玩家穿过下方 raw `10` `(11,22)`。
 - 浮力直接使用 packed cell `cell != 0 && cell != 3`，不是按水深猜测。layer-0 shape `7/8` 才切游泳动画并屏蔽锤子/钩索；水中 gravity object 使用 `OVoid()` 的 8 帧上下浮动。raw `11` 爬虫入水进入 `0x100..0x400` 溺亡相位，追踪蛇选择垂直方向时避开水格，layer-0 有水会暂停顶石压伤计时。
+- `aqVoid()` 中的浮力对象只有在上方目标格同样含 packed water 时才上移；到达最上层湿格后必须原地停住并清除累计下落距离，不能进入干格后上下往返。排水到 `dyInt` 目标行且当前子层为 `2` 时，Java 对下一层 shape `0/3` 跳过 shape `7` 写入；条件反转会在已排空的蜘蛛网格留下幽灵水。
+- Bavaria Stage 9 中央爆破谜题依次清除 `(24,14)` 引水、`(26,12)` 放下炸弹，将浮起的 raw `8` 从右侧钩到 `(28,15)`，再先清除左下网 `(25,17)` 排空中央池。最后绕到 `(28,18)` 从下方清除右下网 `(28,17)` 并避开；炸弹从 `(28,16)` 落到 `(28,19)`，爆炸清除 `(28,20)/(29,20)` 两块 raw `37`。若先开右下网，水会流入爆破墙上方的盆地并托住炸弹，属于错误操作而非替代路线。
 - Bavaria Stage 8 的 raw `40` 神秘药水位于 `(20,12)` 的 foreground raw `14` 宝箱。奖励帧设置 `iByteArr[10]=1` 后必须启动原作 `demo.f` 脚本 `24`，依次显示文本 `26/27`：“找到神秘药水了！”和“现在可以在水下呼吸了。”；不能只设置持久化状态而漏掉说明。
 - Bavaria 隐藏关 1（`world1/stage10`）会在 Stage 4 提前解锁，但通关水下压力板路线需要上述药水。Java 在缺药时只静默阻止进入水格；桌面版额外在关卡标题结束后显示一次前置条件提示，已有药水时不显示。该提示不修改物品、关卡层或存档，属于明确记录的体验优化，不是原作脚本。
 - `ajVoid()` 只由 player raw `47` 在完成 `aqVoid()` 后调用，不是 raw `1`。raw `47` 会生成 foreground `35`；其 `18 -> 12 -> 6 -> 0` 链继续生成 `35/37/34`、把允许的对象向上搬运，并使用 `gen2.f` chunk `3` 与 `gen3.f` chunk `4` 原素材。当前 Bavaria authored 数据没有初始 raw `47`，但共享源码规则已实现。
