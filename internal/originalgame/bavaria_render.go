@@ -152,13 +152,11 @@ func (g *Game) drawBavariaForeground(dst *ebiten.Image, id original.RawID, px, p
 	}
 	switch id {
 	case 15:
-		if g.rt.FanPhase > 0 && g.rt.FanPhase <= 5 {
-			frame := clamp(g.rt.FanPhase*5/10, 0, 4)
+		if frame, visible := sourceBavariaFanPotFrame(id, g.rt.FanPhase); visible {
 			g.bavaria.fanPotBlue.drawFrame(dst, frame, px, py, 0)
 		}
 	case 16:
-		if g.rt.FanPhase >= 5 && g.rt.FanPhase < 9 {
-			frame := clamp(4-g.rt.FanPhase*5/10, 0, 4)
+		if frame, visible := sourceBavariaFanPotFrame(id, g.rt.FanPhase); visible {
 			g.bavaria.fanPotRed.drawFrame(dst, frame, px, py, 0)
 		}
 	case 34:
@@ -218,12 +216,12 @@ func (g *Game) drawBavariaObject(dst *ebiten.Image, id original.RawID, x, y, px,
 	case 28:
 		g.drawBavariaSpike(dst, x, y, state, px, py)
 	case 34:
-		if g.rt.FanPhase >= 5 && g.rt.FanPhase < 9 {
-			g.bavaria.fanPotBlue.drawFrame(dst, clamp(g.rt.FanPhase*5/10, 0, 4), px, py, 0)
+		if frame, visible := sourceBavariaFanPotFrame(id, g.rt.FanPhase); visible {
+			g.bavaria.fanPotBlue.drawFrame(dst, frame, px, py, 0)
 		}
 	case 35:
-		if g.rt.FanPhase > 0 && g.rt.FanPhase <= 5 {
-			g.bavaria.fanPotRed.drawFrame(dst, clamp(4-g.rt.FanPhase*5/10, 0, 4), px, py, 0)
+		if frame, visible := sourceBavariaFanPotFrame(id, g.rt.FanPhase); visible {
+			g.bavaria.fanPotRed.drawFrame(dst, frame, px, py, 0)
 		}
 	case 36:
 		animation := 0
@@ -243,6 +241,28 @@ func (g *Game) drawBavariaObject(dst *ebiten.Image, id original.RawID, x, y, px,
 		return false
 	}
 	return true
+}
+
+func sourceBavariaFanPotFrame(id original.RawID, phase int) (int, bool) {
+	switch id {
+	case 15:
+		if phase >= 0 && phase <= 5 {
+			return clamp(phase*5/10, 0, 4), true
+		}
+	case 16:
+		if phase >= 5 && phase <= 9 {
+			return clamp(4-phase*5/10, 0, 4), true
+		}
+	case 34:
+		if phase >= 5 && phase <= 9 {
+			return clamp(phase*5/10, 0, 4), true
+		}
+	case 35:
+		if phase >= 0 && phase <= 5 {
+			return clamp(4-phase*5/10, 0, 4), true
+		}
+	}
+	return 0, false
 }
 
 func (g *Game) drawBavariaMovingHazard(dst *ebiten.Image, x, y, state, px, py int) {

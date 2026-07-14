@@ -176,6 +176,32 @@ func TestBavariaFanSwitchSwapsAuthoredPodGroupsAtPhaseFive(t *testing.T) {
 	}
 }
 
+func TestBavariaStageFiveSharedSilverDoorStartsLockedWithoutKeys(t *testing.T) {
+	rt := mustLoadBavariaRuntime(t, 4)
+	door := Point{X: 15, Y: 17}
+	trigger := Point{X: 16, Y: 17}
+
+	if got := rt.Foreground[rt.index(trigger.X, trigger.Y)]; got != 26 {
+		t.Fatalf("adjacent trigger raw=%d, want authored raw26", got)
+	}
+	state, _ := rt.At(BackgroundLayer, door.X, door.Y)
+	if state != 2 || rt.IsPassable(door.X, door.Y) {
+		t.Fatalf("shared silver door state/passable=%#x/%v, want count2/false", state, rt.IsPassable(door.X, door.Y))
+	}
+	if rt.KeyForForeground8 != 0 {
+		t.Fatalf("initial silver keys=%d, want 0", rt.KeyForForeground8)
+	}
+
+	rt.Player = Point{X: door.X - 1, Y: door.Y}
+	rt.PlayerMotion = ObjectMotion{}
+	if rt.TryMove(1, 0) {
+		t.Fatal("hero entered the shared silver door without a key")
+	}
+	if rt.Player != (Point{X: door.X - 1, Y: door.Y}) {
+		t.Fatalf("blocked hero moved to %+v", rt.Player)
+	}
+}
+
 func TestBavariaMovingHazardDestroysSourceSpearPair(t *testing.T) {
 	rt := mustLoadBavariaRuntime(t, 0)
 	for y := 5; y <= 7; y++ {
@@ -321,6 +347,52 @@ func TestBavariaStageThreeAwardsMysticHookFromSourceChest(t *testing.T) {
 	}
 	if rt.SpecialItemMask&2 == 0 || rt.SpecialPickups != 1 || !rt.ChestRewarded {
 		t.Fatalf("hook mask/pickups/rewarded=%d/%d/%v, want hook/1/true", rt.SpecialItemMask, rt.SpecialPickups, rt.ChestRewarded)
+	}
+}
+
+func TestBavariaWaterPotionRewardRunsSourceExplanation(t *testing.T) {
+	rt := mustLoadBavariaRuntime(t, 7)
+	chest := Point{X: 20, Y: 12}
+	idx := rt.index(chest.X, chest.Y)
+	if rt.PlayerLayer[idx] != 40 || rt.Foreground[idx] != 14 {
+		t.Fatal("Bavaria Stage 8 Mystic Potion source chest moved")
+	}
+	rt.Player = chest
+	rt.startChestOpening(chest, false)
+	for tick := 0; tick < chestRewardTick; tick++ {
+		rt.TickStatus()
+	}
+	if rt.SpecialItemMask&4 == 0 || !rt.TutorialScriptActive || rt.TutorialScriptID != bavariaWaterPotionScriptID {
+		t.Fatalf("potion mask/script=%d/%v/%d, want water breathing and script 24", rt.SpecialItemMask, rt.TutorialScriptActive, rt.TutorialScriptID)
+	}
+
+	prompts := make([]int, 0, 2)
+	for tick := 0; tick < 20 && rt.TutorialScriptActive; tick++ {
+		rt.tickTutorial()
+		if prompt, ok := rt.TutorialPrompt(); ok && rt.AdvanceTutorialPrompt() {
+			prompts = append(prompts, prompt.TextIndex)
+		}
+	}
+	if rt.TutorialScriptActive || !slices.Equal(prompts, []int{26, 27}) {
+		t.Fatalf("potion explanation active/prompts=%v/%v, want completed [26 27]", rt.TutorialScriptActive, prompts)
+	}
+}
+
+func TestBavariaSecretStageEntryHintRequiresMissingPotion(t *testing.T) {
+	rt := mustLoadBavariaRuntime(t, 10)
+	if !rt.HasStageEntryHint() || !rt.StartStageEntryHint() {
+		t.Fatal("Bavaria Secret Stage 1 did not expose its missing-potion entry hint")
+	}
+	rt.tickTutorial()
+	prompt, ok := rt.TutorialPrompt()
+	if !ok || prompt.TextIndex != bavariaSecretPotionHintTextIndex || prompt.Placement != TutorialTextBottom {
+		t.Fatalf("entry hint prompt=%+v,%v, want bottom text %d", prompt, ok, bavariaSecretPotionHintTextIndex)
+	}
+
+	rt = mustLoadBavariaRuntime(t, 10)
+	rt.SpecialItemMask |= 4
+	if rt.HasStageEntryHint() || rt.StartStageEntryHint() {
+		t.Fatal("Bavaria Secret Stage 1 still showed the prerequisite after collecting the potion")
 	}
 }
 

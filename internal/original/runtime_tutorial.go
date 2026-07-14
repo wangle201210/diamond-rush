@@ -3,6 +3,12 @@ package original
 const tutorialStageIndex = 13
 
 const (
+	bavariaWaterPotionScriptID       = 24
+	bavariaSecretPotionHintScriptID  = 1000
+	bavariaSecretPotionHintTextIndex = 39
+)
+
+const (
 	TutorialTextBubble = iota + 1
 	TutorialTextBottom
 )
@@ -238,9 +244,8 @@ var angkorTutorialScripts = map[int][]tutorialCommand{
 	},
 }
 
-// Bavaria's foreground raw-0 events reference the same demo.f command
-// stream as the Angkor tutorial. These four scripts are the only demo IDs
-// authored in w1.bin.
+// Bavaria's foreground raw-0 events and special-item rewards reference the
+// same demo.f command stream as the Angkor tutorial.
 var bavariaDemoScripts = map[int][]tutorialCommand{
 	4: {
 		tutorialCamera(13, 16, 30),
@@ -259,6 +264,10 @@ var bavariaDemoScripts = map[int][]tutorialCommand{
 		tutorialCamera(13, 56, 45),
 		tutorialWait(20),
 	},
+	bavariaWaterPotionScriptID: {
+		tutorialPrompt(26, TutorialTextBottom, 197, 0),
+		tutorialPrompt(27, TutorialTextBottom, 197, 0),
+	},
 	34: {
 		tutorialPortraitFace(1),
 		tutorialPortraitPosition(17, 50),
@@ -271,6 +280,26 @@ var bavariaDemoScripts = map[int][]tutorialCommand{
 		tutorialPortraitMark(4, 3, true),
 		tutorialPrompt(36, TutorialTextBubble, 90, 2),
 	},
+}
+
+// This is a desktop usability prompt, not a command authored in demo.f.
+var bavariaStageEntryHintScripts = map[int][]tutorialCommand{
+	bavariaSecretPotionHintScriptID: {
+		tutorialPrompt(bavariaSecretPotionHintTextIndex, TutorialTextBottom, 197, 0),
+	},
+}
+
+func (rt *Runtime) HasStageEntryHint() bool {
+	return rt != nil && rt.Stage != nil &&
+		rt.Stage.World == WorldBavaria && rt.Stage.Index == 10 &&
+		rt.SpecialItemMask&4 == 0
+}
+
+func (rt *Runtime) StartStageEntryHint() bool {
+	if !rt.HasStageEntryHint() {
+		return false
+	}
+	return rt.startTutorialScript(bavariaSecretPotionHintScriptID)
 }
 
 func (rt *Runtime) initTutorial() {
@@ -582,7 +611,9 @@ func (rt *Runtime) demoScriptAllowed(scriptID int) bool {
 			return rt.IsTutorialStage()
 		}
 	case WorldBavaria:
-		return scriptID == 4 && rt.Stage.Index == 3 ||
+		return scriptID == bavariaWaterPotionScriptID && rt.Stage.Index == 7 ||
+			scriptID == bavariaSecretPotionHintScriptID && rt.HasStageEntryHint() ||
+			scriptID == 4 && rt.Stage.Index == 3 ||
 			scriptID == 6 && rt.Stage.Index == 8 ||
 			scriptID == 34 && rt.Stage.Index == 9 ||
 			scriptID == 19 && rt.Stage.Index == 12
@@ -593,6 +624,9 @@ func (rt *Runtime) demoScriptAllowed(scriptID int) bool {
 
 func (rt *Runtime) demoScriptCommands(scriptID int) ([]tutorialCommand, bool) {
 	if rt != nil && rt.Stage != nil && rt.Stage.World == WorldBavaria {
+		if commands, ok := bavariaStageEntryHintScripts[scriptID]; ok {
+			return commands, true
+		}
 		commands, ok := bavariaDemoScripts[scriptID]
 		return commands, ok
 	}

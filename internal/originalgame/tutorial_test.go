@@ -9,7 +9,7 @@ import (
 )
 
 func TestAngkorTutorialTextIDsUseChineseLocalization(t *testing.T) {
-	want := [39]string{
+	want := [40]string{
 		0:  "我得先看看那个宝箱。",
 		1:  "推动石头时，",
 		2:  "别堵住自己的路。",
@@ -49,6 +49,7 @@ func TestAngkorTutorialTextIDsUseChineseLocalization(t *testing.T) {
 		36: "大干一场吧！",
 		37: "寒冰钻石一定就在西伯利亚的最后一间密室里！",
 		38: "成败在此一举！",
+		39: "完成本隐藏关需要神秘药水。请先在巴伐利亚第8关取得，再返回这里。",
 	}
 	for index, text := range want {
 		if got := tutorialText(index); got != text {
@@ -69,6 +70,38 @@ func TestDesktopControlLabelsMatchKeyboardBindings(t *testing.T) {
 		if !g.fontSmall.supports(label) {
 			t.Errorf("desktop control label is not renderable: %q", label)
 		}
+	}
+}
+
+func TestBavariaSecretStageEntryHintFollowsIntroAndPotionState(t *testing.T) {
+	g, err := New("decoded/world1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	g.loadStage(bavariaFirstSecretStage)
+	if !g.stageEntryHintPending || g.rt.TutorialScriptActive {
+		t.Fatalf("entry hint pending/active=%v/%v, want pending until title completes", g.stageEntryHintPending, g.rt.TutorialScriptActive)
+	}
+	for tick := 0; tick < stageIntroDuration-1; tick++ {
+		if err := g.updateSource(sourceInput{}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if g.rt.TutorialScriptActive {
+		t.Fatal("entry hint replaced the stage title before its source duration elapsed")
+	}
+	if err := g.updateSource(sourceInput{}); err != nil {
+		t.Fatal(err)
+	}
+	prompt, ok := g.rt.TutorialPrompt()
+	if g.stageEntryHintPending || !g.rt.TutorialScriptActive || !ok || prompt.TextIndex != 39 {
+		t.Fatalf("entry hint pending/active/prompt=%v/%v/%+v,%v", g.stageEntryHintPending, g.rt.TutorialScriptActive, prompt, ok)
+	}
+
+	g.progress.WaterBreathingPotion = true
+	g.loadStage(bavariaFirstSecretStage)
+	if g.stageEntryHintPending || g.rt.TutorialScriptActive {
+		t.Fatal("entry hint was scheduled after the campaign already owned the potion")
 	}
 }
 

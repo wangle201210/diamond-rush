@@ -148,7 +148,7 @@ func windowTitleForWorld(world int) string {
 	return tr(textWindowTitle, worldDisplayName(world), world+1)
 }
 
-var angkorTutorialTexts = [39]string{
+var angkorTutorialTexts = [40]string{
 	0:  "我得先看看那个宝箱。",
 	1:  "推动石头时，",
 	2:  "别堵住自己的路。",
@@ -188,6 +188,7 @@ var angkorTutorialTexts = [39]string{
 	36: "大干一场吧！",
 	37: "寒冰钻石一定就在西伯利亚的最后一间密室里！",
 	38: "成败在此一举！",
+	39: "完成本隐藏关需要神秘药水。请先在巴伐利亚第8关取得，再返回这里。",
 }
 
 func tutorialText(index int) string {

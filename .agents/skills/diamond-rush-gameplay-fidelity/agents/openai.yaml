@@ -1,0 +1,4 @@
+interface:
+  display_name: "Diamond Rush Gameplay Fidelity"
+  short_description: "Audit gameplay against the original Java/JAR"
+  default_prompt: "Use $diamond-rush-gameplay-fidelity to implement and verify this gameplay change against the original Java/JAR."

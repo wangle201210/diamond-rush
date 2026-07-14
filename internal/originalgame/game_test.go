@@ -562,6 +562,33 @@ func TestBavariaWaterSourceForegroundIsAnInvisibleRuntimeMarker(t *testing.T) {
 	}
 }
 
+func TestBavariaFanPotStableEndpointsMatchSourceFrames(t *testing.T) {
+	tests := []struct {
+		name    string
+		id      original.RawID
+		phase   int
+		frame   int
+		visible bool
+	}{
+		{name: "phase-zero blue foreground", id: 15, phase: 0, frame: 0, visible: true},
+		{name: "phase-zero red player", id: 35, phase: 0, frame: 4, visible: true},
+		{name: "phase-five blue player", id: 34, phase: 5, frame: 2, visible: true},
+		{name: "phase-five red foreground", id: 16, phase: 5, frame: 2, visible: true},
+		{name: "phase-nine blue player", id: 34, phase: 9, frame: 4, visible: true},
+		{name: "phase-nine red foreground", id: 16, phase: 9, frame: 0, visible: true},
+		{name: "inactive blue foreground", id: 15, phase: 9, visible: false},
+		{name: "inactive red player", id: 35, phase: 9, visible: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			frame, visible := sourceBavariaFanPotFrame(tt.id, tt.phase)
+			if frame != tt.frame || visible != tt.visible {
+				t.Fatalf("raw %d phase %d frame/visible=%d/%v, want %d/%v", tt.id, tt.phase, frame, visible, tt.frame, tt.visible)
+			}
+		})
+	}
+}
+
 func TestStage05DemoCameraUsesSourcePanTarget(t *testing.T) {
 	g, err := New(defaultWorldDir)
 	if err != nil {

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Diamond Rush Asset Fidelity"
+  short_description: "Audit sprites and rendering against source assets"
+  default_prompt: "Use $diamond-rush-asset-fidelity to diagnose and fix this Diamond Rush sprite or rendering discrepancy."

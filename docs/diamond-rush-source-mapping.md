@@ -465,6 +465,8 @@ The source falling-object state machine is in `aqVoid()` and is shared by player
 - With the Stage 1 initial offset of `1`, the global-frame phase makes the first diagonal transfer occur after 24 to 27 source frames (1.20 to 1.35 seconds at 20 TPS). Raw `0` and raw `1` use the same delay.
 - The renderer's `OVoid()` branch uses the preparation offset for horizontal rocking, `offset * offset / 24` vertical displacement, and `-1 + aSInt % 3` jitter before the transfer. The same arc is applied to horizontal movement over a stationary rounded support when the source-side neighbor condition passes.
 - Bavaria water uses three packed 9-bit sub-layers per cell (owner `0..2`, shape `3..6`, offset `7..8`) plus 15 flow and 15 source records. Gravity reverses upward when the packed cell is nonzero except for literal cell value `3`; `OVoid()` adds the source eight-frame water bob to raw `0/1/8/9/47` rendering.
+- Bavaria Stage 8 stores raw `40` at `(20,12)` under a foreground raw `14` chest. Its reward sets `iByteArr[10]=1` and starts source `demo.f` script `24`, whose bottom-panel text IDs `26/27` explain that the Mystic Potion enables underwater breathing.
+- Bavaria Secret Stage 1 (`world1/stage10`) is unlocked from Stage 4 before that potion is available. The JAR silently rejects entry into nonzero packed-water cells while `iByteArr[10]==0`; the desktop runtime adds a documented, state-neutral prerequisite prompt after the stage title and suppresses it once the potion is owned.
 - On the timer-zero landing frame, Java updates the `0x38` rotation, clears the low direction, and emits sound `14` for a vertically landing boulder. The `0x400/0x800` side marker survives that frame but is cleared on the next stationary update over a non-rounded support.
 
 Go implication:
@@ -699,6 +701,7 @@ Source anchors:
 - Foreground raw `26` is the trigger switch for this mechanism. When the player stands on it, Java sets `cmInt` to the raw `26` background/state group, closes the door in front of the hero, validates the group index, plays the trigger sound, and clears the raw `26` cell.
 - If a same-group raw `17` has foreground raw `7` immediately above it, Java starts that door opening by mutating the door state.
 - If a same-group raw `17` has foreground raw `14` or `33` above it, that container is the authored group reward. It remains closed and its player-layer payload remains hidden/inert before the counter reaches zero; the completion scan writes the unlocked overlay state without replacing the payload background.
+- During stage initialization, a raw `17` immediately below raw `7` makes that door start fully open only when neither horizontal neighbor of the door is raw `26`. Bavaria Stage 5 uses the excluded layout at door `(15,17)`, so its two raw `8` silver locks retain door count `2`.
 
 Go implication:
 

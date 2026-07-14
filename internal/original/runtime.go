@@ -3917,6 +3917,7 @@ func (rt *Runtime) applyChestReward() {
 	case 40:
 		rt.SpecialItemMask |= 4
 		rt.SpecialPickups++
+		rt.queueTutorialScript(bavariaWaterPotionScriptID)
 	case 41:
 		rt.collectBonusValue(rt.ChestRewardValue)
 	case 42:

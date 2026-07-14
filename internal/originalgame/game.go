@@ -411,6 +411,7 @@ type Game struct {
 	resultAwards           byte
 	resultNewAwards        byte
 	introTicks             int
+	stageEntryHintPending  bool
 	lastDX                 int
 	lastDY                 int
 	heroMoveStart          int
@@ -968,6 +969,10 @@ func (g *Game) updateSource(input sourceInput) error {
 	if g.introTicks < stageIntroDuration {
 		g.introTicks++
 	}
+	if g.stageEntryHintPending && g.introTicks >= stageIntroDuration && !g.rt.TutorialScriptActive {
+		g.stageEntryHintPending = false
+		g.rt.StartStageEntryHint()
+	}
 	if g.worldDone {
 		g.updateStageResults(input.Action)
 		return nil
@@ -1457,6 +1462,7 @@ func (g *Game) loadStage(index int) {
 	if rt.IsTutorialStage() {
 		g.introTicks = stageIntroDuration
 	}
+	g.stageEntryHintPending = rt.HasStageEntryHint()
 	g.heroMoveStart = 0
 	g.heroMoveOffset = 0
 	g.resetHeroFacing()

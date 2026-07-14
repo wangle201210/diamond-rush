@@ -67,7 +67,9 @@ func (boss GreatAnaconda) X() int {
 
 func (rt *Runtime) initEnemyGateDoors() {
 	// Doors with a raw-17 marker above or below are initialized in source
-	// phase 3 (fully open). A marker above a door is consumed at load time.
+	// phase 3 (fully open). A marker below does not qualify when raw 26 is
+	// horizontally adjacent to the door; that layout remains keyed/closed.
+	// A marker above a door is consumed at load time.
 	for y := 0; y < rt.Height(); y++ {
 		for x := 0; x < rt.Width(); x++ {
 			idx := rt.index(x, y)
@@ -75,7 +77,11 @@ func (rt *Runtime) initEnemyGateDoors() {
 				continue
 			}
 			markerAbove := y > 0 && rt.Foreground[rt.index(x, y-1)] == 17
-			markerBelow := y+1 < rt.Height() && rt.Foreground[rt.index(x, y+1)] == 17
+			adjacentTrigger := x > 0 && rt.Foreground[rt.index(x-1, y)] == 26 ||
+				x+1 < rt.Width() && rt.Foreground[rt.index(x+1, y)] == 26
+			markerBelow := y+1 < rt.Height() &&
+				rt.Foreground[rt.index(x, y+1)] == 17 &&
+				!adjacentTrigger
 			if !markerAbove && !markerBelow {
 				continue
 			}
