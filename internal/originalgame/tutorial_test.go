@@ -228,15 +228,25 @@ func TestAngkorTutorialCompletionPersistsAndLoadsStageOne(t *testing.T) {
 	}
 }
 
-func TestAngkorSecretStagesUseSourceCampaignPrerequisites(t *testing.T) {
+func TestAngkorSecretStagesEnterWithSaveCarriedStateOnly(t *testing.T) {
+	// Java's stage loader never touches iByteArr[8]/[9]; the secret stages
+	// enter with the save's tool level and max health (shop coats and the
+	// Siberia Freeze Hammer raise them in the full game). A fresh save
+	// therefore enters at 4/4 health and no tool, exactly like the original.
 	g, err := New(defaultWorldDir)
 	if err != nil {
 		t.Fatal(err)
 	}
 	for stage := angkorFirstSecretStage; stage < angkorTutorialStage; stage++ {
 		g.loadStage(stage)
-		if g.rt.MaxHealth != 8 || g.rt.Health != 8 || g.rt.SpecialItemMask != 8 {
-			t.Errorf("secret stage %d health=%d/%d tool=%d, want 8/8/8", stage, g.rt.Health, g.rt.MaxHealth, g.rt.SpecialItemMask)
+		if g.rt.MaxHealth != 4 || g.rt.Health != 4 || g.rt.SpecialItemMask != 0 {
+			t.Errorf("secret stage %d health=%d/%d tool=%d, want save defaults 4/4/0", stage, g.rt.Health, g.rt.MaxHealth, g.rt.SpecialItemMask)
 		}
+	}
+	g.progress.ToolLevel = 8
+	g.progress.MaxHealth = 8
+	g.loadStage(angkorFirstSecretStage)
+	if g.rt.MaxHealth != 8 || g.rt.SpecialItemMask != 8 {
+		t.Errorf("secret stage with upgraded save health=%d tool=%d, want carried 8/8", g.rt.MaxHealth, g.rt.SpecialItemMask)
 	}
 }

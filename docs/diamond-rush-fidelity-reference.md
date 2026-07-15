@@ -48,6 +48,8 @@ cd /Users/wanna/mine/github/wangle201210/DiamondRushSource
 `src/main/resources/w1.bin` 与实际运行的原 JAR 内 `w1.bin` 有 4 字节差异，全部位于 Bavaria `stage07` player layer。原 JAR 的 `(20,10)/(29,19)/(25,20)` 为空，`(7,17)` 为 raw `10`；`decoded/world1/stage07.json` 必须保留 JAR 版本，不能用源码目录资源重新生成后覆盖。
 
 原 JAR 条目的 SHA-256：`w1.bin` 为 `951b998c82383c55144ed82c5c54a7dc70f638017929d46aa155e40b0a77674e`，`map_scotland.out` 为 `5c21ffc3ac32e6f571cba097eaf81f3a7044804d1e4ae19f2c381586eba543c0`。截至 2026-07-13，从这两个 JAR 条目重新解码所得的 13 个 stage JSON 和地图 JSON 与 `decoded/world1` 逐文件一致；manifest 只有记录的 source 路径不同。
+
+`src/main/resources/w0.bin` 与原 JAR 内 `w0.bin`（SHA-256 `0b2eb7662959fd1e73b8ee435e96ca9cff87bd159dec845640954ed9658c0ffd`）有 16 字节差异，全部位于 Angkor `stage00`：JAR 版第二检查点在 `(19,7)`（background `2`）、出口 raw `5` 在 `(21,9)`、`(19,9)` 为 foreground raw `30`/background `20` 的一次性脚本触发格（脚本 `20`，text_bottom `15/16` 魔法锁提示）、`(11,8)/(12,8)/(12,14)` 为地形 raw `113/113/93`；源码目录版把检查点放在 `(17,9)`、出口放在 `(22,9)` 且没有脚本触发格。`decoded/world0` 自 2026-07-15 起保留 JAR 版本，不能用源码目录资源重新生成后覆盖。`src/main/resources/w2.bin` 与 JAR 版同样存在差异，尚未逐字节审计；Siberia 实现前必须先从 JAR 解码。
 5. 原作视频或截图，仅用于确认画面和用户可见结果。
 6. 现有 Go 实现、旧原型和文字攻略只能作为线索，不能证明原作行为。
 
@@ -120,8 +122,9 @@ macOS 输入适配保持手机动作语义互斥：`Space`/`5`/数字小键盘 `
 - player raw `19` 绿蛇 4 个
 - player raw `23` 向左火焰发射器 1 个
 - player raw `79` 入口 1 个
-- foreground raw `4` 检查点 3 个
-- foreground raw `5` 终点 1 个，位于 `(22,9)`
+- foreground raw `4` 检查点 3 个，第二检查点位于 `(19,7)`
+- foreground raw `5` 终点 1 个，位于 `(21,9)`
+- foreground raw `30` 脚本触发格 1 个，位于 `(19,9)`，background 载荷 `20`：主角完全落格（`jInt <= 0`，严于 fg `0` 的 `<= 6`）时一次性清除并排队脚本 `20`（两条 text_bottom 提示 `15/16`）
 - foreground raw `33` 宝箱 1 个
 - foreground raw `20..23` 各 8 个动画前景格
 
@@ -159,7 +162,7 @@ Angkor 打包的全部 14 个 stage 必须使用真实关卡数据和 20 TPS 正
 
 | 显示关卡 | 数据 | raw `12` 配额门 | raw `5` 终点 | 该关新增的核心机制 | 正式回归 |
 | --- | --- | --- | --- | --- | --- |
-| Stage 1 | `stage00.json`，26x21 | `(20,9)`，10 | `(22,9)` | 重力、滚落、蛇、火焰、宝箱、检查点、召回 | `TestRuntimeStage00CanBeCompletedAtSourceCadence` |
+| Stage 1 | `stage00.json`，26x21 | `(20,9)`，10 | `(21,9)` | 重力、滚落、蛇、火焰、宝箱、检查点、召回、raw `30` 脚本 `20` | `TestRuntimeStage00CanBeCompletedAtSourceCadence` |
 | Stage 2 | `stage01.json`，27x24 | `(22,3)`，15 | `(23,2)` | 更长的重力追逐与四个有序检查点 | `TestRuntimeStage01CanBeCompletedAtSourceCadence` |
 | Stage 3 | `stage02.json`，27x26 | `(22,21)`，20 | `(23,21)` | 金银钥匙/锁、raw `30`、敌人分组门 | `TestRuntimeStage02CanBeCompletedAtSourceCadence` |
 | Stage 4 | `stage03.json`，40x23 | `(36,5)`，25 | `(37,5)` | 压力机关、raw `24` 神秘锤、破墙和蛇眩晕 | `TestRuntimeStage03CanBeCompletedAtSourceCadence` |
@@ -174,9 +177,9 @@ Angkor 打包的全部 14 个 stage 必须使用真实关卡数据和 20 TPS 正
 | Secret Stage 4 | `stage12.json`，46x31 | `(38,27)`，99 | `(39,27)` raw `28` | raw `30` 连锁破墙、双石钩推、单程右竖井和 99 点奖励室 | `TestRuntimeStage12SecretStageCanBeCompletedAtSourceCadence` |
 | Tutorial | `stage13.json`，68x11 | 无 | 最终封印脚本，停在 `(61,3)` | `demo.f` 八段脚本、罗盘、检查点重置/召回教学和封印演出 | `TestRuntimeStage13TutorialCanBeCompletedAtSourceCadence` |
 
-Stage 5 在原流程中是取得 Bavaria 神秘钩索后回访的关卡。解码数据明确把 raw `27` 放在 `world1/stage02`（Bavaria Stage 3）`(24,25)` 的 foreground raw `14` 宝箱中；`world0/stage04` 和 `world1/stage04` 均没有 raw `27`。当前实现会在 Bavaria Stage 3 开箱时写入工具等级 `2`，保存后由 Bavaria Stage 5 继承；Angkor Stage 5 的直接关卡入口仍补足该原作前置状态，但绝不能在任一 Stage 5 伪造钩索宝箱。
+Stage 5 在原流程中是取得 Bavaria 神秘钩索后回访的关卡。解码数据明确把 raw `27` 放在 `world1/stage02`（Bavaria Stage 3）`(24,25)` 的 foreground raw `14` 宝箱中；`world0/stage04` 和 `world1/stage04` 均没有 raw `27`。当前实现会在 Bavaria Stage 3 开箱时写入工具等级 `2`，保存后由后续关卡继承。原作的关卡加载（`i.java` `jVoid` 3258-4675）从不写 `iByteArr[9]`，工具保底只发生在世界切换（进 Bavaria ⇒ `>=1`，`i.java:3028-3029`；进 Siberia ⇒ `>=2`）；自 2026-07-15 起，进入 Angkor Stage 5 不再注入工具等级，未取钩索时关内钩点按原作显示"不可用"，玩家可召回退出。绝不能在任一 Stage 5 伪造钩索宝箱。
 
-Stage 8 的秘密出口要求后期取得的 Freeze Hammer。当前 Angkor-only 切片同样缺少这段跨世界获取流程，因此加载 `stage07` 时注入工具等级 `8`；普通出口的正式路线测试仍只使用等级 `2`，证明普通通关不依赖冰冻能力。
+Stage 8 的秘密出口要求 Siberia 才能取得的 Freeze Hammer。原作在无 Freeze Hammer 时锤击蛇/水完全无冻结效果（`i.java:11446-11458`、`11615-11618` 均以 `iByteArr[9] >= 8` 为前提），秘密门本身无工具检查，靠蛇身挡路（`i.java:12106`）实现门禁。自 2026-07-15 起，加载 `stage07` 不再注入工具等级 `8`：在两世界切片内秘密出口保持原作的不可达状态，普通出口用等级 `2` 正常通关；秘密路线的路线测试自行构造已持有 Freeze Hammer 的存档状态。
 
 ## Stage 6 坍塌火炬源码规则
 
@@ -206,7 +209,7 @@ Stage 8 的秘密出口要求后期取得的 Freeze Hammer。当前 Angkor-only 
 - 工具等级 `>=8` 的锤击在命中帧检查中心及上下左右五格：紫钻只在正中心可冻结，蛇可在五格碰撞范围冻结。若中心已命中 raw `30` 或 raw `9`，源码设置动作处理标志并跳过这次五格扫描。
 - raw `9` 走与石头/紫钻相同的 `aqVoid()` 重力、滚落、推动和钩索路径，可压机关、压伤主角并压死接触敌人。移动、检查点保存和恢复必须连同原始冻结类型一起转移；不能只替换贴图。
 - 再次锤击 raw `9` 会解冻。类型 `34` 还原 raw `1`；类型 `37` 根据红蛇位还原 raw `19/43`，主角在其上方时方向为 `2`，否则为 `1`。
-- 冻结紫钻使用 `decoded/sprites/gen0/chunk01-*`，冻结蛇使用 `decoded/sprites/gen1/chunk06-*`，均绘制 frame `0`。Angkor stage index `4/7` 的 raw `5/28` 出口使用目标图的特殊 frame `1`，其他关使用 frame `0`。
+- 冻结紫钻使用 `decoded/sprites/gen0/chunk01-*`，冻结蛇使用 `decoded/sprites/gen1/chunk06-*`（world1 为 `chunk08-*`），均绘制 frame `0`。Angkor stage index `4/7` 的 raw `5/28` 出口使用目标图的特殊 frame `1`，其他关使用 frame `0`。
 - 普通路线先取得两把银钥匙。第二钥匙室必须从 `(26,5)` 把 `(25,5)` 石头左推到石堆上，否则挖掉 `(26,6)` 后石头会滚到宝箱上方，在长开箱动画中反复砸死主角。
 - 右区普通机关把 `(33,12)` 石头左推两次，使其落到 `(31,15)`，再从左向右推一次；石头沿 `(32,15..17)` 落到 pressure switch `1`，持续打开 `(34,16)` 的金钥匙区门。该路线只需工具等级 `2`。
 - 隐藏路线打通 `(16,5)` 弱墙群和 `(16,2)` 单墙，在蛇回到 `(8,2)` 时冻结。冰块落到 `(8,3)` 后从右侧左推，最终落到 `(7,4)` 的 pressure switch `3`，打开 `(6,3)` 后方 raw `28`；地图从普通节点 `7` 跳到秘密节点 `12`，不顺带解锁普通节点 `8`。
@@ -228,12 +231,12 @@ Stage 8 的秘密出口要求后期取得的 Freeze Hammer。当前 Angkor-only 
 ## 四个秘密关源码路线
 
 - `map_angkor.out` 的秘密链是普通 Stage 7 节点 `6 -> 9 -> 10 -> 11`，另一路是普通 Stage 8 节点 `7 -> 12`。秘密关 raw `28` 仍进入普通成绩页并逐节点解锁；末端节点 `11/12` 返回自身，不能按数组下标顺序解锁普通关。
-- `stage09` 依次用石头压住 `(9,7)`、`(12,17)`、`(24,23)` 和 `(26,15)` 等机关，取得银钥匙和金钥匙；15 点配额门与出口均在上层右侧。正式测试只需 Mystic Hook，游戏入口注入的 Freeze Hammer 也兼容该路线。
+- `stage09` 依次用石头压住 `(9,7)`、`(12,17)`、`(24,23)` 和 `(26,15)` 等机关，取得银钥匙和金钥匙；15 点配额门与出口均在上层右侧。正式测试只需 Mystic Hook。
 - `stage10` 的右侧钥匙竖井必须把连续六块石头分流到左右支撑，清空 x `43` 的 y `9..15` 后才能开第三把银钥匙宝箱；三把银钥匙依次打开 y `24..26` 的锁，联动打开 `(36,27)`。
 - `stage11` 的四个 foreground raw `26` 竞技场分别控制敌人组门；四个 raw `14/33` 金钥匙箱在对应计数归零前可站入但不会开盖，也不能提前显示 payload。入口到下层的首次触发顺序是 group `1 -> 3`，下层迷宫后再走 group `0 -> 2`，因为 Java 只用当前 `cmInt` 递减计数。
 - group `0` 把左右蛇冻结、推到落石下，再解冻碾压；group `1` 先把一条蛇冻入 `x=19,y=8`，把另一条固定在 `x=23,y=7`，跟随左落石到 `Remaining<=6` 后解冻，再对 `x=21`/右落石重复；group `2` 从中央分别钩入冰块和落石并用玩家阻止侧滚；group `3` 先在 `x=22,y=18` 放底冰，再把两条活蛇依次钩进同列后一次冻结，通过两次解冻连锁碾压，最后用 `(23,14)` 落石处理幸存冰蛇。出口四锁位于 x `37` 的 y `19..22`，右侧 raw `41` 宝箱补足 50 点配额。
 - `stage12` 的关键次序是先锤掉 `(18..19,21)` raw `30`，再钩/推两块石头避免堵死竖井，锤掉 `(17..18,8)` 上层墙，经过检查点 `(19,4)/(25,3)` 收集安全配额，再一次性下右竖井进入 x `40..44` 奖励室。配额为 99，不能先下竖井后期待返回。
-- 四关运行入口使用原作后期可达的前置状态：工具等级 `8`、最大生命 `8`。每关测试都保留对象扫描、重力、伤害、宝箱和检查点，不通过直接改层或传送完成。
+- 自 2026-07-15 起四关的游戏入口不再注入任何前置状态（原作关卡加载从不写 `iByteArr[8]/[9]`；最大生命 `8` 来自商店外套、工具 `8` 来自 Siberia）。在两世界切片内，依赖 Freeze Hammer 的解法保持原作的不可完成状态，玩家可召回退出。runtime 层路线测试自行构造工具等级 `8`、最大生命 `8` 的后期存档状态，并保留对象扫描、重力、伤害、宝箱和检查点，不通过直接改层或传送完成。
 
 ## Tutorial Stage 13 源码规则
 
@@ -283,6 +286,7 @@ Stage 8 的秘密出口要求后期取得的 Freeze Hammer。当前 Angkor-only 
 - raw `14` 的 cooldown `20` 是等待通路状态；下方和运动方向都堵塞时保持 `20`，通路出现后才从 `19` 倒数。反向机关贴住左侧对象时，原作偶数半帧还有 `(-1,+1)` 像素抖动。
 - 爆炸 `bN()` 在水状态稳定 `xByte==3` 时会把邻近 raw `10` 置为清除状态；raw `30/37` 进入破坏状态，raw `8` 连锁爆炸，raw `16/19/43/49` 被移除。水体重排触发源码音效 `13`。
 - fan pot 在稳定端点也必须可见：相位 `0` 的 foreground raw `15` 使用蓝罐 frame `0`、player raw `35` 使用红罐 frame `4`；相位 `9` 的 player raw `34` 使用蓝罐 frame `4`、foreground raw `16` 使用红罐 frame `0`。Java 的 `aVoid()` 把这些端点预绘入滚动背景缓冲，动态绘制只补相位 `1..5`/`5..8`；Go 每帧重绘场景，因此必须显式绘制端点。相位 `5` 才交换 player/foreground 层。
+- player raw `38` 在初始化时转成 foreground raw `27` 水源喷口，Java `aVoid` 的静态 tile 分支（lookupswitch keys `{4,15,16,27}`，已按 JAR 字节码核对）把它画成 `textures[21]`（`gen0.f` chunk `6` module `0`，24x24 格栅）：module 图直接贴 tile 原点，无动画、无 offset、无 flip，位于背景砖之上、对象与水覆盖之下。authored foreground `27` 会被 Java 初始化 default 分支清空，运行时的 fg `27` 只能来自 raw `38` 转换。
 - 水状态以 Java `eIntArrArr` 的三个 9-bit 子层保存：每层为 3-bit owner、4-bit shape、2-bit 横向偏移；`aLongArr/bLongArr` 对应 15 个 flow/source packed record。`WaterDepth` 现在只由 packed cells 同步生成，供碰撞和 HUD/渲染做占用查询，不能再作为权威状态写入。
 - 水源按列优先扫描并逐个启动；下一水源必须在对象扫描前建立首个子层。phase `1..5`、basin fill、cleanup flow 和 fan reflow 均保存在检查点快照。fan pot 交换、raw `10` 变成 foreground `32`、raw `37` 完成破坏都会调用 `lVoid` 对应的重排入口并播放音效 `13`。
 - 障碍清除触发 phase `5` 重排时，Java 只启动排水计时 `dqInt`，不能提前把 basin timer `dzInt` 从 `-1` 改为 `0`；新 flow 真正撞到 basin 时才同时启动填盆和排水。提前启动会让 Bavaria Stage 8 上方网 `(7,17)` 清除后的旧水先排完，把仍有余量的新 basin 永久留在 phase `2`，进而阻止携带神秘药水的玩家穿过下方 raw `10` `(11,22)`。
@@ -305,6 +309,10 @@ Stage 8 的秘密出口要求后期取得的 Freeze Hammer。当前 Angkor-only 
 
 - raw `12` 配额门：`decoded/sprites/cm/chunk05-*`，两模块组合并叠加 HUD 数字。
 - raw `11` 爬虫：`decoded/sprites/gen1/chunk04-*`，6 个模块；正常帧为 `(aSInt >> 1) % 3`，状态 phase 使用后续模块。
+- 主角着火：伤害类型 `64`（火焰发射器 `i.java:14178-14192`、爬虫接触 `hurtHero(1,64,0)`、点燃火盆 `13730-13737`、爆炸波及 `13293-13305`、Stage 6 火海 `hurtHero(maxHealth,64,1)`、大蟒尾击 `10176`）经 `gVoid(1000)` 把主角动画器替换为 `o.f` chunk `1` animation `0`（7 帧，时长 4+1+1+4+1+1+4=16 tick，`kInt|=0x4000`）；播完后 `YVoid` 调 `cInt()`：HP>0 恢复并给 40 tick 无敌，HP<=0 才进死亡序列（`i.java:11108-11127`、`11724-11737`）。Go 用 `Runtime.BurnTicks` 承载该状态，火焰致死时死亡计时顺延烧身时长。
+- 消散烟雾：`jVoid`（`i.java:15119-15122`）在被炸/被压/被清除的对象格写 foreground 高 4 位 nibble=1，逐格更新每两个源码 tick 加一、到 `cm.f` chunk `3` animation `0` 的 7 帧计数即清除（`13215-13237`），后前景 pass 以 nibble 为帧号绘制（`7786-7795`）。Go 存于 `ForegroundState`（与 raw `32` 草消散同储位，同 Java）。
+- 石头落地尘土：落到非重力物支撑时状态 bits `6..8` 置 1（`i.java:15591-15601`，下方为 raw `0/1/8/9` 时跳过；压力机关格清除 `15585-15587`），每对象 tick 加一到 6 停止；渲染取计数 `1..5` 画 `cm.f` chunk `3` module `0..4`，按 `state&7` 为 `4/2` 左右平移 `±24px`、再下移 `13px`（`9007-9034`、`7804-7806`），只对 tile 类型 `0` 绘制。
+- raw `19/43` 敌人按世界选 chunk（`i.java:3887-3902`，JAR 字节码核对）：world0/2 加载 `gen1.f` chunk `5`（raw `19` palette `0`、raw `43` palette `1`、Siberia palette `2`），world1 加载 chunk `7`（同样 palette `0/1`）；冻结变体按 `15→16`、`17→18` 成对追加（`i.java:4157-4166`）。world1 分支忽略朝向位：攻击计数（state bits `3..7`）大于 0 用 animation `2`，否则 animation `0`，帧速为全速 `aSInt % frameCount`（`i.java:9052-9094`）；其余世界按朝向选 animation 且帧速减半。
 - foreground raw `6` 压力机关：`decoded/sprites/gen2/chunk09-*`，单个 `24x13` 模块，底部对齐并随压入量下移。
 - `DVoid()` 先从滚动背景缓冲绘制地形，再以相对坐标 `-1..11` 扫描动态格；Go 端不能逐格交替画地面和物体，否则向右滚动的石头、向右喷射的火焰和跨格动画会被后一格地面覆盖。上下左右额外扫描范围也必须保留。
 - 游戏内 sprite 必须通过 `*-animations.json` 与 `*-modules.png` 按 module/frame 元数据组合，不能把 `*-frames.png` 假定成固定 `24x24` atlas。Bavaria world chunk `2` 的 frame 最大高度为 `26`，diggable chunk `1` 的 cell 为 `40x41`（Angkor 为 `35x27`）；固定步长会让 `raw 124..129` 的 `2x3` 旗帜和破碎动画跨行错裁。只有没有 sprite 元数据的整屏启动图可直接加载普通 PNG。
@@ -315,7 +323,7 @@ Stage 8 的秘密出口要求后期取得的 Freeze Hammer。当前 Angkor-only 
 - foreground raw `6` 的源码绘制会把 Graphics clip 限制在当前 `24x24` 格；下沉模块即使跨过格底也不能漏到下一行。
 - raw `32` 钩索：颜色 `#d3d7e7` 的水平线加主角 sprite module `0/1`，不是独立位图。
 - player raw `24/31/33/41/50/79` 在 Angkor 关卡中由前景容器、锁、Boss 或入口流程持有可见图形或本身不可见，不得回退绘制诊断蓝块；全部 14 个 stage 的 120 个关闭容器 payload 已审计，raw `2/4/5/6/7/24/26/27/40/41/42/51/52/53` 不得提前显示。
-- Freeze Hammer raw `9` 根据保存的源类型选择 `gen0.f` chunk `1` 的冻结紫钻或 `gen1.f` chunk `6` 的冻结蛇，不得绘制成普通石头。
+- Freeze Hammer raw `9` 根据保存的源类型选择 `gen0.f` chunk `1` 的冻结紫钻或 `gen1.f` chunk `6` 的冻结蛇（world1 为 chunk `8`），不得绘制成普通石头。
 - Stage 6 火海、火炬与碎屑依次使用 `decoded/sprites/mm0/chunk00-*`、`chunk01-*`、`chunk02-*`，不能用通用火焰发射器素材代替。
 - Compass 举起图标使用 `decoded/sprites/gen3/chunk01-modules.png` 的 module `0`，不能用 HUD 指针或文字代替。
 - 教程人物资源通过 `drsprite -demo-sprites .../demoSpr.bin` 单独导出到 `decoded/sprites/tutorial/demoSpr`；不能把诊断色块当头像。

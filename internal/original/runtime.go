@@ -261,6 +261,7 @@ type Runtime struct {
 	HitCount                    int
 	Retries                     int
 	HurtTicks                   int
+	BurnTicks                   int
 	InvulnerabilityTicks        int
 	RockHoldTicks               int
 	PlayerDead                  bool
@@ -837,7 +838,7 @@ func (rt *Runtime) finishMove(x, y, dx, dy int) bool {
 	rt.ResetPushAttempt()
 	rt.RockHoldTicks = rockHoldDuration
 	switch foregroundID {
-	case 0, 26:
+	case 0, 26, 30:
 		rt.pendingForegroundEvent = Point{X: x, Y: y}
 		rt.pendingForegroundEventSet = true
 	case 1:
@@ -1074,6 +1075,15 @@ func (rt *Runtime) tickGravityObjectAt(x, y int) bool {
 	if !isGravityObject(id) {
 		return false
 	}
+	if dust := (rt.ObjectState[idx] & gravityDustMask) >> gravityDustShift; dust > 0 {
+		if rt.Foreground[idx] == 6 {
+			// A pressure plate under the boulder clears the landing dust
+			// counter (i.java:15585-15587).
+			rt.ObjectState[idx] &^= gravityDustMask
+		} else if dust <= 5 {
+			rt.ObjectState[idx] += 1 << gravityDustShift
+		}
+	}
 	if id == 1 && rt.objectOverlapsPlayer(x, y) {
 		rt.collectVioletAt(x, y)
 		return false
@@ -1153,6 +1163,11 @@ func (rt *Runtime) finishGravityMotionAt(x, y int, id RawID) {
 	rt.ObjectState[idx] &^= explosiveFallMask
 	if id == 0 || id == 9 {
 		rt.emitSound(SoundBoulder)
+		if belowID, ok := rt.At(PlayerLayer, x, y+1); !ok || !isGravityObject(belowID) {
+			// Landing on non-boulder support starts the dust counter
+			// (i.java:15591-15601, skipped when iBoolean sees a rock below).
+			rt.ObjectState[idx] = (rt.ObjectState[idx] &^ gravityDustMask) | 1<<gravityDustShift
+		}
 	}
 }
 
@@ -1218,9 +1233,11 @@ func (rt *Runtime) applyExplosionImpact(x, y int) {
 				rt.PlayerLayer[idx] = EmptyRawID
 				rt.ObjectState[idx] = 0
 				rt.ObjectMotion[idx] = ObjectMotion{}
+				rt.startVanishEffectAt(nx, ny)
 			}
-			if rt.isPlayerAt(nx, ny) {
-				rt.Hurt(1)
+			if rt.isPlayerAt(nx, ny) && rt.Hurt(1) {
+				// bN() explosion spread hurts with damage type 64 (fire).
+				rt.igniteHero()
 			}
 		}
 	}
@@ -1452,6 +1469,8 @@ func (rt *Runtime) tickSpearPairAt(x, y int) {
 		rt.PlayerLayer[topIdx] = EmptyRawID
 		rt.ObjectState[baseIdx] = 0
 		rt.ObjectState[topIdx] = 0
+		rt.startVanishEffectAt(x, y)
+		rt.startVanishEffectAt(x, y-1)
 		return
 	}
 	state := rt.ObjectState[baseIdx]
@@ -1511,8 +1530,9 @@ func (rt *Runtime) tickCrawlerTrapAt(x, y int) {
 		rt.ObjectState[idx] = 1
 		rt.decrementEnemyGateForObjectAt(x, y)
 	}
-	if rt.ObjectState[idx] == 1 && rt.isPlayerAt(x, y-1) {
-		rt.Hurt(1)
+	if rt.ObjectState[idx] == 1 && rt.isPlayerAt(x, y-1) && rt.Hurt(1) {
+		// The lit fire bowl burns with damage type 64 (i.java:13730-13737).
+		rt.igniteHero()
 	}
 }
 
@@ -1684,6 +1704,9 @@ func (rt *Runtime) TickSourceFrame(radius, sourceTick, hazardReach int) SourceFr
 			if rt.Foreground[idx] == 32 && rt.tickDigAnimationAt(idx, sourceTick) {
 				result.DigCleared++
 			}
+			if rt.Foreground[idx] != 32 && rt.ForegroundState[idx] > 0 {
+				rt.tickVanishEffectAt(idx, sourceTick)
+			}
 			if rt.Hooking && rt.hookReturning && rt.HookTarget == (Point{X: x, Y: y}) {
 				continue
 			}
@@ -1713,6 +1736,8 @@ func (rt *Runtime) TickSourceFrame(radius, sourceTick, hazardReach int) SourceFr
 				}
 			case id == 22 || id == 23:
 				if rt.horizontalHazardHitsPlayer(x, y, id, hazardReach) && rt.Hurt(1) {
+					// Flame emitters hurt with damage type 64 (i.java:14178-14192).
+					rt.igniteHero()
 					result.HazardHits++
 				}
 			case id == 50:
@@ -1745,20 +1770,31 @@ func (rt *Runtime) TickSourceFrame(radius, sourceTick, hazardReach int) SourceFr
 }
 
 func (rt *Runtime) tickPendingForegroundEvent() {
-	if !rt.pendingForegroundEventSet || rt.playerSourceOffset() > 6 {
+	if !rt.pendingForegroundEventSet {
 		return
 	}
 	point := rt.pendingForegroundEvent
+	pendingID, pendingOK := rt.At(ForegroundLayer, point.X, point.Y)
+	// Java consumes fg 0/26 triggers while the hero offset is still <= 6
+	// (jInt <= 6) but fg 30 script triggers only once fully settled
+	// (jInt <= 0); see i.java case 30 vs case 0 in the foreground scan.
+	settleLimit := 6
+	if pendingOK && pendingID == 30 {
+		settleLimit = 0
+	}
+	if rt.playerSourceOffset() > settleLimit {
+		return
+	}
 	rt.pendingForegroundEventSet = false
 	if rt.Player != point {
 		return
 	}
-	id, ok := rt.At(ForegroundLayer, point.X, point.Y)
+	id, ok := pendingID, pendingOK
 	if !ok {
 		return
 	}
 	switch id {
-	case 0:
+	case 0, 30:
 		eventID := int(rt.Background[rt.index(point.X, point.Y)])
 		rt.collectForegroundEventAt(point.X, point.Y)
 		rt.startTutorialForegroundEvent(eventID)
@@ -1873,7 +1909,12 @@ func (rt *Runtime) tickFallingTorchStage(sourceTick int) bool {
 		}
 	}
 	if rt.Height()*TileSize-rt.RisingFireHeight <= rt.Player.Y*TileSize+18 && rt.Player.X < 17 {
-		return rt.HurtFromDirection(rt.MaxHealth, 1)
+		if rt.HurtFromDirection(rt.MaxHealth, 1) {
+			// The rising fire kills via hurtHero(maxHealth, 64, 1).
+			rt.igniteHero()
+			return true
+		}
+		return false
 	}
 	return false
 }
@@ -2058,6 +2099,42 @@ func (rt *Runtime) tickChestForegroundAt(x, y, sourceTick int, skipAdvance bool)
 	if !skipAdvance && state < maxState && (sourceTick>>1)&1 == 0 {
 		rt.ObjectState[idx] = state + 1
 	}
+}
+
+// Boulder-landing dust lives in object-state bits 6..8 (i.java:15591-15601,
+// advanced at 15697): counter 1..5 selects cm.f chunk 3 modules 0..4.
+const (
+	gravityDustMask  = 0x1C0
+	gravityDustShift = 6
+)
+
+// vanishEffectFrames is cm.f chunk 3 animation 0's frame count; the kill
+// "poof" nibble clears when it reaches this value (i.java:13215-13237).
+const vanishEffectFrames = 7
+
+// startVanishEffectAt mirrors jVoid (i.java:15119-15122): a destroyed object
+// leaves the cm.f chunk 3 smoke nibble in the foreground high bits, which Go
+// stores in ForegroundState.
+func (rt *Runtime) startVanishEffectAt(x, y int) {
+	if x < 0 || y < 0 || x >= rt.Width() || y >= rt.Height() {
+		return
+	}
+	if idx := rt.index(x, y); rt.Foreground[idx] != 32 {
+		rt.ForegroundState[idx] = 1
+	}
+}
+
+// tickVanishEffectAt advances the kill smoke like the Java per-cell update:
+// +1 every second source tick, cleared at the animation frame count.
+func (rt *Runtime) tickVanishEffectAt(idx, sourceTick int) {
+	state := rt.ForegroundState[idx]
+	if sourceTick&1 == 0 {
+		state++
+	}
+	if state >= vanishEffectFrames {
+		state = 0
+	}
+	rt.ForegroundState[idx] = state
 }
 
 func (rt *Runtime) tickDigAnimationAt(idx, sourceTick int) bool {
@@ -2974,6 +3051,7 @@ func (rt *Runtime) tickHorizontalHazardsBounds(minX, maxX, minY, maxY, fixedReac
 				reach = rt.ObjectState[idx] & 0x3
 			}
 			if rt.horizontalHazardHitsPlayer(x, y, id, reach) && rt.Hurt(1) {
+				rt.igniteHero()
 				hits++
 			}
 			if fixedReach < 0 {
@@ -3056,8 +3134,9 @@ func (rt *Runtime) tickCrawlerObjectAt(x, y int) bool {
 	// amVoid() tests contact at the crawler's source cell. A crawler moving
 	// right or up is visited again later in the same source scan, which is
 	// what makes those directions hit immediately and start at timer 13.
-	if rt.isPlayerAt(x, y) {
-		rt.Hurt(1)
+	if rt.isPlayerAt(x, y) && rt.Hurt(1) {
+		// Crawler contact calls hurtHero(1, 64, 0): a fire-type hit.
+		rt.igniteHero()
 	}
 	if !moved && rt.PlayerLayer[idx] == 11 && rt.ObjectMotion[idx].Remaining > 0 {
 		rt.ObjectMotion[idx].Remaining -= 5
@@ -3573,6 +3652,7 @@ func (rt *Runtime) tryMoveGravityObject(fromX, fromY, toX, toY int, id RawID) bo
 	if playerID, ok := rt.At(PlayerLayer, toX, toY); ok && isContactEnemy(playerID) && (id == 0 || id == 9) {
 		rt.decrementEnemyGateForObjectAt(toX, toY)
 		rt.moveObject(fromX, fromY, toX, toY, id)
+		rt.startVanishEffectAt(toX, toY)
 		return true
 	}
 	if !rt.cellEmptyForGravity(toX, toY) {
@@ -3723,6 +3803,22 @@ func (rt *Runtime) HurtFromDirection(amount, direction int) bool {
 	return true
 }
 
+// HeroBurnDuration is the length of o.f chunk 1 animation 0 in source ticks
+// (frame times 4+1+1+4+1+1+4). hurtHero's damage-type 64 path plays it via
+// gVoid(1000) (i.java:9219-9221, kInt |= 0x4000) and YVoid only resolves
+// death or recovery through cInt() once the animation ends (i.java:11108-11127).
+const HeroBurnDuration = 16
+
+// igniteHero mirrors the hurtHero(..., 64, ...) fire branch: the hero sprite
+// is replaced by the burn animation for its full duration; a fatal hit starts
+// the death sequence only after the burn finishes.
+func (rt *Runtime) igniteHero() {
+	rt.BurnTicks = HeroBurnDuration
+	if rt.PlayerDead {
+		rt.DeathTicks += HeroBurnDuration
+	}
+}
+
 func (rt *Runtime) TickStatus() {
 	hurtWasActive := rt.HurtTicks > 0
 	if rt.EnemyGateMessageTicks > 0 {
@@ -3746,6 +3842,9 @@ func (rt *Runtime) TickStatus() {
 		if rt.RecallTicks >= recallAnimationDuration {
 			rt.finishRecall()
 		}
+	}
+	if rt.BurnTicks > 0 {
+		rt.BurnTicks--
 	}
 	if rt.HurtTicks > 0 {
 		rt.HurtTicks--
@@ -4046,6 +4145,7 @@ func (rt *Runtime) finishDeath() bool {
 	rt.Health = rt.MaxHealth
 	rt.PlayerDead = false
 	rt.HurtTicks = 0
+	rt.BurnTicks = 0
 	rt.InvulnerabilityTicks = 0
 	return true
 }
@@ -4355,6 +4455,7 @@ func (rt *Runtime) RestoreCheckpoint() bool {
 	rt.LocksOpened = rt.checkpoint.LocksOpened
 	rt.BreakableWalls = rt.checkpoint.BreakableWalls
 	rt.HurtTicks = 0
+	rt.BurnTicks = 0
 	rt.InvulnerabilityTicks = 0
 	rt.RockHoldTicks = rockHoldDuration
 	rt.DeathTicks = 0

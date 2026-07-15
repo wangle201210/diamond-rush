@@ -6,7 +6,7 @@ This is an implementation checklist for rebuilding Diamond Rush World 0. Raw IDs
 
 ## Pack Summary
 
-- Source: `/Users/wanna/mine/github/wangle201210/DiamondRushSource/src/main/resources/w0.bin`
+- Source: `/Users/wanna/mine/github/wangle201210/DiamondRushSource/jars/diamondrush.jar!/w0.bin`
 - Decoded directory: `decoded/world0`
 - Stage count: `14`
 - Tile size: `24px`
@@ -16,19 +16,19 @@ This is an implementation checklist for rebuilding Diamond Rush World 0. Raw IDs
 
 | Stage | Size | Entrance marker | Known foreground anchors | Known player anchors |
 | ---: | ---: | --- | --- | --- |
-| 00 | 26x21 | (4,17) | 4 checkpoint:3<br>5 exit/goal marker candidate:1<br>20 animated foreground set:8<br>21 animated foreground set:8<br>22 animated foreground set:8<br>23 animated foreground set:8<br>+1 more | 0 boulder:13<br>1 violet gem:21<br>2 red diamond:1<br>10 diggable tile:76<br>12 bonus quota marker:1<br>19 green snake:4<br>+32 more |
+| 00 | 26x21 | (4,17) | 4 checkpoint:3<br>5 exit/goal marker candidate:1<br>20 animated foreground set:8<br>21 animated foreground set:8<br>22 animated foreground set:8<br>23 animated foreground set:8<br>+4 more | 0 boulder:13<br>1 violet gem:21<br>2 red diamond:1<br>10 diggable tile:76<br>12 bonus quota marker:1<br>19 green snake:4<br>+32 more |
 | 01 | 27x24 | (3,5) | 4 checkpoint:4<br>5 exit/goal marker candidate:1<br>20 animated foreground set:8<br>21 animated foreground set:8<br>22 animated foreground set:8<br>23 animated foreground set:8<br>+1 more | 0 boulder:21<br>1 violet gem:19<br>2 red diamond:1<br>7 health refill:2<br>10 diggable tile:31<br>12 bonus quota marker:1<br>+35 more |
-| 02 | 27x26 | (2,17) | 0 one-shot foreground event raw 0:1<br>2 special foreground barrier raw 2:4<br>4 checkpoint:5<br>5 exit/goal marker candidate:1<br>7 stateful door:3<br>8 lock consuming player raw 5 key:1<br>+8 more | 0 boulder:22<br>1 violet gem:37<br>2 red diamond:1<br>4 key for foreground raw 9:1<br>5 key for foreground raw 8:1<br>6 extra life:4<br>+43 more |
-| 03 | 40x23 | (3,17) | 2 special foreground barrier raw 2:3<br>4 checkpoint:7<br>5 exit/goal marker candidate:1<br>6 pressure door switch:2<br>7 stateful door:5<br>14 foreground gate overlay raw 14:1<br>+7 more | 0 boulder:8<br>1 violet gem:25<br>2 red diamond:2<br>6 extra life:1<br>7 health refill:2<br>10 diggable tile:11<br>+42 more |
-| 04 | 51x24 | (3,19) | 2 special foreground barrier raw 2:1<br>4 checkpoint:6<br>5 exit/goal marker candidate:1<br>6 pressure door switch:1<br>7 stateful door:4<br>9 lock consuming player raw 4 key:1<br>+7 more | 0 boulder:47<br>1 violet gem:37<br>2 red diamond:4<br>4 key for foreground raw 9:1<br>6 extra life:1<br>7 health refill:1<br>+47 more |
-| 05 | 30x75 | (2,70) | 0 one-shot foreground event raw 0:10<br>1 clearable foreground cluster raw 1:15<br>4 checkpoint:2<br>5 exit/goal marker candidate:1<br>6 pressure door switch:1<br>14 foreground gate overlay raw 14:1 | 0 boulder:14<br>1 violet gem:17<br>2 red diamond:1<br>10 diggable tile:22<br>12 bonus quota marker:1<br>79 stage entrance marker:1<br>+29 more |
-| 06 | 26x45 | (6,4) | 4 checkpoint:4<br>5 exit/goal marker candidate:1<br>6 pressure door switch:2<br>7 stateful door:5<br>9 lock consuming player raw 4 key:1<br>17 enemy gate group marker:4<br>+7 more | 0 boulder:21<br>1 violet gem:32<br>2 red diamond:3<br>4 key for foreground raw 9:1<br>6 extra life:2<br>7 health refill:2<br>+46 more |
-| 07 | 44x29 | (5,8) | 4 checkpoint:5<br>5 exit/goal marker candidate:1<br>6 pressure door switch:2<br>7 stateful door:6<br>8 lock consuming player raw 5 key:2<br>9 lock consuming player raw 4 key:1<br>+8 more | 0 boulder:35<br>1 violet gem:35<br>2 red diamond:1<br>4 key for foreground raw 9:1<br>5 key for foreground raw 8:2<br>6 extra life:3<br>+46 more |
-| 08 | 35x14 | (4,5) | 0 one-shot foreground event raw 0:1<br>4 checkpoint:1<br>7 stateful door:2<br>14 foreground gate overlay raw 14:1<br>17 enemy gate group marker:4<br>20 animated foreground set:2<br>+4 more | 0 boulder:2<br>31 keyed lock body:16<br>43 red snake:1<br>53 artifact pickup raw 53:1<br>79 stage entrance marker:1<br>80 world tile/frame reference:4<br>+29 more |
-| 09 | 50x30 | (4,6) | 4 checkpoint:5<br>6 pressure door switch:5<br>7 stateful door:7<br>8 lock consuming player raw 5 key:1<br>9 lock consuming player raw 4 key:1<br>20 animated foreground set:14<br>+5 more | 0 boulder:19<br>1 violet gem:48<br>2 red diamond:3<br>4 key for foreground raw 9:1<br>5 key for foreground raw 8:1<br>6 extra life:5<br>+44 more |
-| 10 | 50x31 | (2,19) | 4 checkpoint:4<br>6 pressure door switch:2<br>7 stateful door:4<br>8 lock consuming player raw 5 key:3<br>9 lock consuming player raw 4 key:1<br>14 foreground gate overlay raw 14:1<br>+6 more | 0 boulder:25<br>1 violet gem:46<br>2 red diamond:4<br>4 key for foreground raw 9:1<br>5 key for foreground raw 8:3<br>6 extra life:2<br>+42 more |
-| 11 | 46x31 | (3,27) | 2 special foreground barrier raw 2:5<br>4 checkpoint:4<br>7 stateful door:1<br>9 lock consuming player raw 4 key:4<br>17 enemy gate group marker:13<br>20 animated foreground set:18<br>+6 more | 0 boulder:23<br>1 violet gem:33<br>2 red diamond:5<br>4 key for foreground raw 9:4<br>6 extra life:8<br>10 diggable tile:183<br>+41 more |
-| 12 | 46x31 | (4,28) | 4 checkpoint:3<br>20 animated foreground set:15<br>21 animated foreground set:15<br>22 animated foreground set:16<br>23 animated foreground set:16<br>28 exit/goal marker candidate:1<br>+1 more | 0 boulder:93<br>1 violet gem:198<br>2 red diamond:5<br>6 extra life:8<br>10 diggable tile:251<br>12 bonus quota marker:1<br>+38 more |
+| 02 | 27x26 | (2,17) | 0 one-shot foreground event raw 0:1<br>2 special foreground barrier raw 2:4<br>4 checkpoint:5<br>5 exit/goal marker candidate:1<br>7 stateful door:3<br>8 lock consuming player raw 5 key:1<br>+17 more | 0 boulder:22<br>1 violet gem:37<br>2 red diamond:1<br>4 key for foreground raw 9:1<br>5 key for foreground raw 8:1<br>6 extra life:4<br>+43 more |
+| 03 | 40x23 | (3,17) | 2 special foreground barrier raw 2:3<br>4 checkpoint:7<br>5 exit/goal marker candidate:1<br>6 pressure door switch:2<br>7 stateful door:5<br>14 foreground gate overlay raw 14:1<br>+17 more | 0 boulder:8<br>1 violet gem:25<br>2 red diamond:2<br>6 extra life:1<br>7 health refill:2<br>10 diggable tile:11<br>+42 more |
+| 04 | 51x24 | (3,19) | 2 special foreground barrier raw 2:1<br>4 checkpoint:6<br>5 exit/goal marker candidate:1<br>6 pressure door switch:1<br>7 stateful door:4<br>9 lock consuming player raw 4 key:1<br>+17 more | 0 boulder:47<br>1 violet gem:37<br>2 red diamond:4<br>4 key for foreground raw 9:1<br>6 extra life:1<br>7 health refill:1<br>+47 more |
+| 05 | 30x75 | (2,70) | 0 one-shot foreground event raw 0:10<br>1 clearable foreground cluster raw 1:15<br>4 checkpoint:2<br>5 exit/goal marker candidate:1<br>6 pressure door switch:1<br>14 foreground gate overlay raw 14:1<br>+3 more | 0 boulder:14<br>1 violet gem:17<br>2 red diamond:1<br>10 diggable tile:22<br>12 bonus quota marker:1<br>79 stage entrance marker:1<br>+29 more |
+| 06 | 26x45 | (6,4) | 4 checkpoint:4<br>5 exit/goal marker candidate:1<br>6 pressure door switch:2<br>7 stateful door:5<br>9 lock consuming player raw 4 key:1<br>17 enemy gate group marker:4<br>+29 more | 0 boulder:21<br>1 violet gem:32<br>2 red diamond:3<br>4 key for foreground raw 9:1<br>6 extra life:2<br>7 health refill:2<br>+46 more |
+| 07 | 44x29 | (5,8) | 4 checkpoint:5<br>5 exit/goal marker candidate:1<br>6 pressure door switch:2<br>7 stateful door:6<br>8 lock consuming player raw 5 key:2<br>9 lock consuming player raw 4 key:1<br>+15 more | 0 boulder:35<br>1 violet gem:35<br>2 red diamond:1<br>4 key for foreground raw 9:1<br>5 key for foreground raw 8:2<br>6 extra life:3<br>+46 more |
+| 08 | 35x14 | (4,5) | 0 one-shot foreground event raw 0:1<br>4 checkpoint:1<br>7 stateful door:2<br>14 foreground gate overlay raw 14:1<br>17 enemy gate group marker:4<br>20 animated foreground set:2<br>+17 more | 0 boulder:2<br>31 keyed lock body:16<br>43 red snake:1<br>53 artifact pickup raw 53:1<br>79 stage entrance marker:1<br>80 world tile/frame reference:4<br>+29 more |
+| 09 | 50x30 | (4,6) | 4 checkpoint:5<br>6 pressure door switch:5<br>7 stateful door:7<br>8 lock consuming player raw 5 key:1<br>9 lock consuming player raw 4 key:1<br>20 animated foreground set:14<br>+20 more | 0 boulder:19<br>1 violet gem:48<br>2 red diamond:3<br>4 key for foreground raw 9:1<br>5 key for foreground raw 8:1<br>6 extra life:5<br>+44 more |
+| 10 | 50x31 | (2,19) | 4 checkpoint:4<br>6 pressure door switch:2<br>7 stateful door:4<br>8 lock consuming player raw 5 key:3<br>9 lock consuming player raw 4 key:1<br>14 foreground gate overlay raw 14:1<br>+18 more | 0 boulder:25<br>1 violet gem:46<br>2 red diamond:4<br>4 key for foreground raw 9:1<br>5 key for foreground raw 8:3<br>6 extra life:2<br>+42 more |
+| 11 | 46x31 | (3,27) | 2 special foreground barrier raw 2:5<br>4 checkpoint:4<br>7 stateful door:1<br>9 lock consuming player raw 4 key:4<br>17 enemy gate group marker:13<br>20 animated foreground set:18<br>+9 more | 0 boulder:23<br>1 violet gem:33<br>2 red diamond:5<br>4 key for foreground raw 9:4<br>6 extra life:8<br>10 diggable tile:183<br>+41 more |
+| 12 | 46x31 | (4,28) | 4 checkpoint:3<br>20 animated foreground set:15<br>21 animated foreground set:15<br>22 animated foreground set:16<br>23 animated foreground set:16<br>28 exit/goal marker candidate:1<br>+11 more | 0 boulder:93<br>1 violet gem:198<br>2 red diamond:5<br>6 extra life:8<br>10 diggable tile:251<br>12 bonus quota marker:1<br>+38 more |
 | 13 | 68x11 | (5,4) | 0 one-shot foreground event raw 0:8<br>4 checkpoint:2<br>7 stateful door:1<br>14 foreground gate overlay raw 14:2<br>17 enemy gate group marker:2<br>20 animated foreground set:10<br>+4 more | 0 boulder:13<br>1 violet gem:8<br>6 extra life:1<br>10 diggable tile:61<br>42 compass:1<br>79 stage entrance marker:1<br>+30 more |
 
 ## World 0 Raw ID Coverage
@@ -52,8 +52,8 @@ This is an implementation checklist for rebuilding Diamond Rush World 0. Raw IDs
 | 23 | 23 | 30 | left horizontal hazard (source-anchor) |
 | 24 | 24 | 1 | special item pickup raw 24 (source-anchor) |
 | 30 | 30 | 118 | breakable wall (source-anchor) |
-| 31 | 31 | 33 | keyed lock body (render-anchor) |
-| 33 | 33 | 5 | passable overlay raw 33 (source-anchor) |
+| 31 | 31 | 33 | keyed lock body (source-anchor) |
+| 33 | 33 | 5 | passable marker raw 33 (source-anchor) |
 | 41 | 41 | 24 | bonus value pickup (source-anchor) |
 | 42 | 42 | 1 | compass (source-anchor) |
 | 43 | 43 | 10 | red snake (source-anchor) |
@@ -62,7 +62,7 @@ This is an implementation checklist for rebuilding Diamond Rush World 0. Raw IDs
 | 80 | 80 | 161 | world tile/frame reference (render-anchor) |
 | 81 | 81 | 151 | world tile/frame reference (render-anchor) |
 | 82 | 82 | 74 | world tile/frame reference (render-anchor) |
-| 83 | 83 | 107 | world tile/frame reference (render-anchor) |
+| 83 | 83 | 106 | world tile/frame reference (render-anchor) |
 | 84 | 84 | 62 | world tile/frame reference (render-anchor) |
 | 85 | 85 | 1160 | world tile/frame reference (render-anchor) |
 | 86 | 86 | 134 | world tile/frame reference (render-anchor) |
@@ -91,11 +91,11 @@ This is an implementation checklist for rebuilding Diamond Rush World 0. Raw IDs
 | 110 | 110 | 465 | world tile/frame reference (render-anchor) |
 | 111 | 111 | 446 | world tile/frame reference (render-anchor) |
 | 112 | 112 | 21 | world tile/frame reference (render-anchor) |
-| 113 | 113 | 519 | world tile/frame reference (render-anchor) |
+| 113 | 113 | 521 | world tile/frame reference (render-anchor) |
 | 114 | 114 | 14 | world tile/frame reference (render-anchor) |
 | 115 | 115 | 320 | world tile/frame reference (render-anchor) |
 | 116 | 116 | 345 | world tile/frame reference (render-anchor) |
-| 255 | -1 | 3011 | empty (source-anchor) |
+| 255 | -1 | 3010 | empty (source-anchor) |
 
 ### foreground
 
@@ -118,40 +118,41 @@ This is an implementation checklist for rebuilding Diamond Rush World 0. Raw IDs
 | 23 | 23 | 161 | animated foreground set (render-anchor) |
 | 26 | 26 | 12 | enemy gate trigger switch (source-anchor) |
 | 28 | 28 | 6 | exit/goal marker candidate (inferred) |
+| 30 | 30 | 1 | unclassified |
 | 33 | 33 | 114 | foreground gate overlay raw 33 (source-anchor) |
-| 80 | 80 | 10 | unclassified |
-| 81 | 81 | 5 | unclassified |
-| 83 | 83 | 1 | unclassified |
-| 85 | 85 | 35 | unclassified |
-| 86 | 86 | 3 | unclassified |
-| 87 | 87 | 6 | unclassified |
-| 88 | 88 | 1 | unclassified |
-| 90 | 90 | 4 | unclassified |
-| 91 | 91 | 2 | unclassified |
-| 93 | 93 | 1 | unclassified |
-| 94 | 94 | 5 | unclassified |
-| 95 | 95 | 1 | unclassified |
-| 96 | 96 | 56 | unclassified |
-| 97 | 97 | 6 | unclassified |
-| 98 | 98 | 3 | unclassified |
-| 99 | 99 | 3 | unclassified |
-| 100 | 100 | 5 | unclassified |
-| 101 | 101 | 4 | unclassified |
-| 102 | 102 | 1 | unclassified |
-| 103 | 103 | 9 | unclassified |
-| 104 | 104 | 12 | unclassified |
-| 105 | 105 | 43 | unclassified |
-| 106 | 106 | 2 | unclassified |
-| 107 | 107 | 2 | unclassified |
-| 108 | 108 | 2 | unclassified |
-| 110 | 110 | 2 | unclassified |
-| 111 | 111 | 2 | unclassified |
-| 113 | 113 | 24 | unclassified |
-| 115 | 115 | 2 | unclassified |
-| 116 | 116 | 1 | unclassified |
-| 117 | 117 | 81 | unclassified |
-| 118 | 118 | 155 | unclassified |
-| 119 | 119 | 71 | unclassified |
+| 80 | 80 | 10 | world tile/frame reference (render-anchor) |
+| 81 | 81 | 5 | world tile/frame reference (render-anchor) |
+| 83 | 83 | 1 | world tile/frame reference (render-anchor) |
+| 85 | 85 | 35 | world tile/frame reference (render-anchor) |
+| 86 | 86 | 3 | world tile/frame reference (render-anchor) |
+| 87 | 87 | 6 | world tile/frame reference (render-anchor) |
+| 88 | 88 | 1 | world tile/frame reference (render-anchor) |
+| 90 | 90 | 4 | world tile/frame reference (render-anchor) |
+| 91 | 91 | 2 | world tile/frame reference (render-anchor) |
+| 93 | 93 | 1 | world tile/frame reference (render-anchor) |
+| 94 | 94 | 5 | world tile/frame reference (render-anchor) |
+| 95 | 95 | 1 | world tile/frame reference (render-anchor) |
+| 96 | 96 | 56 | world tile/frame reference (render-anchor) |
+| 97 | 97 | 6 | world tile/frame reference (render-anchor) |
+| 98 | 98 | 3 | world tile/frame reference (render-anchor) |
+| 99 | 99 | 3 | world tile/frame reference (render-anchor) |
+| 100 | 100 | 5 | world tile/frame reference (render-anchor) |
+| 101 | 101 | 4 | world tile/frame reference (render-anchor) |
+| 102 | 102 | 1 | world tile/frame reference (render-anchor) |
+| 103 | 103 | 9 | world tile/frame reference (render-anchor) |
+| 104 | 104 | 12 | world tile/frame reference (render-anchor) |
+| 105 | 105 | 43 | world tile/frame reference (render-anchor) |
+| 106 | 106 | 2 | world tile/frame reference (render-anchor) |
+| 107 | 107 | 2 | world tile/frame reference (render-anchor) |
+| 108 | 108 | 2 | world tile/frame reference (render-anchor) |
+| 110 | 110 | 2 | world tile/frame reference (render-anchor) |
+| 111 | 111 | 2 | world tile/frame reference (render-anchor) |
+| 113 | 113 | 24 | world tile/frame reference (render-anchor) |
+| 115 | 115 | 2 | world tile/frame reference (render-anchor) |
+| 116 | 116 | 1 | world tile/frame reference (render-anchor) |
+| 117 | 117 | 81 | world tile/frame reference (render-anchor) |
+| 118 | 118 | 155 | world tile/frame reference (render-anchor) |
+| 119 | 119 | 70 | world tile/frame reference (render-anchor) |
 | 255 | -1 | 14311 | empty (source-anchor) |
 
 ### background
@@ -170,7 +171,7 @@ This is an implementation checklist for rebuilding Diamond Rush World 0. Raw IDs
 | 15 | 15 | 4 | unclassified |
 | 16 | 16 | 2 | unclassified |
 | 17 | 17 | 1 | unclassified |
-| 20 | 20 | 4 | unclassified |
+| 20 | 20 | 5 | unclassified |
 | 25 | 25 | 1 | unclassified |
 | 28 | 28 | 1 | unclassified |
 | 29 | 29 | 1 | unclassified |
@@ -181,7 +182,7 @@ This is an implementation checklist for rebuilding Diamond Rush World 0. Raw IDs
 | 50 | 50 | 9 | unclassified |
 | 60 | 60 | 1 | unclassified |
 | 99 | 99 | 2 | unclassified |
-| 255 | -1 | 15552 | empty (source-anchor) |
+| 255 | -1 | 15551 | empty (source-anchor) |
 
 ## Current Implementation Implications
 

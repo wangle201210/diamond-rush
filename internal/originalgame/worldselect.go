@@ -218,6 +218,11 @@ func (g *Game) activateWorldSelectPosition() {
 			return
 		}
 		g.progress.LastWorld = world
+		if world == original.WorldBavaria {
+			// i.java:3028-3029: selecting Bavaria at the seal guarantees the
+			// Mystic Hammer (iByteArr[9] = max(iByteArr[9], 1)).
+			g.progress.ToolLevel = maxToolLevel(g.progress.ToolLevel, 1)
+		}
 		g.progress = g.progress.normalized()
 		if g.progressPath != "" {
 			if err := saveOriginalProgress(g.progressPath, g.progress); err != nil {

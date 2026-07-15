@@ -16,6 +16,8 @@ const (
 	bavariaExplosiveFrames      = "decoded/sprites/gen0/chunk05-frames.png"
 	bavariaExplosiveModules     = "decoded/sprites/gen0/chunk05-modules.png"
 	bavariaExplosiveMetadata    = "decoded/sprites/gen0/chunk05-animations.json"
+	bavariaWaterSpoutModules    = "decoded/sprites/gen0/chunk06-modules.png"
+	bavariaWaterSpoutMetadata   = "decoded/sprites/gen0/chunk06-animations.json"
 	bavariaCrawlerTrapFrames    = "decoded/sprites/gen0/chunk08-frames.png"
 	bavariaCrawlerTrapModules   = "decoded/sprites/gen0/chunk08-modules.png"
 	bavariaCrawlerTrapMetadata  = "decoded/sprites/gen0/chunk08-animations.json"
@@ -64,6 +66,7 @@ type bavariaSpriteSet struct {
 	fanPotRed    *spriteSheet
 	fanPotBlue   *spriteSheet
 	blastWall    *spriteSheet
+	waterSpout   *spriteSheet
 	water        *spriteSheet
 	waterPotion  *spriteSheet
 	fanSwitch    *spriteSheet
@@ -96,6 +99,7 @@ func loadBavariaSpriteSet() (bavariaSpriteSet, error) {
 		{"red fan pot", &result.fanPotRed, bavariaFanPotRedFrames, bavariaFanPotRedModules, bavariaFanPotMetadata},
 		{"blue fan pot", &result.fanPotBlue, bavariaFanPotBlueFrames, bavariaFanPotBlueModules, bavariaFanPotMetadata},
 		{"blast wall", &result.blastWall, "", bavariaBlastWallModules, bavariaBlastWallMetadata},
+		{"water spout", &result.waterSpout, "", bavariaWaterSpoutModules, bavariaWaterSpoutMetadata},
 		{"water", &result.water, bavariaWaterFrames, bavariaWaterModules, bavariaWaterMetadata},
 		{"water potion", &result.waterPotion, "", bavariaWaterPotionModules, bavariaWaterPotionMetadata},
 		{"fan switch", &result.fanSwitch, bavariaFanSwitchFrames, bavariaFanSwitchModules, bavariaFanSwitchMetadata},
@@ -155,6 +159,11 @@ func (g *Game) drawBavariaForeground(dst *ebiten.Image, id original.RawID, px, p
 		if frame, visible := sourceBavariaFanPotFrame(id, g.rt.FanPhase); visible {
 			g.bavaria.fanPotBlue.drawFrame(dst, frame, px, py, 0)
 		}
+	case 27:
+		// Java draws the raw 38 water spout as the static textures[21]
+		// module (gen0.f chunk 6, i.java aVoid case 27): module 0 at the
+		// tile origin, no animation, offset, or flip.
+		g.bavaria.waterSpout.drawModule(dst, 0, px, py)
 	case 16:
 		if frame, visible := sourceBavariaFanPotFrame(id, g.rt.FanPhase); visible {
 			g.bavaria.fanPotRed.drawFrame(dst, frame, px, py, 0)

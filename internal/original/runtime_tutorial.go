@@ -118,6 +118,12 @@ func tutorialFlash(cycles int) tutorialCommand {
 }
 
 var angkorTutorialScripts = map[int][]tutorialCommand{
+	// Script 20 is the Stage 1 magic-lock hint fired by the authored
+	// foreground raw 30 trigger at (19,9): two text_bottom prompts (15, 16).
+	20: {
+		tutorialPrompt(15, TutorialTextBottom, 197, 0),
+		tutorialPrompt(16, TutorialTextBottom, 197, 0),
+	},
 	29: {
 		tutorialCamera(6, 4, 5),
 		tutorialPortraitFace(2),
@@ -601,6 +607,8 @@ func (rt *Runtime) demoScriptAllowed(scriptID int) bool {
 	switch rt.Stage.World {
 	case WorldAngkor:
 		switch scriptID {
+		case 20:
+			return rt.Stage.Index == 0
 		case 22:
 			return rt.Stage.Index == 3
 		case 30:

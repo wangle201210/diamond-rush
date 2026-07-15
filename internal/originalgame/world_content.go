@@ -23,6 +23,13 @@ type worldVisualDefinition struct {
 	mapHeaderModules  string
 	mapHeaderMetadata string
 	foregroundEffects spriteVisualDefinition
+	// Java loads gen chunk 15 (gen1.f #5) for raw 19/43 enemies except in
+	// world 1, which loads chunk 17 (gen1.f #7) instead; the frozen variant
+	// pairs chunk 16 with 15 and chunk 18 with 17 (i.java:3887-3902,
+	// 4157-4166, JAR-verified).
+	enemyGreen  spriteVisualDefinition
+	enemyRed    spriteVisualDefinition
+	enemyFrozen spriteVisualDefinition
 }
 
 type spriteVisualDefinition struct {
@@ -53,6 +60,21 @@ func worldVisualDefinitionFor(world int) worldVisualDefinition {
 				modules:  bavariaForegroundEffectModules,
 				metadata: bavariaForegroundEffectMetadata,
 			},
+			enemyGreen: spriteVisualDefinition{
+				sheet:    "decoded/sprites/gen1/chunk07-frames.png",
+				modules:  "decoded/sprites/gen1/chunk07-modules.png",
+				metadata: "decoded/sprites/gen1/chunk07-animations.json",
+			},
+			enemyRed: spriteVisualDefinition{
+				sheet:    "decoded/sprites/gen1/chunk07-palette01-frames.png",
+				modules:  "decoded/sprites/gen1/chunk07-palette01-modules.png",
+				metadata: "decoded/sprites/gen1/chunk07-animations.json",
+			},
+			enemyFrozen: spriteVisualDefinition{
+				sheet:    "decoded/sprites/gen1/chunk08-frames.png",
+				modules:  "decoded/sprites/gen1/chunk08-modules.png",
+				metadata: "decoded/sprites/gen1/chunk08-animations.json",
+			},
 		}
 	}
 	return worldVisualDefinition{
@@ -74,6 +96,21 @@ func worldVisualDefinitionFor(world int) worldVisualDefinition {
 			sheet:    foregroundEffectSheet,
 			modules:  foregroundEffectModules,
 			metadata: foregroundEffectMetadata,
+		},
+		enemyGreen: spriteVisualDefinition{
+			sheet:    snakeSheet,
+			modules:  snakeModuleSheet,
+			metadata: snakeMetadata,
+		},
+		enemyRed: spriteVisualDefinition{
+			sheet:    redSnakeSheet,
+			modules:  redSnakeModuleSheet,
+			metadata: snakeMetadata,
+		},
+		enemyFrozen: spriteVisualDefinition{
+			sheet:    frozenSnakeSheet,
+			modules:  frozenSnakeModules,
+			metadata: frozenSnakeMetadata,
 		},
 	}
 }
@@ -167,6 +204,18 @@ func (g *Game) switchWorld(world int) error {
 	if err != nil {
 		return fmt.Errorf("load %s map header: %w", worldName(world), err)
 	}
+	enemyGreen, err := loadSpriteSheetWithModules(definition.enemyGreen.sheet, definition.enemyGreen.modules, definition.enemyGreen.metadata)
+	if err != nil {
+		return fmt.Errorf("load %s enemy sprite: %w", worldName(world), err)
+	}
+	enemyRed, err := loadSpriteSheetWithModules(definition.enemyRed.sheet, definition.enemyRed.modules, definition.enemyRed.metadata)
+	if err != nil {
+		return fmt.Errorf("load %s red enemy sprite: %w", worldName(world), err)
+	}
+	enemyFrozen, err := loadSpriteSheetWithModules(definition.enemyFrozen.sheet, definition.enemyFrozen.modules, definition.enemyFrozen.metadata)
+	if err != nil {
+		return fmt.Errorf("load %s frozen enemy sprite: %w", worldName(world), err)
+	}
 
 	g.pack = pack
 	g.worldMap = worldMap
@@ -176,6 +225,9 @@ func (g *Game) switchWorld(world int) error {
 	g.floor = floor
 	g.foregroundEffects = foregroundEffects
 	g.worldMapHeader = mapHeader
+	g.snakes = enemyGreen
+	g.redSnakes = enemyRed
+	g.frozenSnake = enemyFrozen
 	g.worldDir = dir
 	g.worldIndex = world
 	setWindowTitleForWorld(world)

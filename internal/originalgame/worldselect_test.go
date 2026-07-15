@@ -126,6 +126,27 @@ func TestWorldSelectCannotEnterLockedWorld(t *testing.T) {
 	}
 }
 
+func TestWorldSelectEnteringBavariaGuaranteesMysticHammer(t *testing.T) {
+	// i.java:3028-3029: selecting Bavaria at the seal raises iByteArr[9] to
+	// at least 1. Stage loads themselves never modify the tool level.
+	g, err := New(defaultWorldDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g.progress.WorldUnlocked[original.WorldBavaria] = true
+	g.enterWorldSelect(-1)
+	g.worldSelectPosition = sealPositionBavaria
+	g.activateWorldSelectPosition()
+	if g.worldIndex != original.WorldBavaria || g.progress.ToolLevel != 1 {
+		t.Fatalf("Bavaria seal entry world=%d tool=%d, want Bavaria with Mystic Hammer guaranteed", g.worldIndex, g.progress.ToolLevel)
+	}
+	g.progress.ToolLevel = 2
+	g.activateWorldSelectPosition()
+	if g.progress.ToolLevel != 2 {
+		t.Fatalf("Bavaria seal re-entry tool=%d, want existing hook level 2 kept", g.progress.ToolLevel)
+	}
+}
+
 func TestSealMoveTableMatchesOriginalConfig(t *testing.T) {
 	want := [4][4]int{
 		{-1, -1, 0, -1},

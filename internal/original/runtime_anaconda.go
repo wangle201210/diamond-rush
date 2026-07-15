@@ -233,7 +233,10 @@ func (rt *Runtime) tickGreatAnaconda(sourceTick int) (hits int, defeated bool) {
 			boss.TailHit = false
 			boss.TailVisible = false
 		} else if !boss.TailHit && rt.Player.Y == anacondaTailY && rt.Player.X >= boss.X()-3 && rt.Player.X <= boss.X()+4 {
-			rt.HurtFromDirection(1, anacondaBodyKnockbackDirection(rt.Player.X, boss.X()))
+			if rt.HurtFromDirection(1, anacondaBodyKnockbackDirection(rt.Player.X, boss.X())) {
+				// i.java:10176 hurtHero(1, 64, ...): the strike is fire-typed.
+				rt.igniteHero()
+			}
 			boss.TailHit = true
 		}
 	case AnacondaPhaseDescend:

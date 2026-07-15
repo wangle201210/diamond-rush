@@ -3,6 +3,7 @@ package original
 import (
 	"fmt"
 	"path/filepath"
+	"slices"
 	"testing"
 )
 
@@ -87,8 +88,8 @@ func TestRuntimeCompassTargetsOrderedCheckpointsThenRaw5Goal(t *testing.T) {
 	}{
 		{0, Point{X: 4, Y: 17}},
 		{1, Point{X: 11, Y: 9}},
-		{2, Point{X: 17, Y: 9}},
-		{3, Point{X: 22, Y: 9}},
+		{2, Point{X: 19, Y: 7}},
+		{3, Point{X: 21, Y: 9}},
 	}
 	for _, tt := range tests {
 		rt.CheckpointProgress = tt.progress
@@ -232,7 +233,7 @@ func TestRuntimeStage00GoalAutoWalksPastSourceBoundary(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rt.Player = Point{X: 21, Y: 9}
+	rt.Player = Point{X: 20, Y: 9}
 	rt.PlayerMotion = ObjectMotion{}
 	if !rt.TryMove(1, 0) {
 		t.Fatal("failed to enter stage00 raw5 goal")
@@ -247,8 +248,8 @@ func TestRuntimeStage00GoalAutoWalksPastSourceBoundary(t *testing.T) {
 		steps++
 		settleRuntimePlayerMotion(rt)
 	}
-	if steps != 10 || rt.Player != (Point{X: stage.Width + 6, Y: 9}) {
-		t.Fatalf("goal exit steps=%d player=%+v, want 10 and (%d,9)", steps, rt.Player, stage.Width+6)
+	if steps != 11 || rt.Player != (Point{X: stage.Width + 6, Y: 9}) {
+		t.Fatalf("goal exit steps=%d player=%+v, want 11 and (%d,9)", steps, rt.Player, stage.Width+6)
 	}
 }
 
@@ -465,15 +466,15 @@ func TestRuntimeStage00CanBeCompletedFromEntrance(t *testing.T) {
 	move("upper connector east", 1, 0, 6)
 	move("dig behind corridor rock", 0, 1, 3)
 	push("push corridor rock left", -1)
-	move("second checkpoint", 1, 0, 3)
+	move("exit corridor approach", 1, 0, 5)
+	move("second checkpoint", 0, -1, 2)
 	if rt.CheckpointProgress != 3 {
 		t.Fatalf("checkpoint progress after raw state 2 = %d, want 3", rt.CheckpointProgress)
 	}
 
 	// The visible raw-12 gate requires ten gems. Five more are reachable above
 	// the final checkpoint, while the separate raw-5 exit has no quota check.
-	move("upper room entry", 1, 0, 2)
-	move("upper room climb", 0, -1, 3)
+	move("upper room climb", 0, -1, 1)
 	move("upper room left gem", -1, 0, 1)
 	move("upper room right gems", 1, 0, 2)
 	move("upper room north", 0, -1, 2)
@@ -488,9 +489,9 @@ func TestRuntimeStage00CanBeCompletedFromEntrance(t *testing.T) {
 
 	move("return east", 1, 0, 2)
 	move("return south", 0, 1, 5)
-	move("exit corridor", 1, 0, 3)
-	if rt.Player != (Point{X: 22, Y: 9}) || !rt.ReachedGoal {
-		t.Fatalf("stage00 finish player=%+v reached=%v, want goal (22,9)/true", rt.Player, rt.ReachedGoal)
+	move("exit corridor", 1, 0, 2)
+	if rt.Player != (Point{X: 21, Y: 9}) || !rt.ReachedGoal {
+		t.Fatalf("stage00 finish player=%+v reached=%v, want goal (21,9)/true", rt.Player, rt.ReachedGoal)
 	}
 }
 
@@ -511,11 +512,19 @@ func TestRuntimeStage00CanBeCompletedAtSourceCadence(t *testing.T) {
 			rt.AdvancePlayerMotion()
 		}
 	}
+	scriptPrompts := make([]int, 0, 2)
 	move := func(label string, dx, dy, count int) {
 		t.Helper()
 		for step := 1; step <= count; step++ {
 			pushWaits := 0
 			for {
+				if rt.TutorialScriptActive {
+					if prompt, ok := rt.TutorialPrompt(); ok && rt.AdvanceTutorialPrompt() {
+						scriptPrompts = append(scriptPrompts, prompt.TextIndex)
+					}
+					tickUpdate()
+					continue
+				}
 				if rt.PlayerMotion.Remaining > 0 || rt.HurtTicks > 0 {
 					tickUpdate()
 					continue
@@ -586,9 +595,9 @@ func TestRuntimeStage00CanBeCompletedAtSourceCadence(t *testing.T) {
 	move("upper connector east", 1, 0, 6)
 	move("dig behind corridor rock", 0, 1, 3)
 	move("push corridor rock left", -1, 0, 1)
-	move("second checkpoint", 1, 0, 3)
-	move("upper room entry", 1, 0, 2)
-	move("upper room climb", 0, -1, 3)
+	move("exit corridor approach", 1, 0, 5)
+	move("second checkpoint", 0, -1, 2)
+	move("upper room climb", 0, -1, 1)
 	move("upper room left gem", -1, 0, 1)
 	move("upper room right gems", 1, 0, 2)
 	move("upper room north", 0, -1, 2)
@@ -602,9 +611,12 @@ func TestRuntimeStage00CanBeCompletedAtSourceCadence(t *testing.T) {
 	}
 	move("return east", 1, 0, 2)
 	move("return south", 0, 1, 5)
-	move("exit corridor", 1, 0, 3)
-	if rt.Player != (Point{X: 22, Y: 9}) || !rt.ReachedGoal {
+	move("exit corridor", 1, 0, 2)
+	if rt.Player != (Point{X: 21, Y: 9}) || !rt.ReachedGoal {
 		t.Fatalf("source-cadence finish player=%+v reached=%v tick=%d", rt.Player, rt.ReachedGoal, sourceTick)
+	}
+	if !slices.Equal(scriptPrompts, []int{15, 16}) {
+		t.Fatalf("stage00 raw30 script prompts=%v, want [15 16]", scriptPrompts)
 	}
 }
 
@@ -2133,6 +2145,38 @@ func TestRuntimeCrawlerDamagesPlayerOnTick(t *testing.T) {
 	}
 }
 
+func TestRuntimeCrawlerContactIgnitesHeroBurnAnimation(t *testing.T) {
+	// Crawler contact is hurtHero(1, 64, 0): a fire-type hit that swaps the
+	// hero sprite to o.f chunk 1 animation 0 for its 16-tick duration.
+	stage := mustLoadOriginalStage(t, "stage00.json")
+	rt, err := NewRuntime(stage)
+	if err != nil {
+		t.Fatal(err)
+	}
+	clearRuntimePlayerIDs(rt, 11)
+	prepareCrawlerTestArea(rt, 10, 10)
+	rt.Player = Point{X: 11, Y: 10}
+	rt.SetForTest(PlayerLayer, 10, 10, 11)
+	rt.SetForTest(PlayerLayer, 10, 11, 80)
+	rt.ObjectState[rt.index(10, 10)] = 2
+	if rt.TickCrawlers() != 1 {
+		t.Fatal("crawler did not reach the hero")
+	}
+	if rt.BurnTicks != HeroBurnDuration {
+		t.Fatalf("burn ticks=%d, want %d after fire-type contact", rt.BurnTicks, HeroBurnDuration)
+	}
+	rt.TickStatus()
+	if rt.BurnTicks != HeroBurnDuration-1 {
+		t.Fatalf("burn ticks=%d after one status tick, want %d", rt.BurnTicks, HeroBurnDuration-1)
+	}
+	if !rt.RestoreCheckpoint() {
+		t.Fatal("RestoreCheckpoint failed")
+	}
+	if rt.BurnTicks != 0 {
+		t.Fatalf("burn ticks=%d after checkpoint restore, want 0", rt.BurnTicks)
+	}
+}
+
 func TestRuntimeHurtStatePreventsRepeatedContactDamage(t *testing.T) {
 	stage := mustLoadOriginalStage(t, "stage00.json")
 	rt, err := NewRuntime(stage)
@@ -2382,6 +2426,73 @@ func TestRuntimeBoulderCrushesCrawler(t *testing.T) {
 	target, _ := rt.At(PlayerLayer, 2, 11)
 	if source != EmptyRawID || target != 0 {
 		t.Fatalf("crawler crush source=%d target=%d, want empty/raw0", source, target)
+	}
+}
+
+func TestRuntimeBoulderCrushLeavesVanishSmoke(t *testing.T) {
+	// jVoid (i.java:15119-15122) marks a crushed enemy's cell with the cm.f
+	// chunk 3 smoke nibble; the object scan advances it every second source
+	// tick and clears it at the 7-frame animation count.
+	stage := mustLoadOriginalStage(t, "stage00.json")
+	rt, err := NewRuntime(stage)
+	if err != nil {
+		t.Fatal(err)
+	}
+	clearRuntimePlayerIDs(rt, 0, 1)
+	rt.SetForTest(PlayerLayer, 2, 10, 0)
+	rt.SetForTest(PlayerLayer, 2, 11, 43)
+	rt.SetForTest(ForegroundLayer, 2, 11, EmptyRawID)
+	if tickGravityObject(rt, 2, 10) != 1 {
+		t.Fatal("boulder did not crush the snake")
+	}
+	if got := rt.ForegroundStateAt(2, 11); got != 1 {
+		t.Fatalf("vanish nibble=%d after crush, want 1", got)
+	}
+	rt.Player = Point{X: 4, Y: 11}
+	for tick := 1; tick <= 16 && rt.ForegroundStateAt(2, 11) > 0; tick++ {
+		rt.TickSourceFrame(8, tick, 0)
+	}
+	if got := rt.ForegroundStateAt(2, 11); got != 0 {
+		t.Fatalf("vanish nibble=%d after animation window, want cleared", got)
+	}
+}
+
+func TestRuntimeBoulderLandingStartsDustCounter(t *testing.T) {
+	// i.java:15591-15601 sets state bits 6..8 to 1 when a rock lands on a
+	// non-boulder support; the per-object tick advances it to 6 and stops
+	// (render shows counters 1..5 as cm.f chunk 3 modules 0..4).
+	stage := mustLoadOriginalStage(t, "stage00.json")
+	rt, err := NewRuntime(stage)
+	if err != nil {
+		t.Fatal(err)
+	}
+	clearRuntimePlayerIDs(rt, 0, 1)
+	rt.SetForTest(PlayerLayer, 2, 10, 0)
+	rt.SetForTest(PlayerLayer, 2, 11, EmptyRawID)
+	rt.SetForTest(PlayerLayer, 2, 12, 80)
+	rt.SetForTest(ForegroundLayer, 2, 11, EmptyRawID)
+	rt.Player = Point{X: 4, Y: 11}
+	settled := false
+	for tick := 1; tick <= 24; tick++ {
+		rt.TickGravityNearPlayer(8)
+		idx := rt.index(2, 11)
+		if id, _ := rt.At(PlayerLayer, 2, 11); id == 0 && rt.ObjectMotion[idx].Remaining == 0 && rt.ObjectState[idx]&0x7 == 0 {
+			settled = true
+			break
+		}
+	}
+	if !settled {
+		t.Fatal("boulder never settled on the ledge")
+	}
+	dust := (rt.ObjectState[rt.index(2, 11)] & 0x1C0) >> 6
+	if dust < 1 || dust > 5 {
+		t.Fatalf("dust counter=%d right after landing, want 1..5", dust)
+	}
+	for tick := 0; tick < 8; tick++ {
+		rt.TickGravityNearPlayer(8)
+	}
+	if got := (rt.ObjectState[rt.index(2, 11)] & 0x1C0) >> 6; got != 6 {
+		t.Fatalf("dust counter=%d after advancing, want parked at 6", got)
 	}
 }
 

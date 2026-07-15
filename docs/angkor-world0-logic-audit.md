@@ -60,9 +60,9 @@ This document records the code-level completion audit for all 14 stages packed i
 ## Cross-World Prerequisites
 
 - Mystic Hammer raw `24` is in Angkor Stage 4 at `(26,18)`.
-- Mystic Hook raw `27` is not in Angkor Stage 5. It is in `world1/stage02` (Bavaria Stage 3) at `(24,25)` under foreground raw `14`. The Angkor-only Stage 5 entry supplies level `2` to model the original revisit state; do not add a fake hook chest to World 0.
+- Mystic Hook raw `27` is not in Angkor Stage 5. It is in `world1/stage02` (Bavaria Stage 3) at `(24,25)` under foreground raw `14`. Stage entry no longer supplies any tool level: Java's stage loader (`jVoid`, i.java:3258-4675) never writes `iByteArr[9]`; the only guarantees are world-entry ones (Bavaria => >=1 at i.java:3028-3029, Siberia => >=2). Do not add a fake hook chest to World 0.
 - Freeze Hammer raw `26` is in `world2/stage05` at `(32,22)`. The Stage 8 secret-route and secret-stage entries similarly use a source-valid later-game prerequisite state.
-- The Mystic Hook acquisition journey is now implemented in Bavaria Stage 3 and persists into later stages. The Freeze Hammer journey still depends on unimplemented Siberia content; direct Angkor revisit entries retain their source-valid prerequisite fallback.
+- The Mystic Hook acquisition journey is implemented in Bavaria Stage 3 and persists through the save. The Freeze Hammer stays in unimplemented Siberia, so Angkor Stage 8's frozen-snake secret route and the Freeze-Hammer-dependent secret-stage solutions remain blocked in the two-world slice, exactly as in the original before Siberia; runtime route tests construct the tool state themselves.
 
 ## Verification
 

@@ -247,26 +247,30 @@ func TestLoadStageSwitchesRuntime(t *testing.T) {
 	if got := g.rt.EntranceMarker; got != (original.Point{X: 3, Y: 19}) {
 		t.Fatalf("stage04 entrance = %+v, want (3,19)", got)
 	}
-	if g.rt.SpecialItemMask != 2 {
-		t.Fatalf("stage04 standalone prerequisite tool=%d, want Mystic Hook level 2", g.rt.SpecialItemMask)
+	if g.rt.SpecialItemMask != 0 {
+		t.Fatalf("stage04 standalone tool=%d, want save-carried state only (Java jVoid never writes iByteArr[9])", g.rt.SpecialItemMask)
 	}
 }
 
-func TestStage07UsesFreezeHammerCrossWorldPrerequisite(t *testing.T) {
+func TestStage07EntryDoesNotGrantFreezeHammer(t *testing.T) {
+	// Java's stage loader never raises iByteArr[9]; the Freeze Hammer only
+	// comes from the Siberia chest, so Angkor Stage 8 enters with whatever
+	// the save carries and its frozen-snake secret route stays blocked.
 	g, err := New(defaultWorldDir)
 	if err != nil {
 		t.Fatal(err)
 	}
+	g.progress.ToolLevel = 2
 	rt, err := original.NewRuntime(g.pack.Stages[7])
 	if err != nil {
 		t.Fatal(err)
 	}
 	g.applyCampaignProgress(rt, 7)
-	if rt.SpecialItemMask != 8 {
-		t.Fatalf("Stage 8 prerequisite tool=%d, want Freeze Hammer level 8", rt.SpecialItemMask)
+	if rt.SpecialItemMask != 2 {
+		t.Fatalf("Stage 8 entry tool=%d, want save-carried hook level 2", rt.SpecialItemMask)
 	}
-	if !rt.RestoreCheckpoint() || rt.SpecialItemMask != 8 {
-		t.Fatalf("Stage 8 checkpoint restored tool=%d, want Freeze Hammer level 8", rt.SpecialItemMask)
+	if !rt.RestoreCheckpoint() || rt.SpecialItemMask != 2 {
+		t.Fatalf("Stage 8 checkpoint restored tool=%d, want save-carried hook level 2", rt.SpecialItemMask)
 	}
 }
 
@@ -551,14 +555,54 @@ func TestBavariaSpikeCoverUsesCellBehindExtension(t *testing.T) {
 	}
 }
 
-func TestBavariaWaterSourceForegroundIsAnInvisibleRuntimeMarker(t *testing.T) {
+func TestBavariaWaterSourceForegroundDrawsStaticSpoutModule(t *testing.T) {
 	g, err := New("decoded/world1")
 	if err != nil {
 		t.Fatal(err)
 	}
+	if g.bavaria.waterSpout == nil {
+		t.Fatal("Bavaria water spout sheet (gen0.f chunk 6) not loaded")
+	}
+	if len(g.bavaria.waterSpout.meta.Modules) == 0 {
+		t.Fatal("water spout sheet has no modules")
+	}
+	if module := g.bavaria.waterSpout.meta.Modules[0]; module.W != original.TileSize || module.H != original.TileSize {
+		t.Fatalf("water spout module 0 = %dx%d, want 24x24", module.W, module.H)
+	}
 	dst := ebiten.NewImage(original.TileSize, original.TileSize)
-	if g.drawBavariaForeground(dst, 27, 0, 0) {
-		t.Fatal("foreground raw 27 rendered a sprite; Java uses it only as the runtime water-source marker")
+	if !g.drawBavariaForeground(dst, 27, 0, 0) {
+		t.Fatal("foreground raw 27 did not render; Java aVoid case 27 draws the static textures[21] module (gen0.f chunk 6)")
+	}
+}
+
+func TestWorldEnemySheetsFollowSourceChunkSelection(t *testing.T) {
+	// i.java:3887-3902 loads gen chunk 17 (gen1.f #7) for raw 19/43 in
+	// world 1 and chunk 15 (gen1.f #5) elsewhere; frozen variants pair
+	// chunk 18 with 17 and chunk 16 with 15.
+	angkor, err := New(defaultWorldDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := angkor.snakes.meta.AnimationCounts; !slices.Equal(got, []int{4, 11, 8, 11, 5}) {
+		t.Fatalf("Angkor enemy animation counts=%v, want gen1#5 [4 11 8 11 5]", got)
+	}
+	bavaria, err := New("decoded/world1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for name, sheet := range map[string]*spriteSheet{"green": bavaria.snakes, "red": bavaria.redSnakes} {
+		if got := sheet.meta.AnimationCounts; !slices.Equal(got, []int{4, 4, 8}) {
+			t.Fatalf("Bavaria %s enemy animation counts=%v, want gen1#7 [4 4 8]", name, got)
+		}
+	}
+	if got := len(bavaria.frozenSnake.meta.Frames); got != 1 {
+		t.Fatalf("Bavaria frozen enemy frames=%d, want gen1#8 single frame", got)
+	}
+	if err := bavaria.switchWorld(original.WorldAngkor); err != nil {
+		t.Fatal(err)
+	}
+	if got := bavaria.snakes.meta.AnimationCounts; !slices.Equal(got, []int{4, 11, 8, 11, 5}) {
+		t.Fatalf("post-switch enemy animation counts=%v, want gen1#5 [4 11 8 11 5]", got)
 	}
 }
 
@@ -660,13 +704,16 @@ func TestFirstNineStagesUnlockAndCarryOriginalToolPrerequisites(t *testing.T) {
 	}
 	g.progress = progress
 	g.loadStage(4)
-	if g.rt.SpecialItemMask != 2 {
-		t.Fatalf("Stage 5 runtime tool=%d, want original cross-world hook prerequisite level 2", g.rt.SpecialItemMask)
+	if g.rt.SpecialItemMask != 1 {
+		t.Fatalf("Stage 5 runtime tool=%d, want save-carried hammer level 1 (no stage-entry injection)", g.rt.SpecialItemMask)
 	}
 	progress.recordStageResult(4, g.rt)
-	if progress.HighestUnlocked != 5 || !progress.StageCleared[4] || progress.ToolLevel != 2 {
-		t.Fatalf("Stage 5 progress=%+v, want Stage 6 unlocked and hook persisted", progress)
+	if progress.HighestUnlocked != 5 || !progress.StageCleared[4] || progress.ToolLevel != 1 {
+		t.Fatalf("Stage 5 progress=%+v, want Stage 6 unlocked without a tool upgrade", progress)
 	}
+	// The Mystic Hook comes from the Bavaria Stage 3 chest (world1/stage02);
+	// model that detour in the persistent save before the Angkor revisit.
+	progress.ToolLevel = maxToolLevel(progress.ToolLevel, 2)
 	g.progress = progress
 	g.loadStage(5)
 	if g.stageIndex != 5 || !g.rt.IsFallingTorchStage() || g.rt.SpecialItemMask != 2 {
@@ -687,17 +734,17 @@ func TestFirstNineStagesUnlockAndCarryOriginalToolPrerequisites(t *testing.T) {
 	}
 	g.progress = progress
 	g.loadStage(7)
-	if g.stageIndex != 7 || g.rt.SpecialItemMask != 8 {
-		t.Fatalf("Stage 8 runtime index=%d tool=%d, want 7/8", g.stageIndex, g.rt.SpecialItemMask)
+	if g.stageIndex != 7 || g.rt.SpecialItemMask != 2 {
+		t.Fatalf("Stage 8 runtime index=%d tool=%d, want 7/2: the Freeze Hammer stays in unimplemented Siberia", g.stageIndex, g.rt.SpecialItemMask)
 	}
 	progress.recordStageResult(7, g.rt)
-	if progress.HighestUnlocked != 8 || !progress.StageCleared[7] || !progress.StageUnlocked[8] || progress.ToolLevel != 8 {
-		t.Fatalf("eight-stage progress=%+v, want Stage 8 clear, Stage 9 unlocked, and Freeze Hammer persisted", progress)
+	if progress.HighestUnlocked != 8 || !progress.StageCleared[7] || !progress.StageUnlocked[8] || progress.ToolLevel != 2 {
+		t.Fatalf("eight-stage progress=%+v, want Stage 8 clear, Stage 9 unlocked, and no phantom Freeze Hammer", progress)
 	}
 	g.progress = progress
 	g.loadStage(8)
-	if g.stageIndex != 8 || !g.rt.Anaconda.Enabled || g.rt.SpecialItemMask != 8 {
-		t.Fatalf("Stage 9 runtime index=%d boss=%v tool=%d, want 8/true/8", g.stageIndex, g.rt.Anaconda.Enabled, g.rt.SpecialItemMask)
+	if g.stageIndex != 8 || !g.rt.Anaconda.Enabled || g.rt.SpecialItemMask != 2 {
+		t.Fatalf("Stage 9 runtime index=%d boss=%v tool=%d, want 8/true/2", g.stageIndex, g.rt.Anaconda.Enabled, g.rt.SpecialItemMask)
 	}
 	progress.recordStageResult(8, g.rt)
 	if progress.HighestUnlocked != 8 || !progress.StageCleared[8] {
@@ -710,7 +757,7 @@ func TestAdvanceAfterGoalAutoWalksBeyondStageBeforeResults(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	g.rt.Player = original.Point{X: 21, Y: 9}
+	g.rt.Player = original.Point{X: 20, Y: 9}
 	g.rt.PlayerMotion = original.ObjectMotion{}
 	if !g.rt.TryMove(1, 0) {
 		t.Fatal("failed to enter source raw5 goal")
@@ -745,7 +792,7 @@ func TestAdvanceAfterGoalDoesNotCompleteAtGoalCell(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	g.rt.Player = original.Point{X: 21, Y: 9}
+	g.rt.Player = original.Point{X: 20, Y: 9}
 	g.rt.PlayerMotion = original.ObjectMotion{}
 	if !g.rt.TryMove(1, 0) {
 		t.Fatal("failed to enter source raw5 goal")
@@ -758,8 +805,8 @@ func TestAdvanceAfterGoalDoesNotCompleteAtGoalCell(t *testing.T) {
 	if g.worldDone {
 		t.Fatal("world done = true before hero left the stage boundary")
 	}
-	if g.rt.Player != (original.Point{X: 23, Y: 9}) || g.heroMoveOffset != 12 {
-		t.Fatalf("first exit step player=%+v offset=%d, want (23,9)/12", g.rt.Player, g.heroMoveOffset)
+	if g.rt.Player != (original.Point{X: 22, Y: 9}) || g.heroMoveOffset != 12 {
+		t.Fatalf("first exit step player=%+v offset=%d, want (22,9)/12", g.rt.Player, g.heroMoveOffset)
 	}
 }
 

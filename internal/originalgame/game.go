@@ -68,6 +68,9 @@ const (
 	crawlerMetadata            = "decoded/sprites/gen1/chunk04-animations.json"
 	commonPickupModules        = "decoded/sprites/cm/chunk04-modules.png"
 	commonPickupMetadata       = "decoded/sprites/cm/chunk04-animations.json"
+	destructionFXFrames        = "decoded/sprites/cm/chunk03-frames.png"
+	destructionFXModules       = "decoded/sprites/cm/chunk03-modules.png"
+	destructionFXMetadata      = "decoded/sprites/cm/chunk03-animations.json"
 	frozenVioletSheet          = "decoded/sprites/gen0/chunk01-frames.png"
 	frozenVioletModules        = "decoded/sprites/gen0/chunk01-modules.png"
 	frozenVioletMetadata       = "decoded/sprites/gen0/chunk01-animations.json"
@@ -172,6 +175,9 @@ const (
 	heroFrameSheet             = "decoded/sprites/o/chunk00-frames.png"
 	heroModuleSheet            = "decoded/sprites/o/chunk00-modules.png"
 	heroMetadata               = "decoded/sprites/o/chunk00-animations.json"
+	heroBurnFrameSheet         = "decoded/sprites/o/chunk01-frames.png"
+	heroBurnModuleSheet        = "decoded/sprites/o/chunk01-modules.png"
+	heroBurnMetadata           = "decoded/sprites/o/chunk01-animations.json"
 	fontSmallSheet             = "decoded/fonts/freej2me-small.png"
 	fontSmallMetadata          = "decoded/fonts/freej2me-small.json"
 	fontMediumSheet            = "decoded/fonts/freej2me-medium.png"
@@ -359,6 +365,8 @@ type Game struct {
 	tutorialPortrait       *spriteSheet
 	hud                    *spriteSheet
 	hero                   *spriteSheet
+	heroBurn               *spriteSheet
+	destructionFX          *spriteSheet
 	fontSmall              *bitmapFont
 	fontMedium             *bitmapFont
 	worldCanvas            *ebiten.Image
@@ -562,11 +570,11 @@ func New(worldDir string) (*Game, error) {
 	if err != nil {
 		return nil, fmt.Errorf("load hazard emitter sheet: %w", err)
 	}
-	snakes, err := loadSpriteSheetWithModules(snakeSheet, snakeModuleSheet, snakeMetadata)
+	snakes, err := loadSpriteSheetWithModules(visuals.enemyGreen.sheet, visuals.enemyGreen.modules, visuals.enemyGreen.metadata)
 	if err != nil {
 		return nil, fmt.Errorf("load snake sprite: %w", err)
 	}
-	redSnakes, err := loadSpriteSheetWithModules(redSnakeSheet, redSnakeModuleSheet, snakeMetadata)
+	redSnakes, err := loadSpriteSheetWithModules(visuals.enemyRed.sheet, visuals.enemyRed.modules, visuals.enemyRed.metadata)
 	if err != nil {
 		return nil, fmt.Errorf("load red snake sprite: %w", err)
 	}
@@ -582,7 +590,7 @@ func New(worldDir string) (*Game, error) {
 	if err != nil {
 		return nil, fmt.Errorf("load frozen violet sprite: %w", err)
 	}
-	frozenSnake, err := loadSpriteSheetWithModules(frozenSnakeSheet, frozenSnakeModules, frozenSnakeMetadata)
+	frozenSnake, err := loadSpriteSheetWithModules(visuals.enemyFrozen.sheet, visuals.enemyFrozen.modules, visuals.enemyFrozen.metadata)
 	if err != nil {
 		return nil, fmt.Errorf("load frozen snake sprite: %w", err)
 	}
@@ -754,6 +762,14 @@ func New(worldDir string) (*Game, error) {
 	if err != nil {
 		return nil, fmt.Errorf("load hero sprite: %w", err)
 	}
+	heroBurn, err := loadSpriteSheetWithModules(heroBurnFrameSheet, heroBurnModuleSheet, heroBurnMetadata)
+	if err != nil {
+		return nil, fmt.Errorf("load hero burn sprite: %w", err)
+	}
+	destructionFX, err := loadSpriteSheetWithModules(destructionFXFrames, destructionFXModules, destructionFXMetadata)
+	if err != nil {
+		return nil, fmt.Errorf("load destruction effects: %w", err)
+	}
 	fontSmall, err := loadBitmapFont(fontSmallSheet, fontSmallMetadata)
 	if err != nil {
 		return nil, fmt.Errorf("load FreeJ2ME small font: %w", err)
@@ -846,6 +862,8 @@ func New(worldDir string) (*Game, error) {
 		tutorialPortrait:    tutorialPortrait,
 		hud:                 hud,
 		hero:                hero,
+		heroBurn:            heroBurn,
+		destructionFX:       destructionFX,
 		fontSmall:           fontSmall,
 		fontMedium:          fontMedium,
 		sounds:              sounds,
@@ -1498,24 +1516,12 @@ func (g *Game) applyCampaignProgress(rt *original.Runtime, stageIndex int) {
 			waterBreathingPotion = true
 		}
 	}
-	if rt.Stage.World == original.WorldAngkor && stageIndex == 4 {
-		// Angkor Stage 5 is revisited after the Mystic Hook is obtained in
-		// Bavaria. Keep direct-stage and legacy saves in that source-valid state.
-		toolLevel = maxToolLevel(toolLevel, 2)
-	}
-	if rt.Stage.World == original.WorldAngkor && stageIndex == 7 {
-		// Angkor Stage 8's secret route is revisited with the Freeze Hammer.
-		// The intervening world is outside this Angkor-only campaign slice.
-		toolLevel = maxToolLevel(toolLevel, 8)
-	}
-	if rt.Stage.World == original.WorldAngkor && stageIndex >= angkorFirstSecretStage && stageIndex < angkorTutorialStage {
-		// The four Angkor secret stages are revisited after the intervening
-		// worlds and shop upgrades. Supply that source-valid campaign state in
-		// this Angkor-only slice.
-		toolLevel = maxToolLevel(toolLevel, 8)
-		rt.MaxHealth = max(rt.MaxHealth, 8)
-		rt.Health = rt.MaxHealth
-	}
+	// Java's stage loader (i.java jVoid 3258-4675) never writes the tool
+	// level or max health: iByteArr[9] only changes at chest pickups and the
+	// world-entry guarantees (Bavaria => >=1, Siberia => >=2). Angkor Stage 5,
+	// Stage 8, and the secret stages therefore enter with whatever the save
+	// carries; hook- or Freeze-Hammer-gated content simply stays blocked, as
+	// in the original, until the tool is genuinely acquired.
 	rt.SpecialItemMask = toolLevelSpecialItemMask(toolLevel)
 	if waterBreathingPotion {
 		rt.SpecialItemMask |= 4
@@ -2356,6 +2362,30 @@ func (g *Game) drawCellObjects(dst *ebiten.Image, x, y, px, py int) {
 
 func (g *Game) drawCellForegroundOverlay(dst *ebiten.Image, x, y, px, py int) {
 	foregroundID, _ := g.rt.At(original.ForegroundLayer, x, y)
+	if foregroundID != 32 {
+		// Kill smoke: Java draws cm.f chunk 3 animation 0 at the stored
+		// foreground high nibble in this same post-foreground pass
+		// (i.java:7786-7795).
+		if nibble := g.rt.ForegroundStateAt(x, y); nibble > 0 {
+			g.destructionFX.drawAnimationSequenceFrame(dst, 0, nibble, px, py, 0)
+		}
+	}
+	if playerID, _ := g.rt.At(original.PlayerLayer, x, y); playerID == 0 {
+		// Boulder-landing dust: modules 0..4 from the state bits 6..8
+		// counter, shifted a tile toward the roll origin and 13px down
+		// (i.java:9007-9034, 7804-7806).
+		state := g.objectStateAt(x, y)
+		if dust := (state&0x1C0)>>6 - 1; dust >= 0 && dust < 5 {
+			shift := 0
+			switch state & 0x7 {
+			case 4:
+				shift = 24
+			case 2:
+				shift = -24
+			}
+			g.destructionFX.drawModule(dst, dust, px+shift, py+13)
+		}
+	}
 	switch {
 	case foregroundID == 32:
 		g.drawDiggableFrame(dst, g.rt.ForegroundStateAt(x, y), px, py)
@@ -2398,15 +2428,26 @@ func sourceCellObjectVisible(playerID, foregroundID original.RawID) bool {
 
 func (g *Game) drawSnake(dst *ebiten.Image, x, y, px, py int) {
 	state := g.objectStateAt(x, y)
+	sheet := g.snakes
+	if id, _ := g.rt.At(original.PlayerLayer, x, y); id == 43 {
+		sheet = g.redSnakes
+	}
+	if g.worldIndex == original.WorldBavaria {
+		// Java's world-1 branch (i.java:9052-9094) ignores the facing bits:
+		// animation 2 while the attack counter (state bits 3..7) runs,
+		// otherwise animation 0, stepped at full source-frame speed.
+		animation := 0
+		if (state&0xF8)>>3 > 0 {
+			animation = 2
+		}
+		sheet.drawAnimationSequenceFrame(dst, animation, g.tick, px, py, 0)
+		return
+	}
 	direction := state & 0x7
 	if direction == 0 {
 		direction = (state & 0x7000) >> 12
 	}
 	animation := clamp(direction-1, 0, 3)
-	sheet := g.snakes
-	if id, _ := g.rt.At(original.PlayerLayer, x, y); id == 43 {
-		sheet = g.redSnakes
-	}
 	sheet.drawAnimationSequenceFrame(dst, animation, g.tick>>1, px, py, 0)
 }
 
@@ -2615,6 +2656,13 @@ func (g *Game) drawDiggableFrame(dst *ebiten.Image, frame, px, py int) {
 }
 
 func (g *Game) drawPlayer(dst *ebiten.Image, px, py int) {
+	if g.rt.BurnTicks > 0 {
+		// While kInt&0x4000 is set Java draws animator 3 (o.f chunk 1, the
+		// burn animation) instead of the hero, before any invulnerability
+		// flicker applies (i.java:8812, YVoid).
+		g.heroBurn.drawAnimationWithFrameOffset(dst, 0, original.HeroBurnDuration-g.rt.BurnTicks, px, py, 0)
+		return
+	}
 	if g.rt.InvulnerabilityTicks > 0 && (g.tick>>1)&1 != 0 {
 		return
 	}

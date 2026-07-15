@@ -56,7 +56,11 @@ cd /Users/wanna/mine/github/wangle201210/DiamondRushSource
 5. 截图和视频只能确认用户可见结果，不能证明碰撞条件、更新顺序、计时器、检查点快照或状态位语义。
 6. 现有 Go 代码、旧原型和攻略只能作为定位线索。
 
-`src/main/resources/w1.bin` 与原 JAR 内 `w1.bin` 有 4 字节差异，均在 Bavaria `stage07` player layer。原 JAR 的 `(20,10)/(29,19)/(25,20)` 为空，`(7,17)` 为 raw `10`；`decoded/world1/stage07.json` 必须保留 JAR 版本。JAR 中 `w1.bin` SHA-256 为 `951b998c82383c55144ed82c5c54a7dc70f638017929d46aa155e40b0a77674e`，`map_scotland.out` 为 `5c21ffc3ac32e6f571cba097eaf81f3a7044804d1e4ae19f2c381586eba543c0`。
+`src/main/resources` 下的 `w0.bin`、`w1.bin`、`w2.bin` 均与原 JAR 内同名条目存在差异，`decoded/worldN` 必须保留 JAR 版本，不能用源码目录资源重新生成后覆盖：
+
+- `w1.bin` 有 4 字节差异，均在 Bavaria `stage07` player layer。原 JAR 的 `(20,10)/(29,19)/(25,20)` 为空，`(7,17)` 为 raw `10`。JAR 中 `w1.bin` SHA-256 为 `951b998c82383c55144ed82c5c54a7dc70f638017929d46aa155e40b0a77674e`，`map_scotland.out` 为 `5c21ffc3ac32e6f571cba097eaf81f3a7044804d1e4ae19f2c381586eba543c0`。
+- `w0.bin` 有 16 字节差异，均在 Angkor `stage00`：JAR 版第二检查点在 `(19,7)`、出口在 `(21,9)`、`(19,9)` 为 foreground raw `30` 脚本触发格（脚本 `20`）。JAR 中 `w0.bin` SHA-256 为 `0b2eb7662959fd1e73b8ee435e96ca9cff87bd159dec845640954ed9658c0ffd`。详见 `docs/diamond-rush-fidelity-reference.md` 数据完整性一节。
+- `w2.bin` 亦有差异，尚未逐字节审计；实现 Siberia 前必须先从 JAR 解码。
 
 ## 始终生效的运行时约束
 

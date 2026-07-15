@@ -595,7 +595,7 @@ Go implication:
 - Treat raw `24`, `26`, `27`, `42`, and `53` as passable source-special pickups. Raw `42` is the Compass and triggers tutorial script `11`; raw `53` preserves the special animation `47`, 141-tick input lock, seal bit `0`, and 11-step non-result transition.
 - Preserve the Java state effects as runtime flags/masks and derive action tool level from raw `24` Mystic Mallet, raw `27` Mystic Hook, and raw `26` Freeze Hammer in source progression order `1/2/8`.
 - Clear the source cell and include the flags in checkpoint snapshots.
-- Draw all three tools from their source modules in overhead rewards. Bavaria Stage 3 now performs the real raw `27` acquisition and persists tool level `2`; Bavaria Stage 5 inherits it and contains no duplicate raw `27`. The Angkor Stage 5 direct-stage fallback supplies the same authored revisit prerequisite without inventing a false hook chest.
+- Draw all three tools from their source modules in overhead rewards. Bavaria Stage 3 performs the real raw `27` acquisition and persists tool level `2`; Bavaria Stage 5 inherits it and contains no duplicate raw `27`. Stage entries never modify the tool level (Java `jVoid` writes no `iByteArr[9]`); the Bavaria world-entry guarantee (tool >= 1, i.java:3028-3029) is the only floor, and no false hook chest exists in World 0.
 
 ## Angkor Tutorial Stage 13 And Compass
 
